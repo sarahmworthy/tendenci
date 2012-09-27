@@ -41,7 +41,7 @@ class Story(TendenciBaseModel):
     start_dt = models.DateTimeField(_('Start Date/Time'), null=True, blank=True)
     end_dt = models.DateTimeField(_('End Date/Time'), null=True, blank=True)
     expires = models.BooleanField(_('Expires'), default=True)
-    ncsortorder = models.IntegerField(null=True, blank=True)
+    ncsortorder = models.IntegerField(_('Order'), null=True, blank=True)
     image = models.ForeignKey('StoryPhoto',
         help_text=_('Photo that represents this story.'), null=True, default=None)
     group = models.ForeignKey(Group, null=True, default=None, on_delete=models.SET_NULL)
@@ -108,6 +108,17 @@ class Story(TendenciBaseModel):
             if self.image:
                 self.image.delete()  # delete image and file row
             self.image = image  # set image
+            
+            self.save()
+        
+        if self.ncsortorder is None:
+             #Append
+            try:
+                last = Story.objects.order_by('-ncsortorder')[0]
+                self.ncsortorder = last.ncsortorder + 1
+            except TypeError:
+                 #First row
+                self.ncsortorder = 0
 
             self.save()
 

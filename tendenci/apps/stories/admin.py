@@ -6,8 +6,9 @@ from tendenci.apps.stories.forms import StoryAdminForm
 
 
 class StoryAdmin(TendenciBaseModelAdmin):
-    list_display = ('title', 'tags', 'status')
+    list_display = ('title', 'tags', 'status', 'ncsortorder')
     search_fields = ('title','content')
+    list_editable = ['ncsortorder']
     fieldsets = [('Story Information', {
                       'fields': ['title',
                                  'content',
@@ -35,10 +36,17 @@ class StoryAdmin(TendenciBaseModelAdmin):
                       'classes': ['admin-only'],
                     })]
     form = StoryAdminForm
+    ordering = ['-ncsortorder']
 
     class Media:
+        css = {
+            "all": ("css/websymbols.css",)
+        }
         js = (
-            '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
+            'js/jquery-1.6.2.min.js',
+            'js/jquery-ui-1.8.17.custom.min.js',
+            'js/story-admin-list-reorder.js',
+            'js/global/tinymce.event_handlers.js',
         )
     
     def save(self, *args, **kwargs):
@@ -57,7 +65,7 @@ class StoryAdmin(TendenciBaseModelAdmin):
             log_defaults['action'] = "add"
  
         # Handle a special case for bulk reordering via the list view.
-        if form.changed_data != ['ordering']:
+        if form.changed_data != ['ncsortorder']:
             EventLog.objects.log(**log_defaults)
         return instance
 
