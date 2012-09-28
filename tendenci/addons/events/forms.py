@@ -3,6 +3,7 @@ import imghdr
 from os.path import splitext, basename
 from datetime import datetime, timedelta
 from decimal import Decimal
+from timezones import zones
 
 from django import forms
 from django.forms.widgets import RadioSelect
@@ -14,6 +15,7 @@ from django.utils.importlib import import_module
 from django.contrib.auth.models import User, AnonymousUser
 from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
+from tendenci.core.site_settings.utils import get_setting
 
 from captcha.fields import CaptchaField
 from tendenci.addons.events.models import Event, Place, RegistrationConfiguration, \
@@ -414,6 +416,9 @@ class EventForm(TendenciBaseForm):
 
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
+
+    default_timezone = get_setting('site', 'global', 'defaulttimezone')
+    timezone = forms.ChoiceField(zones.PRETTY_TIMEZONE_CHOICES, initial=default_timezone)
 
     class Meta:
         model = Event
