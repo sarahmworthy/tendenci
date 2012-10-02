@@ -2,6 +2,7 @@ import uuid
 from hashlib import md5
 import operator
 from datetime import datetime, timedelta
+from timezones import zones
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -273,7 +274,7 @@ class RegConfPricing(models.Model):
     
     @property
     def timezone(self):
-        return self.reg_conf.event.timezone.zone
+        return self.reg_conf.event.timezone
     
     @staticmethod
     def get_access_filter(user, is_strict=False, spots_available=-1):
@@ -868,7 +869,7 @@ class Event(TendenciBaseModel):
     all_day = models.BooleanField()
     start_dt = models.DateTimeField(default=datetime.now()+timedelta(days=30))
     end_dt = models.DateTimeField(default=datetime.now()+timedelta(days=30, hours=2))
-    timezone = TimeZoneField(_('Time Zone'))
+    timezone = models.CharField(_('Time Zone'), max_length=100, choices=zones.PRETTY_TIMEZONE_CHOICES)
     place = models.ForeignKey('Place', null=True)
     registration_configuration = models.OneToOneField('RegistrationConfiguration', null=True, editable=False)
     private = models.BooleanField() # hide from lists
