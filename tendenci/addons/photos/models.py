@@ -658,7 +658,8 @@ class Image(ImageModel, TendenciBaseModel):
     photoset = models.ManyToManyField(PhotoSet, blank=True, verbose_name=_('photo set'))
     tags = TagField(blank=True, help_text="Comma delimited (eg. mickey, donald, goofy)")
     license = models.ForeignKey('License', null=True, blank=True)
-    
+    photographer = models.CharField(max_length=100, null = True, blank = True)
+
     # html-meta tags
     meta = models.OneToOneField(MetaTags, blank=True, null=True)
 

@@ -279,8 +279,11 @@ def edit(request, id, set_id=0, form_class=PhotoEditForm, template_name="photos/
                 }
                 EventLog.objects.log(**log_defaults)
 
-                messages.add_message(request, messages.INFO, _("Successfully updated photo '%s'") % photo.title)
-                return HttpResponseRedirect(reverse("photo", kwargs={"id": photo.id, "set_id": set_id}))
+                messages.add_message(request, messages.SUCCESS, _("Successfully updated photo '%s'") % photo.title)
+                if set_id:
+                    return HttpResponseRedirect(reverse("photo", kwargs={"id": photo.id, "set_id": set_id}))
+                else:
+                    return HttpResponseRedirect(reverse("photo", kwargs={"id": photo.id}))
         else:
             form = form_class(instance=photo, user=request.user)
     
@@ -305,7 +308,7 @@ def delete(request, id, set_id=0):
         raise Http403
 
     if request.method == "POST":
-        messages.add_message(request, messages.INFO, _("Successfully deleted photo '%s'") % photo.title)
+        messages.add_message(request, messages.SUCCESS, _("Successfully deleted photo '%s'") % photo.title)
         log_defaults = {
             'event_id' : 990300,
             'event_data': '%s (%d) deleted by %s' % (photo._meta.object_name, photo.pk, request.user),
@@ -318,7 +321,7 @@ def delete(request, id, set_id=0):
 
         photo.delete()
 
-        messages.add_message(request, messages.INFO, 'Photo %s deleted' % id)
+        messages.add_message(request, messages.SUCCESS, 'Photo %s successfully deleted' % id)
         
         try:
             photo_set = PhotoSet.objects.get(id=set_id)
@@ -360,7 +363,7 @@ def photoset_add(request, form_class=PhotoSetAddForm, template_name="photos/phot
                 }
                 EventLog.objects.log(**log_defaults) 
                 
-                messages.add_message(request, messages.INFO, 'Successfully added photo set!')
+                messages.add_message(request, messages.SUCCESS, 'Successfully added photo set!')
                 return HttpResponseRedirect(reverse('photos_batch_add', kwargs={'photoset_id':photo_set.id}))
     else:
         form = form_class(user=request.user)
@@ -400,7 +403,7 @@ def photoset_edit(request, id, form_class=PhotoSetEditForm, template_name="photo
                     ObjectPermission.objects.remove_all(photo)
                     ObjectPermission.objects.assign_group(group_perms, photo)
 
-                messages.add_message(request, messages.INFO, _("Successfully updated photo set! "))
+                messages.add_message(request, messages.SUCCESS, _("Successfully updated photo set! "))
                 EventLog.objects.log(**{
                     'event_id': 991200,
                     'event_data': '%s (%d) edited by %s' % (photo_set._meta.object_name, photo_set.pk, request.user),
@@ -442,7 +445,7 @@ def photoset_delete(request, id, template_name="photos/photo-set/delete.html"):
         # soft delete all images in photo set
         Image.objects.filter(photoset=photo_set).delete()
 
-        messages.add_message(request, messages.INFO, 'Photo Set %s deleted' % photo_set)
+        messages.add_message(request, messages.SUCCESS, 'Photo Set %s deleted' % photo_set)
 
         if "delete" in request.META.get('HTTP_REFERER', None):
             #if the referer is the get page redirect to the photo set search
@@ -612,7 +615,7 @@ def photos_batch_edit(request, photoset_id=0, template_name="photos/batch-edit.h
             'status',
             'status_detail',
         ),
-        extra=0
+        extra=0,
     )
 
     if request.method == "POST":
@@ -650,7 +653,7 @@ def photos_batch_edit(request, photoset_id=0, template_name="photos/batch-edit.h
                     cover.photo = chosen_cover
                     cover.save()
             
-            messages.add_message(request, messages.INFO, 'Photo changes saved')
+            messages.add_message(request, messages.SUCCESS, 'Photo changes saved')
             return HttpResponseRedirect(reverse('photoset_details', args=(photoset_id,)))  
 
     else:  # if request.method != POST

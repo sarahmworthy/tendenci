@@ -32,6 +32,8 @@
                         <div><input class="title" type="text" /></div>
                         <div>{% trans "Replace all captions" %}</div>
                         <div><textarea class="caption"></textarea></div>
+                        <div>{% trans "Replace all photographers" %}</div>
+                        <div><input class="photographer" type="text" /></div>
                         <div>{% trans "Replace all tags" %}</div>
                         <div><input class="tags" type="text" /></div>
                         <div>{{ tag_help_text }}</div>
@@ -80,7 +82,10 @@
                         <div class="label">{{ photo_form.caption.label_tag }}</div>
                         <div class="field">{{ photo_form.caption }}</div>
                     </div>
-    
+                    <div class="photographer-wrap">
+                        <div class="label">{{ photo_form.photographer.label_tag }}</div>
+                        <div class="field">{{ photo_form.photographer }}</div>
+                    </div>
                     <div style="position:relative;">
                         <div class="tags-wrap">
                             <div class="label">{{ photo_form.tags.label_tag }}</div>
@@ -116,33 +121,33 @@
 {{ block.super }}
 <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.4.2.min.js"></script>
 <script type="text/javascript">
+    $(document).ready(function(){
+        $(".photo-bulk-editor .title").keyup(function(event){
+            $('.title-wrap input').val($(this).val())
+        });
+        $(".photo-bulk-editor .caption").keyup(function(event){
+            $('.caption-wrap textarea').val($('.photo-bulk-editor .caption').val())
+        });
+        $(".photo-bulk-editor .photographer").keyup(function(event){
+            $('.photographer-wrap input').val($(this).val())
+        });
+        $(".photo-bulk-editor .tags").keyup(function(event){
+            $('.tags-wrap input').val($(this).val())
+        });
+        $(".bulk-license select").change(function(event) {
+            $(".license-wrap select").val($(this).val());
+        });
 
-	$(".photo-bulk-editor .title").keyup(function(event){
-		$('.title-wrap input').val($(this).val())
-	});
-	$(".photo-bulk-editor .caption").keyup(function(event){
-		$('.caption-wrap textarea').val($('.photo-bulk-editor .caption').val())
-	});
-	$(".photo-bulk-editor .tags").keyup(function(event){
-		$('.tags-wrap input').val($(this).val())
-	});
-
-    $(".bulk-license select").change(function(event) {
-        $(".license-wrap select").val($(this).val());
+        $(window).scroll(function(){
+            if ($(window).scrollTop() > $(".float-anchor").offset().top){
+                $(".float-window").css("position", "fixed");
+                $(".float-window").css("top", "40px");
+            }
+            if ($(window).scrollTop() <= $(".float-anchor").offset().top){
+                $(".float-window").css("position", "relative");
+                $(".float-window").css("top", $(".float-anchor").offset);
+            }
+        });
     });
-
-
-	$(window).scroll(function(){
-		if  ($(window).scrollTop() > $(".float-anchor").offset().top){
-			$(".float-window").css("position", "fixed");
-			$(".float-window").css("top", "40px");
-		}
-		
-		if  ($(window).scrollTop() <= $(".float-anchor").offset().top){
-			$(".float-window").css("position", "relative");
-			$(".float-window").css("top", $(".float-anchor").offset);
-		}
-	});
-
 </script>
 {% endblock %}

@@ -67,12 +67,14 @@ class PhotoEditForm(TendenciBaseForm):
                 ('pending','Pending'),))
     license = LicenseField(queryset=License.objects.all(),
                 widget = forms.RadioSelect(), empty_label=None)
+    #photographer = forms.CharField(max_length=100, required=False)
     
     class Meta:
         model = Image
 
         fields = (
             'title',
+            'photographer',
             'caption',
             'license',
             'tags',
@@ -80,7 +82,7 @@ class PhotoEditForm(TendenciBaseForm):
             'user_perms',
             'group_perms',
             'status',
-            'status_detail'
+            'status_detail',
         )
 
         fieldsets = [
@@ -88,8 +90,9 @@ class PhotoEditForm(TendenciBaseForm):
                       'fields': [
                           'title',
                           'caption',
+                          'photographer',
                           'tags',
-                          'license',
+                          'license'
                       ], 'legend': '',
                   }),
                 ('Permissions', {
@@ -115,6 +118,10 @@ class PhotoEditForm(TendenciBaseForm):
         
     def __init__(self, *args, **kwargs):
         super(PhotoEditForm, self).__init__(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        ret = super(PhotoEditForm, self).save(*args, **kwargs)
+        return ret
 
 class PhotoSetAddForm(TendenciBaseForm):
     """ Photo-Set Add-Form """

@@ -362,6 +362,14 @@ table.photo-form select {
 	height: 100px;
 }
 
+.photographer-wrap {
+    margin-bottom: 5px;
+}
+
+.photographer-wrap input {
+    width: 80%;
+}
+
 .tags-wrap {
 	margin-bottom: 5px;
 }
