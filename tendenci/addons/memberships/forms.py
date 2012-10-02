@@ -18,6 +18,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.importlib import import_module
 from django.core.files.storage import FileSystemStorage
 
+from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.addons.corporate_memberships.models import (CorporateMembership,
     AuthorizedDomain)
@@ -869,6 +870,7 @@ class AppEntryForm(forms.ModelForm):
         self.types_field = app.membership_types
         self.user = kwargs.pop('user', None) or AnonymousUser
         self.corporate_membership = kwargs.pop('corporate_membership', None) # id; not object
+        currency_symbol = get_setting("site", "global", "currencysymbol")
 
         super(AppEntryForm, self).__init__(*args, **kwargs)
 
@@ -926,18 +928,18 @@ class AppEntryForm(forms.ModelForm):
                     if self.corporate_membership:
                         membership_type = self.corporate_membership.corporate_membership_type.membership_type 
                         choices = [membership_type.name]
-                        choices_with_price = ['%s $%s' % (membership_type.name, membership_type.price)]
+                        choices_with_price = ['%s %s%s' % (membership_type.name, currency_symbol, membership_type.price)]
                         if membership_type.admin_fee:
-                            choices_with_price = ['%s $%s ($%s admin fee)' % (membership_type.name, membership_type.price, membership_type.admin_fee)]
+                            choices_with_price = ['%s %s%s (%s%s admin fee)' % (membership_type.name, currency_symbol, membership_type.price, currency_symbol, membership_type.admin_fee)]
                         field_args["choices"] = zip(choices, choices_with_price)
                     else:
                         choices = [type.name for type in app.membership_types.exclude(pk__in=exclude_types)]
                         choices_with_price = []
                         for type in app.membership_types.exclude(pk__in=exclude_types):
                             if type.admin_fee:
-                                type_label = '%s $%s ($%s admin fee)' % (type.name, type.price, type.admin_fee)
+                                type_label = '%s %s%s (%s%s admin fee)' % (type.name, currency_symbol, type.price, currency_symbol, type.admin_fee)
                             else:
-                                type_label = '%s $%s' % (type.name, type.price)
+                                type_label = '%s %s%s' % (type.name, currency_symbol, type.price)
                             choices_with_price.append(type_label)
                         field_args["choices"] = zip(choices, choices_with_price)
 
