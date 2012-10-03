@@ -40,6 +40,8 @@ from tendenci.addons.memberships.importer.forms import ImportMapForm, UploadForm
 from tendenci.addons.memberships.importer.utils import parse_mems_from_csv
 from tendenci.addons.memberships.importer.tasks import ImportMembershipsTask
 
+from tendenci.apps.discounts.models import Discount
+
 
 def membership_index(request):
     return HttpResponseRedirect(reverse('membership.search'))
@@ -269,7 +271,19 @@ def application_details(request, template_name="memberships/applications/details
         if app_entry_form.is_valid():
 
             entry = app_entry_form.save(commit=False)
-            entry_invoice = entry.save_invoice()
+            # Get discount
+            discount = None
+            discount_code = app_entry_form.cleaned_data.get('discount_code')
+            if discount_code:
+                [discount] = Discount.objects.filter(discount_code=discount_code)[:1] or [None]
+                if discount and discount.available_for(1):
+                    app_set = set()
+                    for discount_app in discount.app.all():
+                        app_set.add(discount_app.app_label)
+                    if not 'memberships' in app_set:
+                        discount = None
+                
+            entry_invoice = entry.save_invoice(discount=discount)
 
             if user.is_authenticated():
                 entry.user = user

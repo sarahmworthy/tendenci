@@ -61,6 +61,12 @@ def add(request, form_class=DiscountForm, template_name="discounts/add.html"):
         if form.is_valid():
             discount = form.save(commit=False)
             discount = update_perms_and_save(request, form, discount)
+            
+            #Manage m2m relationships
+            if form.cleaned_data.get('app'):
+                for app in form.cleaned_data.get('app'):
+                    discount.app.add(app)
+                discount.save()
 
             messages.add_message(request, messages.SUCCESS, 'Successfully added %s' % discount)
             return redirect('discount.detail', id=discount.id)
@@ -84,6 +90,13 @@ def edit(request, id, form_class=DiscountForm, template_name="discounts/edit.htm
         if form.is_valid():
             discount = form.save(commit=False)
             discount = update_perms_and_save(request, form, discount)
+            
+            #Manage m2m relationships
+            discount.app.clear()
+            if form.cleaned_data.get('app'):
+                for app in form.cleaned_data.get('app'):
+                    discount.app.add(app)
+                discount.save()
 
             messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % discount)
             return redirect('discount.detail', id=discount.id)
@@ -146,6 +159,13 @@ def discounted_prices(request, form_class=DiscountHandlingForm):
     if request.method == 'POST':
         form = form_class(request.POST)
         if form.is_valid():
+            if not form.cleaned_data.get('prices'):
+                return HttpResponse(json.dumps(
+                    {
+                        "error": False,
+                        "message": "Your discount has been added.",
+                }), mimetype="text/plain")
+			
             price_list, discount_total, discount_list, msg = form.get_discounted_prices()
             total = sum(price_list)
             new_prices = ';'.join([str(price) for price in price_list])

@@ -30,7 +30,7 @@ from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
 from tendenci.addons.memberships.utils import csv_to_dict, is_import_valid, NoMembershipTypes
 from tendenci.addons.memberships.widgets import (CustomRadioSelect, TypeExpMethodWidget,
-    NoticeTimeTypeWidget)
+    NoticeTimeTypeWidget, DiscountWidget)
 from tendenci.addons.memberships.utils import get_notice_token_help_text
 
 fs = FileSystemStorage(location=UPLOAD_ROOT)
@@ -455,6 +455,7 @@ class AppForm(TendenciBaseForm):
             'notes',
             'membership_types',
             'payment_methods',
+            'discount_eligible',
             'use_for_corp',
             'use_captcha',
             'allow_anonymous_view',
@@ -831,7 +832,6 @@ class EntryEditForm(TendenciBaseForm):
         return self.instance
 
 class AppEntryForm(forms.ModelForm):
-
     class Meta:
         model = AppEntry
         exclude = (
@@ -977,7 +977,15 @@ class AppEntryForm(forms.ModelForm):
                 'label':'',
                 'error_messages':{'required':'CAPTCHA is required'}
             })
-
+            
+        if app and app.discount_eligible:
+            display_discount = True
+        else:
+            display_discount = False
+            
+        if display_discount:
+            self.fields['discount_code'] = forms.CharField(label=_('Discount Code'), required=False)
+            self.fields['discount_code'].widget = DiscountWidget()
 
     def save(self, **kwargs):
         """

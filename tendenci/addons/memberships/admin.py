@@ -212,7 +212,8 @@ class AppAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {'fields': ('name','slug', 'description', 'confirmation_text', 'notes', 
-                           'membership_types', 'payment_methods', 'use_for_corp', 'use_captcha')},),
+                           'membership_types', 'payment_methods', 'use_for_corp', 'use_captcha',
+                           'discount_eligible')},),
         ('Administrative', {'fields': ('allow_anonymous_view','user_perms', 'member_perms', 'group_perms',
                                        'status_detail')}),
     )
@@ -281,7 +282,7 @@ class AppAdmin(admin.ModelAdmin):
             
                     (None, {
                         'fields': ('name','slug', 'use_for_corp', 'description', 'confirmation_text', 'notes', 
-                                   'membership_types', 'payment_methods', 'use_captcha'),
+                                   'membership_types', 'payment_methods', 'use_captcha', 'discount_eligible'),
                     }),
 
                     ('Administrative', {

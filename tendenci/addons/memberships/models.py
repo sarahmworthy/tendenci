@@ -21,6 +21,8 @@ from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.utils import get_notice_recipients, has_perm
 from tendenci.core.perms.object_perms import ObjectPermission
+from tendenci.apps.discounts.models import DiscountUse
+from tendenci.apps.discounts.utils import assign_discount
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.user_groups.models import Group
 from tendenci.addons.memberships.managers import MembershipManager, \
@@ -785,6 +787,7 @@ class App(TendenciBaseModel):
     use_captcha = models.BooleanField(_("Use Captcha"), default=1)
     membership_types = models.ManyToManyField(MembershipType, verbose_name="Membership Types")
     payment_methods = models.ManyToManyField(PaymentMethod, verbose_name="Payment Methods")
+    discount_eligible = models.BooleanField(default=True)
 
     use_for_corp = models.BooleanField(_("Use for Corporate Individuals"), default=0)
 
@@ -1438,6 +1441,7 @@ class AppEntry(TendenciBaseModel):
 
     def save_invoice(self, **kwargs):
         status_detail = kwargs.get('status_detail', 'tendered')
+        discount = kwargs.get('discount', None)
 
         content_type = ContentType.objects.get(app_label=self._meta.app_label,
               model=self._meta.module_name)
@@ -1449,6 +1453,7 @@ class AppEntry(TendenciBaseModel):
             )
         except:  # else; create invoice
             invoice = Invoice()
+            invoice.title = self.__unicode__()
             invoice.object_type = content_type
             invoice.object_id = self.pk
 
@@ -1476,11 +1481,25 @@ class AppEntry(TendenciBaseModel):
             invoice.subtotal = membership_price
             invoice.total = membership_price
             invoice.balance = membership_price
+            
+        if discount:
+            price_list, discount_total, discount_list, msg = assign_discount([invoice.total,], discount)
+            if price_list:
+                invoice.subtotal = price_list[0]
+                invoice.total = price_list[0]
+                invoice.balance = price_list[0]
 
         invoice.due_date = datetime.now()  # TODO: change model field to null=True
         invoice.ship_date = datetime.now()  # TODO: change model field to null=True
 
         invoice.save()
+        
+        #Use Discount
+        if discount_list and discount_list[0] > 0:
+            DiscountUse.objects.create(
+                discount=discount,
+                invoice=invoice,
+            )
 
         self.invoice = invoice
         self.save()

@@ -1,6 +1,6 @@
 import datetime
 from django import forms
-from django.forms.widgets import RadioFieldRenderer, RadioInput
+from django.forms.widgets import RadioFieldRenderer, RadioInput, TextInput
 from django.utils.safestring import mark_safe
 from django.utils.html import conditional_escape
 from django.utils.encoding import force_unicode
@@ -361,6 +361,12 @@ class Output(forms.Widget):
         if value is None:
             value = ''
         return force_unicode(self._format_value(value))
+
+class DiscountWidget(forms.TextInput):
+    def render(self, name, value, attrs=None):
+        before = "<div id='discount-message' class='error'></div>"
+        after = "<br/> <button type='button' id='discount_check'>Check Discount</button>"
+        return mark_safe(before + super(DiscountWidget, self).render(name, value, attrs) + after)
 
 class Header(Output):
     """

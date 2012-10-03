@@ -655,7 +655,13 @@ def add_registration(*args, **kwargs):
     if discount_code:
         [discount] = Discount.objects.filter(discount_code=discount_code)[:1] or [None]
         if discount and discount.available_for(1):
-            amount_list, discount_amount, discount_list, msg = assign_discount(amount_list, discount)
+            app_set = set()
+            for discount_app in discount.app.all():
+                app_set.add(discount_app.app_label)
+            if 'events' in app_set:
+                amount_list, discount_amount, discount_list, msg = assign_discount(amount_list, discount)
+            else:
+                discount = None
     
     reg8n_attrs = {
         "event": event,
