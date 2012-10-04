@@ -71,10 +71,14 @@ def get_user_import_settings(request, id):
 
     return d
 
+def wrap_in_quotes(text):
+    if text == '\n':
+        return text
+    return '"' + text + '"'
 
 def render_excel(filename, title_list, data_list, file_extension='.xls'):
     if file_extension == '.csv':
-        str_out = ','.join(title_list)
+        str_out = ','.join(map(wrap_in_quotes, title_list))
 
         for row_item_list in data_list:
             for i in range(0, len(row_item_list)):
@@ -91,6 +95,10 @@ def render_excel(filename, title_list, data_list, file_extension='.xls'):
                         row_item_list[i] = row_item_list[i].strftime(
                             '%H:%M:%S'
                             )
+                    else:
+                        row_item_list[i] = unicode(row_item_list[i])
+                        if "," in row_item_list[i]:
+                            row_item_list[i] = '"' + row_item_list[i] + '"'
             str_out += ','.join(row_item_list)
 
         content_type = "application/text"

@@ -1285,7 +1285,7 @@ def corp_export(request):
                     value_type = type(value)
                     if (value_type is bool) or (value_type is long) or (value_type is int):
                         value = str(value)
-                    data_row.append(value.replace(',', ' '))
+                    data_row.append(value)
                 
                 for field in extra_field_names:
                     value = ''
