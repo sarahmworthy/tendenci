@@ -25,6 +25,12 @@
     <td width="75%"><b>{{ requser }}{% endblocktrans %}</b></td>
   </tr>
 </table>
+{% if object.invoice %}
+    <p>
+        {% if object.invoice.balance == 0 %}Paid{% else %}Pending Payment{% endif %}, {{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ object.invoice.balance }} due for <a href="{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}">Invoice {{ object.invoice.pk }} </a>
+    </p>
+{% endif %}
+
 {% blocktrans %}If you would like view all 
   recently deleted jobs, go to:{% endblocktrans %} <b><a href="{{ SITE_GLOBAL_SITEURL }}{% url event_log.search %}?q=253000">{{ SITE_GLOBAL_SITEURL }}{% url event_log.search %}?q=253000</a></b><br>
   <br>

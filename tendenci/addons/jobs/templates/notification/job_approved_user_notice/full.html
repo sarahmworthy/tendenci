@@ -8,9 +8,9 @@
 </p>
 
 {% if object.invoice %}
-<p>
-	{% blocktrans %}To view the invoice, go to:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}">{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}</a>
-</p>
+    <p> 
+        {% if object.invoice.balance == 0 %}Paid{% else %}Pending Payment{% endif %}, {{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ object.invoice.balance }} due for <a href="{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}">Invoice {{ object.invoice.pk }} </a> 
+    </p>
 {% endif %}
 
 

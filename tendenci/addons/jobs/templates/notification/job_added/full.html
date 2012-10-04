@@ -34,5 +34,10 @@
  
 <P>{% trans "Time submitted:" %} {% now "D d M Y P" %}</P>
  
+{% if object.invoice %}
+    <p> 
+        {% if object.invoice.balance == 0 %}Paid{% else %}Pending Payment{% endif %}, {{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ object.invoice.balance }} due for <a href="{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}">Invoice {{ object.invoice.pk }} </a> 
+    </p>
+{% endif %}
 </body>
 </html>
