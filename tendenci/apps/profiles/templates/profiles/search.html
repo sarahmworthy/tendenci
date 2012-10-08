@@ -21,15 +21,15 @@
 {% users_nav request.user user_this %}
     <h1>{% if SITE_GLOBAL_SEARCHINDEX %}{% trans "Users Search" %}{% else %}{% trans "Users List" %}{% endif %}</h1>
     {{ MODULE_USERS_USERSEARCHSTATEMENT }}
-    
+    {% profile_search search_form %}
+
     {% autopaginate profiles 10 %}
-    {% profile_search %}
+
     {% if profiles %}
         <span><em>{{ paginator.count }} {% trans "Users" %} {% trans "Found" %}</em></span>
     {% else %}
         <span>{% trans "Hmm.. didn't find anything."%} <a href="{% url haystack_search %}?q={{ request.GET.q}}">{% blocktrans %}Try the power search</a>.{% endblocktrans %}</span>
     {% endif %}
-    
 
     <div class="profiles-wrap">
     {% for profile in profiles %}
@@ -41,4 +41,19 @@
 
     {% paginate %}
 </div>
+{% endblock %}
+
+{% block extra_body %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(function(){
+	$('.advanced-search-header a').click(function(){
+        if($('.advanced-search').hasClass('hidden')){
+            $('.advanced-search').removeClass('hidden');
+        }else{
+            $('.advanced-search').addClass('hidden');
+        };
+    });
+});
+</script>
 {% endblock %}

@@ -2,10 +2,44 @@
     position: relative;
 }
 
+.t .forms {
+    margin-bottom: 10px;
+}
+
+.t .forms .advanced-search {
+    margin-top: 10px;
+}
+
+.t .forms .advanced-search table{
+    width: 60%;
+}
+
+.t .forms .advanced-search .search-label{
+    vertical-align: middle;
+    padding-right: 5px;
+    width: 80px;
+}
+
+.t .forms .advanced-search td input[type="text"]{
+    width: 100%;
+}
+
+.t .forms .advanced-search.hidden {
+    display: none;
+}
+
+.t .forms .advanced-search-header {
+    margin-top: 10px;
+}
+
 .t form.search-form input[type="text"] {
-	margin-bottom:10px;
-	padding:5px;
-	width:60%;
+	margin: 0px;
+	padding: 5px;
+	width: 60%;
+}
+
+.t form.search-form input[type="submit"] {
+    margin-top: 0px;
 }
 
 .profile-icon img {

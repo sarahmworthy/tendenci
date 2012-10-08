@@ -35,7 +35,7 @@ from tendenci.apps.user_groups.forms import GroupMembershipEditForm
 
 from tendenci.apps.profiles.models import Profile
 from tendenci.apps.profiles.forms import (ProfileForm, ExportForm, UserPermissionForm, 
-UserGroupsForm, ValidatingPasswordChangeForm, UserMembershipForm)
+UserGroupsForm, ValidatingPasswordChangeForm, UserMembershipForm, ProfileSearchForm)
 from tendenci.apps.profiles.tasks import ExportProfilesTask
 
 try:
@@ -140,13 +140,40 @@ def search(request, template_name="profiles/search.html"):
     if request.user.is_authenticated():
         if not allow_user_search and not request.user.profile.is_superuser:
             raise Http403
-
-    query = request.GET.get('q', None)
+    
     filters = get_query_filters(request.user, 'profiles.view_profile')
     profiles = Profile.objects.filter(filters).distinct()
-
-    if query:
-        profiles = profiles.filter(Q(user__first_name__icontains=query) | Q(user__last_name__icontains=query) | Q(user__email__icontains=query) | Q(user__username__icontains=query))
+    
+    search_form = ProfileSearchForm(request.GET)
+    advanced_search = False # for hiding advanced search form
+    if search_form.is_valid():
+        data = search_form.cleaned_data
+        # Basic Search
+        query = data['q']
+        if query: # because we're not using the search index?
+            profiles = profiles.filter(Q(user__first_name__icontains=query) | Q(user__last_name__icontains=query) | Q(user__email__icontains=query))
+        # Advanced Search
+        if data['first_name']:
+            profiles = profiles.filter(user__first_name__icontains=data['first_name'])
+            advanced_search = True
+        if data['last_name']:
+            profiles = profiles.filter(user__last_name__icontains=data['last_name'])
+            advanced_search = True
+        if data['email_address']:
+            profiles = profiles.filter(user__email__icontains=data['email_address'])
+            advanced_search = True
+        if data['company']:
+            profiles = profiles.filter(company__icontains=data['company'])
+            advanced_search = True
+        if data['city']:
+            profiles = profiles.filter(city__icontains=data['city'])
+            advanced_search = True
+        if data['state']:
+            profiles = profiles.filter(state__icontains=data['state'])
+            advanced_search = True
+        if data['zipcode']:
+            profiles = profiles.filter(zipcode__icontains=data['zipcode'])
+            advanced_search = True
 
     profiles = profiles.order_by('user__last_name', 'user__first_name')
 
@@ -160,8 +187,12 @@ def search(request, template_name="profiles/search.html"):
     }
     EventLog.objects.log(**log_defaults)
 
-    return render_to_response(template_name, {'profiles':profiles, "user_this":None}, 
-        context_instance=RequestContext(request))
+    return render_to_response(template_name, {
+        'search_form': search_form,
+        'profiles': profiles,
+        "user_this": None, # what's this for?
+        'advanced_search': advanced_search,
+        }, context_instance=RequestContext(request))
 
 
 @login_required

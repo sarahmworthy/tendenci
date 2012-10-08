@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.forms.extras.widgets import SelectDateWidget
 from django.utils.safestring import mark_safe
+from form_utils.forms import BetterForm
 
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.core.perms.forms import TendenciBaseForm
@@ -26,6 +27,43 @@ APPS = ('profiles', 'user_groups', 'articles',
         'stories', 'actions', 'photos', 'entities',
         'locations', 'files', 'directories', 'resumes',
         'memberships', 'corporate_memberships')
+
+class ProfileSearchForm(BetterForm):
+    q = forms.CharField(label="", required=False)
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
+    email_address = forms.CharField(required=False)
+    company = forms.CharField(required=False)
+    city = forms.CharField(required=False)
+    state = forms.CharField(required=False)
+    zipcode = forms.CharField(required=False)
+    
+    class Meta:
+        fields = (
+            'q',
+            'first_name',
+            'last_name',
+            'email_address',
+            'company',
+            'city',
+            'state',
+            'zipcode',
+            )
+
+        fieldsets = [
+            ('',{
+            'fields': [
+                'first_name',
+                'last_name',
+                'email_address',
+                'company',
+                'city',
+                'state',
+                'zipcode',
+                ],
+            'legend': ''
+            }),
+        ]
 
 class ProfileForm(TendenciBaseForm):
 

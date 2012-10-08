@@ -1,6 +1,25 @@
+{% load styled_forms %}
 {% if SITE_GLOBAL_SEARCHINDEX %}
-<form class="search-form" action="{% url profile.search %}" method="get">
-<input type="text" name="q" value="{{ request.GET.q|striptags }}" />
-<input type="submit" name="search" value="Search" />
-</form>
+<div class="forms">
+    <form class="search-form" action="{% url profile.search %}" method="get">
+        {{ search_form.q }}
+        <input class="default-search-button" type="submit" name="search" value="Search" />
+        <div class="advanced-search-header">
+        <a href="#advanced-search">Advanced Options</a>
+        </div>
+        <div class="advanced-search {% if not advanced_search %}hidden{% endif %}">
+            <table>
+                {% for field in search_form %}
+                    {% if field.label != search_form.q.label %}
+                    <tr>
+                        <td class="search-label">{{ field.label }}:</td>
+                        <td>{{ field }}</td>
+                    </tr>
+                    <tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+    </form>
+</div>
 {% endif %}
