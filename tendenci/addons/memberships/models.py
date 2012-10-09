@@ -544,10 +544,17 @@ class Notice(models.Model):
                                             ('attimeof', 'At Time Of')))
     notice_type = models.CharField(_("For Notice Type"), max_length=20, choices=NOTICE_TYPES)
     system_generated = models.BooleanField(_("System Generated"), default=0)
-    membership_type = models.ForeignKey(
-        "MembershipType",
-        blank=True,
-        null=True,
+    # Replaced with M2M field
+    # membership_type = models.ForeignKey(
+    #    "MembershipType",
+    #    blank=True,
+    #    null=True,
+    #    help_text=_("Note that if you \
+    #        don't select a membership type, \
+    #        the notice will go out to all members."
+    #    ))
+    membership_types = models.ManyToManyField("MembershipType",
+        related_name="notices",
         help_text=_("Note that if you \
             don't select a membership type, \
             the notice will go out to all members."

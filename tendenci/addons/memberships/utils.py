@@ -320,8 +320,8 @@ def get_notice_token_help_text(notice=None):
         and display a list of available token.
     """
     help_text = ''
-    if notice and notice.membership_type:
-        membership_types = [notice.membership_type]
+    if notice and notice.membership_types.all().exists():
+        membership_types = notice.membership_types.all()
     else:
         membership_types = MembershipType.objects.filter(status=True, status_detail='active')
 

@@ -140,27 +140,41 @@ class NoticeAdmin(admin.ModelAdmin):
                          reverse('membership.notice.log.search'), self.id)
     notice_log.allow_tags = True
     
+    def mem_types(self, obj):
+        type_list = []
+        for mem_type in obj.membership_types.all():
+            type_list.append(str(mem_type.name))
+        return type_list
+    
     list_display = ['notice_name', notice_log, 'content_type', 
-                     'membership_type', 'status', 'status_detail']
+                     'mem_types', 'status', 'status_detail']
     list_filter = ['notice_type', 'status_detail']
     
     fieldsets = (
-        (None, {'fields': ('notice_name', 'notice_time_type', 'membership_type')}),
-        ('Email Fields', {'fields': ('subject', 'content_type', 'sender', 'sender_display', 'email_content')}),
+        (None, {'fields': (
+            'notice_name',
+            'notice_time_type',
+            'membership_types')}),
+        ('Email Fields', {'fields': (
+            'subject',
+            'content_type',
+            'sender',
+            'sender_display',
+            'email_content')}),
         ('Other Options', {'fields': ('status', 'status_detail')}),
     )
-    
+
     form = NoticeForm
-    
+
     class Media:
         js = (
             "%sjs/jquery-1.4.2.min.js" % settings.STATIC_URL,
             '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
         )
-                
+
     def save_model(self, request, object, form, change):
         instance = form.save(commit=False)
-        
+
         # save the expiration method fields
         notice_time_type = form.cleaned_data['notice_time_type']
         notice_time_type_list = notice_time_type.split(",")

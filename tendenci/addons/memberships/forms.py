@@ -348,7 +348,7 @@ class NoticeForm(forms.ModelForm):
         fields = (
                   'notice_name',
                   'notice_time_type',
-                  'membership_type',
+                  'membership_types',
                   'subject',
                   'content_type',
                   'sender',
