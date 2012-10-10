@@ -723,8 +723,8 @@ class Notice(models.Model):
         for notice in Notice.objects.filter(**field_dict):
 
             notice_requirments = (
-                notice.membership_type == membership_type,
-                notice.membership_type == None
+                membership_type in notice.membership_types.all(),
+                notice.membership_types.all().count() == 0
             )
 
             if any(notice_requirments):

@@ -71,10 +71,6 @@
                     <li class="divider"></li>
                     <li><a href="{% url membership.edit membership.pk %}">{% trans "Edit Membership" %}</a></li>
                 {% endif %}
-                {% if can_edit_memb %}
-                    <li class="divider"></li>
-                    <li><a href="{% url membership.edit membership.pk %}">{% trans "Edit Membership" %}</a></li>
-                {% endif %}
             </ul>
             {% endif %}
         {% endif %}
