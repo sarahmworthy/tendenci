@@ -263,6 +263,13 @@ class ImportMembershipsTask(Task):
                 # add user to group
                 membership.membership_type.group.add_user(membership.user)
 
+                # Handle status detail field
+                if membership.status_detail:                    
+                    membership.status_detail = membership.status_detail.lower()
+                    if membership.status_detail not in ['active', 'expired', 'pending']:
+                        membership.status_detail = 'active'
+                    membership.save()
+
                 # append to imported list
                 imported.append(membership)
 
