@@ -9,7 +9,7 @@
         	<div class="sub">
             	<div class="column">
             	<h4><a href="{% url dashboard %}">{% trans "Apps" %}</a></h4>
-                	<div class="column app-list">  
+                	<div class="column app-list">
                         {% for app in registered_apps.core %}
                             {% if app.enabled %}
                             <ul>
@@ -97,7 +97,7 @@
         {% comment %}
     	<!-- <li><a href="#">{% trans "Members" %}</a>
         	<div class="sub">
-            	<div class="column">                
+            	<div class="column">
                     <ul>
                         <li><a href="#">{% trans "List" %}</a></li>
                         <li><a href="#">{% trans "Add" %}</a></li>
@@ -128,7 +128,7 @@
         {% if "Self-Signup" == SITE_DEVELOPER_PARTNER|join:"" %}
         <li><a href="{% url settings %}"><span class="glyph heading">&sup3;</span>&nbsp;&nbsp;{% trans "Themes" %}</a>
         	<div class="sub">
-            	<div class="column">                
+            	<div class="column">
                     <ul>
                         <li><a href="/settings/module/theme_editor/">{% trans "Current Theme: " %}{{ MODULE_THEME_EDITOR_THEME|title }}</a></li>
                         <li><a href="/settings/module/theme/">{% trans "Theme Settings" %}</a></li>
@@ -141,7 +141,7 @@
         {% endif %}
         <li><a href="/reports"><span class="glyph heading">&#117;</span>&nbsp;&nbsp;{% trans "Reports" %}</a>
             <div class="sub">
-            	<div class="column">                
+            	<div class="column">
                     <ul>
                         <li><a href="{% url reports-events-summary %}">{% trans "Event logs Summary" %}</a></li>
                     	<li><a href="{% url reports-admin-users %}">{% trans "Administrators" %}</a></li>
@@ -156,11 +156,12 @@
                         <li><a href="{% url reports-members-over-time %}">{% trans "Memberships Over Time" %}</a></li>
                         <li><a href="{% url reports-corp-mems-over-time %}">{% trans "Corporate Memberships Over Time" %}</a></li>
                         <li><a href="{% url reports-corp-mems-summary %}">{% trans "Corporate Membership Report" %}</a></li>
+                        <li><a href="{% url reports-template-edits %}">{% trans "Template File Edits" %}</a></li>
                     </ul>
                 </div>
             </div>
         	<!-- <div class="sub">
-            	<div class="column">                
+            	<div class="column">
                     <h4>{% trans "Recently Viewed" %}</h4>
                     <ul>
                         <li><a href="#">{% trans "Event Logs" %}</a></li>
@@ -192,7 +193,7 @@
                         <li><a href="{% url event_log.search %}">{% trans "Event Logs" %}</a></li>
                         <li><a href="{% url clear_cache %}">{% trans "Clear Cache" %}</a></li>
                         <li><a href="/">{% trans "Home" %}</a></li>
-                    </ul>    
+                    </ul>
                 </div>
             </div>
         </li>
@@ -228,12 +229,12 @@
         {% if TOGGLE_TEMPLATE %}
             <li><a href="?">{% trans "View using My Template" %}</a></li>
         {% endif %}
-        
+
     	<li class="right"><a href="/accounts/logout"><span class="glyph heading">&#88;</span>&nbsp;&nbsp;{% trans "Logout" %}</a></li>
     	<li class="right"><a href="/profiles">{{ user.username }}</a></li>
     	<!-- <li class="right search"><a href="#">Search</a>
         	<div class="sub">
-            	<div class="column">                
+            	<div class="column">
                     <ul>
                         <li>
                         	<form action="/search" method="get" name="search">
@@ -254,5 +255,5 @@
                             <input type="text" maxlength="255" value="" name="q" id="admin-search-bar" x-webkit-speech speech onwebkitspeechchange="this.form.submit();"><input type="submit" class="glyph heading" value="&#76;" id="admin-search-submit">                            </form>
         </li>
     </ul>
-     
+
 </div>

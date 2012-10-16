@@ -201,3 +201,38 @@ def handle_uploaded_file(f, file_dir):
 
         if hasattr(settings, 'REMOTE_DEPLOY_URL') and settings.REMOTE_DEPLOY_URL:
             urllib.urlopen(settings.REMOTE_DEPLOY_URL)
+
+def get_files_list(all_files_folders):
+    """
+    Get the list of all files (excluding folders)
+    from within the theme folder using the result from
+    get_all_files_list()
+    """
+    all_files = []
+    for key,value in all_files_folders.items():
+        if value.items():
+            for key,value in value.items():
+                if key == "contents":
+                    for item in value:
+                        if 'name' in item.keys():
+                            if item['editable'] == True:
+                                all_files.append(item)
+                else:
+                    get_files_list_helper(all_files, value)
+    ordered = sorted(all_files)
+    return ordered
+
+def get_files_list_helper(all_files, folder):
+    """
+    Iterator for get_files_list() function above
+    """
+    if folder.items():
+        for key,value in folder.items():
+            if key == "contents":
+                for item in value:
+                    if 'name' in item.keys():
+                        if item['editable'] == True:
+                            all_files.append(item)
+            else:
+                get_files_list_helper(all_files, value)
+    return all_files

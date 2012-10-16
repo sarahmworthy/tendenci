@@ -67,3 +67,15 @@ tr.odd {
   border-collapse: collapse;
   width: 100%;
 }
+
+table.template_files_edit_report {
+    width: 100%;
+}
+
+table.template_files_edit_report,
+table.template_files_edit_report td,
+table.template_files_edit_report th {
+    border:  1px solid #ccc;
+    border-collapse:  collapse;
+    padding: 5px;
+}

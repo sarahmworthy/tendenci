@@ -138,6 +138,10 @@ textarea{
 	border: 1px solid #ccc;
 }
 
+#template_files_edit report {
+    margin-top: 40px;
+}
+
 .archived_file {
 	padding: 5px;
 }

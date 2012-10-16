@@ -1,0 +1,29 @@
+{% extends "reports/base.html" %}
+{% load pagination_tags %}
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Template Files Edit Report" %}</h1>
+    <div id="template_files_edit_report_wrapper">
+        <table class='template_files_edit_report'>
+            <tr>
+                <th> {% trans "Template File" %}</th>            
+                <th> {% trans "Last Edit Date" %}</th>
+                <th> {% trans "Last Editor Username" %}</th>
+                <th> {% trans "First Edit Date" %}</th>
+                <th> {% trans "First Editor Username" %}</th>
+                <th> {% trans "# of Edits" %}</th>
+            </tr>
+            {% for report in reports %}
+                <tr>
+                    <td> <a href="{% url theme_editor.editor %}?file={{ report.template_file }}&theme_edit={{ current_theme }}">{{ report.template_file }}</a></td>
+                    <td> {{ report.last_edit_date }} </td>
+                    <td> {{ report.last_editor_username }} </td>
+                    <td> {{ report.first_edit_date }} </td>
+                    <td> {{ report.first_editor_username }} </td>
+                    <td> {{ report.no_of_edits }} </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endblock content %}

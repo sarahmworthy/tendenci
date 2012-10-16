@@ -5,6 +5,7 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.template import RequestContext
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
 from django.utils import simplejson as json
@@ -15,7 +16,7 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.core.theme.utils import get_theme, theme_choices as theme_choice_list
 from tendenci.apps.theme_editor.models import ThemeFileVersion
 from tendenci.apps.theme_editor.forms import FileForm, ThemeSelectForm, UploadForm
-from tendenci.apps.theme_editor.utils import get_dir_list, get_file_list, get_file_content, get_all_files_list
+from tendenci.apps.theme_editor.utils import get_dir_list, get_file_list, get_file_content, get_all_files_list, get_files_list
 from tendenci.apps.theme_editor.utils import qstr_is_file, qstr_is_dir, copy
 from tendenci.apps.theme_editor.utils import handle_uploaded_file, app_templates
 
@@ -332,3 +333,37 @@ def upload_file(request):
         form = UploadForm()
 
     return render_to_response(context_instance=RequestContext(request))
+
+@staff_member_required
+def template_edits_report(request, template_name="reports/template_files_edit.html"):
+    selected_theme = request.GET.get("theme_edit", get_theme())    
+    theme_root = os.path.join(settings.THEMES_DIR, selected_theme)
+    all_files_folders = get_all_files_list(ROOT_DIR=theme_root)
+    all_files = get_files_list(all_files_folders)
+    
+    reports = []
+    for files in all_files:
+        container = {}
+        file_archive = ThemeFileVersion.objects.filter(relative_file_path=files['path']).order_by("-create_dt")
+        if file_archive:
+            file_archive_latest = file_archive[0]
+            file_archive_initial = file_archive[len(file_archive) - 1]
+            container['last_edit_date'] = file_archive_latest.create_dt
+            container['last_editor_username'] = file_archive_latest.author
+            container['first_edit_date'] = file_archive_initial.create_dt
+            container['first_editor_username'] = file_archive_initial.author
+        else:
+            container['last_edit_date'] = None
+            container['last_editor_username'] = None
+            container['first_edit_date'] = None
+            container['first_editor_username'] = None
+        container['template_file'] = files['path']
+        container['no_of_edits'] = len(file_archive)
+        if container['no_of_edits'] > 0:
+            reports.append(container)
+    sorted_reports = sorted(reports, key=lambda k: k['no_of_edits'], reverse=True)
+       
+    return render_to_response(template_name, {
+        'current_theme': selected_theme,
+        'reports': sorted_reports,
+    }, context_instance=RequestContext(request))
