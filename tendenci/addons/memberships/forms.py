@@ -12,6 +12,8 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.forms.fields import CharField, ChoiceField, BooleanField
 from django.template.defaultfilters import slugify
 from django.forms.widgets import HiddenInput
+from django.forms.formsets import BaseFormSet
+from django.forms.util import ErrorList
 from django import forms
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
@@ -869,6 +871,7 @@ class AppEntryForm(forms.ModelForm):
         self.types_field = app.membership_types
         self.user = kwargs.pop('user', None) or AnonymousUser
         self.corporate_membership = kwargs.pop('corporate_membership', None) # id; not object
+        self.form_index = kwargs.pop('form_index', None)
 
         super(AppEntryForm, self).__init__(*args, **kwargs)
 
@@ -958,8 +961,8 @@ class AppEntryForm(forms.ModelForm):
                 field_args['initial'] = field.default_value
             field_args['help_text'] = field.help_text
 
-            if field.pk in kwargs['initial']:
-                field_args['initial'] = kwargs['initial'][field.pk]
+            #if field.pk in kwargs['initial']:
+            #    field_args['initial'] = kwargs['initial'][field.pk]
 
             if field_widget is not None:
                 module, widget = field_widget.rsplit(".", 1)
@@ -1037,6 +1040,53 @@ class AppEntryForm(forms.ModelForm):
             if field_class == "EmailField":
                 return self.cleaned_data["field_%s" % field.id]
         return None
+
+class AppEntryBaseFormSet(BaseFormSet):
+    def __init__(self, app=None, data=None, files=None, auto_id='id_%s', prefix=None,
+                 initial=None, error_class=ErrorList, **kwargs):
+        self.corporate_membership = kwargs.pop('corporate_membership', None)
+        self.user = kwargs.pop('user', None)
+        self.app = app
+        custom_reg_form = kwargs.pop('custom_reg_form', None)
+        if custom_reg_form:
+            self.custom_reg_form = custom_reg_form
+        entries = kwargs.pop('entries', None)
+        if entries:
+            self.entries = entries
+        super(AppEntryBaseFormSet, self).__init__(data, files, auto_id, prefix,
+                 initial, error_class)
+        
+    def _construct_form(self, i, **kwargs):
+        """
+        Instantiates and returns the i-th form instance in a formset.
+        """
+        defaults = {'auto_id': self.auto_id, 'prefix': self.add_prefix(i)}
+        
+        defaults['app'] = self.app
+        defaults['corporate_membership'] = self.corporate_membership
+        defaults['user'] = self.user
+        defaults['form_index'] = i
+        if hasattr(self, 'custom_reg_form'):
+            defaults['custom_reg_form'] = self.custom_reg_form
+        if hasattr(self, 'entries'):
+            defaults['entry'] = self.entries[i]
+            
+        
+        if self.data or self.files:
+            defaults['data'] = self.data
+            defaults['files'] = self.files
+        if self.initial:
+            try:
+                defaults['initial'] = self.initial[i]
+            except IndexError:
+                pass
+        # Allow extra forms to be empty.
+        if i >= self.initial_form_count():
+            defaults['empty_permitted'] = True
+        defaults.update(kwargs)
+        form = self.form(**defaults)
+        self.add_fields(form, i)
+        return form
 
 class CSVForm(forms.Form):
     """

@@ -25,8 +25,38 @@
 
 	<div class="form-builder-wrap">
     	<form method="post" enctype="multipart/form-data">{% csrf_token %}
+        {{ app_entry_formset.management_form }}
     	<div class="forms">
-            {{ app_entry_form|styled_form }}
+            {% for form in app_entry_formset.forms %}
+                {% with forloop.counter as forloop_counter %}
+                <div id="form_{{ forloop.counter }}" class="applicant-form">
+				    <div class="applicant-header{% if total_regt_forms = 1 %} hidden{% endif %}">
+				        <span class="showhide"></span>{% trans "Applicant" %} #<span class="item-counter">{{ forloop_counter }}</span>:
+				    </div>
+				    <div class="{% cycle 'odd-applicant' 'even-applicant'%}">
+                        {{ form|styled_form }}
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+
+            <!--{% if form.DELETE %}
+                <div class="form-field delete{% if forloop.first %} hidden{% endif %}">
+				    <div class="delete-button-wrap">
+				    	<button class="delete-button">&nbsp;&nbsp;{% trans "Delete" %}</button>
+					</div>
+								
+				    <noscript>
+				    	<div>{{ form.DELETE }} {% trans "Delete" %}</div>
+				    </noscript>
+	
+				</div>
+			{% endif %}-->
+
+            <div class="add-registrant-box">
+                <button id="add-another-btn" onClick="add_applicants(this, 'form'); return false;" title="Add another one before pressing Submit">Add More</button>
+            </div>
+
         	<input type="submit" value="Submit" />
 		</div>
         </form>
@@ -65,5 +95,8 @@
                 });
             };
         }
+    </script>
+    <script type="text/javascript">
+        {% include 'memberships/include/membership-applicants.js' %}
     </script>
 {% endblock extra_body %}

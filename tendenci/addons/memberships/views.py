@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.shortcuts import render_to_response, redirect, get_object_or_404
 from django.template import RequestContext
 from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.forms.formsets import formset_factory
 
 from djcelery.models import TaskMeta
 from geraldo.generators import PDFGenerator
@@ -32,7 +33,7 @@ from tendenci.addons.memberships.models import (App, AppEntry, Membership,
     MembershipType, Notice, AppField, MembershipImport)
 from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
-    AppEntryForm)
+    AppEntryForm, AppEntryBaseFormSet)
 from tendenci.addons.memberships.utils import (is_import_valid, prepare_chart_data,
     get_days, get_over_time_stats, get_status_filter,
     get_membership_stats, NoMembershipTypes)
@@ -248,14 +249,25 @@ def application_details(request, template_name="memberships/applications/details
             )
 
     try:
-        app_entry_form = AppEntryForm(
+        '''app_entry_form = AppEntryForm(
                 app,
                 request.POST or None,
                 request.FILES or None,
                 user=user,
                 corporate_membership=corporate_membership,
                 initial=initial_dict
-            )
+            )'''
+        AppEntryFormset = formset_factory(AppEntryForm, 
+                                          formset=AppEntryBaseFormSet,
+                                          max_num=1, can_delete=True)
+        app_entry_formset = AppEntryFormset(
+                            app,
+                            request.POST or None,
+                            request.FILES or None,
+                            user=user,
+                            corporate_membership=corporate_membership,
+                            initial=initial_dict) 
+
     except NoMembershipTypes as e:
         print e
 
@@ -266,78 +278,79 @@ def application_details(request, template_name="memberships/applications/details
             context_instance=RequestContext(request))
 
     if request.method == "POST":
-        if app_entry_form.is_valid():
+        if app_entry_formset.is_valid():
+            for app_entry_form in app_entry_formset.forms:
+                entry = app_entry_form.save(commit=False)
+                entry_invoice = entry.save_invoice()
 
-            entry = app_entry_form.save(commit=False)
-            entry_invoice = entry.save_invoice()
+                if user.is_authenticated():
+                    entry.user = user
+                    entry.is_renewal = all(is_only_a_member)
 
-            if user.is_authenticated():
-                entry.user = user
-                entry.is_renewal = all(is_only_a_member)
+                # add all permissions and save the model
+                entry = update_perms_and_save(request, app_entry_form, entry)
 
-            # add all permissions and save the model
-            entry = update_perms_and_save(request, app_entry_form, entry)
+                # administrators go to approve/disapprove page
+                #if user.profile.is_superuser:
+                #    return redirect(reverse('membership.application_entries', args=[entry.pk]))
 
-            # administrators go to approve/disapprove page
-            if user.profile.is_superuser:
-                return redirect(reverse('membership.application_entries', args=[entry.pk]))
-
-            # send "joined" notification
-            Notice.send_notice(
-                entry=entry,
-                request=request,
-                emails=entry.email,
-                notice_type='join',
-                membership_type=entry.membership_type,
-            )
-
-            if entry_invoice.total == 0:
-                if not entry_invoice.is_tendered:
-                    entry_invoice.tender(request.user)
-
-            # online payment
-            if entry_invoice.total > 0 and entry.payment_method and entry.payment_method.is_online:
-
-                return HttpResponseRedirect(reverse(
-                    'payment.pay_online',
-                    args=[entry_invoice.pk, entry_invoice.guid]
-                ))
-
-            if not entry.approval_required():
-
-                entry.user, created = entry.get_or_create_user()
-                if created:
-                    send_welcome_email(entry.user)
-
-                entry.approve()
-
-                # silence old memberships within renewal period
-                Membership.objects.silence_old_memberships(entry.user)
-
-                # get user from the membership since it's null in the entry
-                entry.user = entry.membership.user
-
-                # send "approved" notification
+                # send "joined" notification
                 Notice.send_notice(
+                    entry=entry,
                     request=request,
                     emails=entry.email,
-                    notice_type='approve',
-                    membership=entry.membership,
+                    notice_type='join',
                     membership_type=entry.membership_type,
                 )
 
-                # log - entry approval
+                if entry_invoice.total == 0:
+                    if not entry_invoice.is_tendered:
+                        entry_invoice.tender(request.user)
+
+                # online payment
+                if entry_invoice.total > 0 and entry.payment_method and entry.payment_method.is_online:
+
+                    return HttpResponseRedirect(reverse(
+                        'payment.pay_online',
+                        args=[entry_invoice.pk, entry_invoice.guid]
+                    ))
+
+                if not entry.approval_required():
+
+                    entry.user, created = entry.get_or_create_user()
+                    if created:
+                        send_welcome_email(entry.user)
+
+                    entry.approve()
+
+                    # silence old memberships within renewal period
+                    Membership.objects.silence_old_memberships(entry.user)
+
+                    # get user from the membership since it's null in the entry
+                    entry.user = entry.membership.user
+
+                    # send "approved" notification
+                    Notice.send_notice(
+                        request=request,
+                        emails=entry.email,
+                        notice_type='approve',
+                        membership=entry.membership,
+                        membership_type=entry.membership_type,
+                    )
+
+                    # log - entry approval
+                    EventLog.objects.log(instance=entry)
+
+                # log - entry submission
                 EventLog.objects.log(instance=entry)
 
-            # log - entry submission
-            EventLog.objects.log(instance=entry)
-
-            return redirect(entry.confirmation_url)
+            return redirect('membership.application_entries_search')
 
     return render_to_response(template_name, {
             'app': app,
-            'app_entry_form': app_entry_form,
+            #'app_entry_form': app_entry_form,
             'pending_entries': pending_entries,
+            'app_entry_formset': app_entry_formset,
             }, context_instance=RequestContext(request))
 
 
