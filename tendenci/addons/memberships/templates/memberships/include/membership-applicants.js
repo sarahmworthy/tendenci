@@ -1,3 +1,34 @@
+function deleteApplicant(ele, prefix) {
+    var registrant_form = $(ele).parents('.applicant-form');
+    var attr_id = $(registrant_form).attr("id");
+    // remove the registrant form
+    $(registrant_form).remove();
+    // $(registrant_form).slideUp(600, function(){
+    	// $(this).remove();
+    // });
+    
+    // update the TOTAL_FORMS
+    var forms = $(".applicant-form");
+    $("#id_" + prefix + "-TOTAL_FORMS").val(forms.length);
+    
+    // update form index
+    var this_form;
+    for (var i=0, formCount=forms.length; i<formCount; i++){
+        this_form = forms.get(i);
+        $(this_form).find(".form-field").children().children().each(function() {
+            if (this){
+                updateIndex(this, prefix, i);
+            }
+        });
+        // update form header
+        if (i > 0){
+            updateFormHeader(this_form, prefix, i);
+        }
+    }
+    
+    return false;
+}
+
 function updateIndex(e, prefix, idx){
     var id_regex = new RegExp('(form-\\d+)');
     var replacement = prefix + '-' + idx
@@ -89,3 +120,15 @@ function add_applicants(e, prefix) {
     }
     return false;
 }
+
+$(document).ready(function(){
+	
+    // delete confirmation
+    $('button.delete-button').live('click', function(e){
+         var delete_confirm = confirm('Are you sure you want to delete this applicant?');   // confirm
+         if(delete_confirm) {
+            deleteApplicant(this, 'form');
+         }
+        return false;   // cancel
+    });
+});

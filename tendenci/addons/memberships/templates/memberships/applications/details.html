@@ -30,11 +30,16 @@
             {% for form in app_entry_formset.forms %}
                 {% with forloop.counter as forloop_counter %}
                 <div id="form_{{ forloop.counter }}" class="applicant-form">
-				    <div class="applicant-header{% if total_regt_forms = 1 %} hidden{% endif %}">
+				    <div class="applicant-header hidden">
 				        <span class="showhide"></span>{% trans "Applicant" %} #<span class="item-counter">{{ forloop_counter }}</span>:
 				    </div>
 				    <div class="{% cycle 'odd-applicant' 'even-applicant'%}">
                         {{ form|styled_form }}
+                        <div class="form-field delete{% if forloop.first %} hidden{% endif %}">
+				            <div class="delete-button-wrap">
+				              	<button class="delete-button">&nbsp;&nbsp;{% trans "Delete" %}</button>
+					        </div>		
+				        </div>
                     </div>
                 </div>
                 {% endwith %}
@@ -53,10 +58,11 @@
 				</div>
 			{% endif %}-->
 
+            {% if can_add_more %}
             <div class="add-registrant-box">
                 <button id="add-another-btn" onClick="add_applicants(this, 'form'); return false;" title="Add another one before pressing Submit">Add More</button>
             </div>
-
+            {% endif %}
         	<input type="submit" value="Submit" />
 		</div>
         </form>

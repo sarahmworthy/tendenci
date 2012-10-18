@@ -249,17 +249,9 @@ def application_details(request, template_name="memberships/applications/details
             )
 
     try:
-        '''app_entry_form = AppEntryForm(
-                app,
-                request.POST or None,
-                request.FILES or None,
-                user=user,
-                corporate_membership=corporate_membership,
-                initial=initial_dict
-            )'''
         AppEntryFormset = formset_factory(AppEntryForm, 
                                           formset=AppEntryBaseFormSet,
-                                          max_num=1, can_delete=True)
+                                          max_num=1)
         app_entry_formset = AppEntryFormset(
                             app,
                             request.POST or None,
@@ -308,12 +300,12 @@ def application_details(request, template_name="memberships/applications/details
                         entry_invoice.tender(request.user)
 
                 # online payment
-                if entry_invoice.total > 0 and entry.payment_method and entry.payment_method.is_online:
+                #if entry_invoice.total > 0 and entry.payment_method and entry.payment_method.is_online:
 
-                    return HttpResponseRedirect(reverse(
-                        'payment.pay_online',
-                        args=[entry_invoice.pk, entry_invoice.guid]
-                    ))
+                #    return HttpResponseRedirect(reverse(
+                #        'payment.pay_online',
+                #        args=[entry_invoice.pk, entry_invoice.guid]
+                #    ))
 
                 if not entry.approval_required():
 
@@ -346,9 +338,13 @@ def application_details(request, template_name="memberships/applications/details
 
             return redirect('membership.application_entries_search')
 
+    can_add_more = False
+    if corporate_membership and not corporate_membership.corporate_membership_type.membership_type.price > 0:
+        can_add_more = True
+
     return render_to_response(template_name, {
             'app': app,
-            #'app_entry_form': app_entry_form,
+            'can_add_more': can_add_more,
             'pending_entries': pending_entries,
             'app_entry_formset': app_entry_formset,
             }, context_instance=RequestContext(request))
