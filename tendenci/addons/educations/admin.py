@@ -6,12 +6,12 @@ from tendenci.addons.educations.forms import EducationForm
 
 
 class EducationAdmin(TendenciBaseModelAdmin):
-    list_display = ['school', 'major', 'degree',
+    list_display = ['user', 'school', 'major', 'degree',
                     'graduation_dt',
                     'owner_link', 'admin_perms',
                     'admin_status']
     list_filter = ['status_detail', 'owner_username']
-    search_fields = ['region_name', 'region_code']
+    search_fields = ['school', 'user']
     fieldsets = (
         ('', {
             'fields': ('user',

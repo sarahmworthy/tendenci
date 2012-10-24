@@ -26,7 +26,7 @@ class EducationForm(TendenciBaseForm):
         'status_detail',
         )
 
-        fieldsets = [('Region Information', {
+        fieldsets = [('Education Information', {
                       'fields': ['user',
                                 'school',
                                 'major',
