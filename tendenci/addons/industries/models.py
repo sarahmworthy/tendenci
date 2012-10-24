@@ -21,7 +21,7 @@ class Industry(TendenciBaseModel):
     objects = IndustryManager()
 
     class Meta:
-        permissions = (("view_industry", "Can view Industry"),)
+        permissions = (("view_industry", "Can view industry"),)
         verbose_name = "Industry"
         verbose_name_plural = "Industries"
 
