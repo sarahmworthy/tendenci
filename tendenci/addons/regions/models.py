@@ -12,7 +12,7 @@ class Region(TendenciBaseModel):
     guid = models.CharField(max_length=40)
     region_name = models.CharField(_('Name'), max_length=200)
     region_code = models.CharField(_('Region Code'), max_length=200)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, default='')
 
     perms = generic.GenericRelation(ObjectPermission,
                                   object_id_field="object_id",

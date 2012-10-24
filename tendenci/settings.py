@@ -211,6 +211,7 @@ INSTALLED_APPS = (
     'tendenci.addons.locations',
     'tendenci.addons.industries',
     'tendenci.addons.regions',
+    'tendenci.addons.educations',
     'tendenci.core.site_settings',
     'tendenci.addons.make_payments',
     'tendenci.apps.accountings',
