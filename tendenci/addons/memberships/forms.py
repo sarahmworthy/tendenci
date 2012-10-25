@@ -1299,8 +1299,16 @@ class MembershipDefaultForm(TendenciBaseForm):
     hide_address = forms.BooleanField(required=False)
     hide_email = forms.BooleanField(required=False)
     hide_phone = forms.BooleanField(required=False)
-    dob = SplitDateTimeField(required=False,
+
+    dob = forms.DateTimeField(required=False,
         widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
+    education_grad_dt = forms.DateTimeField(required=False,
+        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
+    career_start_dt = forms.DateTimeField(required=False,
+        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
+    career_end_dt = forms.DateTimeField(required=False,
+        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
+
     gender = forms.CharField(initial=u'', required=False)
     spouse = forms.CharField(initial=u'', required=False)
     profession = forms.CharField(initial=u'', required=False)

@@ -173,19 +173,19 @@ def application_detail_default(request, **kwargs):
                 request.POST.getlist('education_school'),
                 request.POST.getlist('education_degree'),
                 request.POST.getlist('education_major'),
-                request.POST.getlist('education_year'),
+                request.POST.getlist('education_grad_dt'),
             )
 
             for education in educations:
                 if any(education):
                     school, degree, major, grad_dt = education
-                    Education.objects.create(
-                        user=membership.user,
-                        school=school,
-                        degree=degree,
-                        major=major,
-                        graduation_dt=grad_dt,
-                    )
+                    # Education.objects.create(
+                    #     user=membership.user,
+                    #     school=school,
+                    #     degree=degree,
+                    #     major=major,
+                    #     graduation_dt=grad_dt,
+                    # )
         else:
             print form.errors
     else:
