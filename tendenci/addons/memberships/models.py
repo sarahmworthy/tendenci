@@ -34,6 +34,8 @@ from tendenci.apps.profiles.models import Profile
 from tendenci.core.files.models import File
 from tendenci.apps.entities.models import Entity
 from tendenci.addons.directories.models import Directory
+from tendenci.addons.industries.models import Industry
+from tendenci.addons.regions.models import Region
 
 
 from south.modelsinspector import add_introspection_rules
@@ -333,8 +335,8 @@ class MembershipDefault(TendenciBaseModel):
     government_agency = models.CharField(max_length=250, blank=True, default=u'')
     license_number = models.CharField(max_length=50, blank=True, default=u'')
     license_state = models.CharField(max_length=50, blank=True, default=u'')
-    # industry = models.ForeignKey()
-    # region = models.ForeignKey()
+    industry = models.ForeignKey(Industry)
+    region = models.ForeignKey(Region)
     company_size = models.CharField(max_length=50, blank=True, default=u'')
     promotion_code = models.CharField(max_length=50, blank=True, default=u'')
     directory = models.ForeignKey(Directory, blank=True, null=True)
