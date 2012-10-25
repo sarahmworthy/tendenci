@@ -32,6 +32,9 @@ from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.files.models import File
+from tendenci.apps.entities.models import Entity
+from tendenci.addons.directories.models import Directory
+
 
 from south.modelsinspector import add_introspection_rules
 add_introspection_rules([], ["^tinymce.models.HTMLField"])
@@ -257,6 +260,86 @@ class MembershipType(TendenciBaseModel):
                         expiration_dt = expiration_dt + relativedelta(years=1)
 
                 return expiration_dt
+
+
+class MembershipDefault(TendenciBaseModel):
+    """
+    This membership model represents the Tendenci 4
+    schema and is temporarily being used to collect
+    data into a default flat membership record.
+    """
+    guid = models.CharField(max_length=50, editable=False)
+    lang = models.CharField(max_length=10, editable=False, default='eng')
+    member_number = models.CharField(max_length=50, blank=True)
+    membership_type = models.ForeignKey(MembershipType)
+    user = models.ForeignKey(User, editable=False)
+    renewal = models.BooleanField(blank=True, default=False)
+    certifications = models.CharField(max_length=500, blank=True)
+    work_experience = models.TextField(blank=True)
+    referral_source = models.CharField(max_length=150, blank=True)
+    referral_source_other = models.CharField(max_length=150, blank=True)
+    referral_source_member_name = models.CharField(max_length=50, blank=True, default=u'')
+    referral_source_member_number = models.CharField(max_length=50, blank=True, default=u'')
+    affiliation_member_number = models.CharField(max_length=50, blank=True)
+    join_dt = models.DateTimeField()
+    expire_dt = models.DateTimeField()
+    primary_practice = models.CharField(max_length=100, default=u'')
+    how_long_in_practice = models.CharField(max_length=50, blank=True, default=u'')
+    notes = models.CharField(max_length=500, blank=True)
+    admin_notes = models.TextField()
+    newsletter_type = models.CharField(max_length=50, blank=True)
+    directory_type = models.CharField(max_length=50, blank=True)
+    generate_member_number = models.BooleanField()
+    application_abandoned = models.BooleanField()
+    application_abandoned_dt = models.DateTimeField()
+    application_abandoned_user = models.ForeignKey(User,
+        related_name='application_abandond_set')
+    application_complete = models.BooleanField()
+    application_complete_dt = models.DateTimeField()
+    application_complete_user = models.ForeignKey(User,
+        related_name='application_complete_set')
+    application_approved = models.BooleanField()
+    application_approved_dt = models.DateTimeField()
+    application_approved_user = models.ForeignKey(User,
+        related_name='application_approved_set')
+    action_taken = models.CharField(max_length=500, blank=True)
+    action_taken_dt = models.DateTimeField()
+    action_taken_user = models.ForeignKey(User,
+        related_name='action_taken_set')
+    bod_dt = models.DateTimeField()
+    personnel_notified_dt = models.DateTimeField()
+    payment_received_dt = models.DateTimeField()
+    payment_method = models.ForeignKey(PaymentMethod)
+    override = models.BooleanField()
+    override_price = models.FloatField()
+    exported = models.BooleanField()
+    application_approved_denied_dt = models.DateTimeField()
+    application_approved_denied_user = models.ForeignKey(User,
+        related_name='application_approved_denied_set')
+    application_denied = models.BooleanField()
+    chapter = models.CharField(max_length=150, blank=True)
+    areas_of_expertise = models.CharField(max_length=1000, blank=True)
+    organization_entity = models.ForeignKey(Entity,
+        related_name='organization_set', editable=False)
+    corporate_entity = models.ForeignKey(Entity,
+        related_name='corporate_set', editable=False)
+    corporate_membership_id = models.IntegerField()
+    renew_dt = models.DateTimeField()
+    home_state = models.CharField(max_length=50, blank=True, default=u'')
+    year_left_native_country = models.IntegerField()
+    network_sectors = models.CharField(max_length=250, blank=True, default=u'')
+    networking = models.CharField(max_length=250, blank=True, default=u'')
+    government_worker = models.BooleanField()
+    government_agency = models.CharField(max_length=250, default=u'')
+    license_number = models.CharField(max_length=50, blank=True, default=u'')
+    license_state = models.CharField(max_length=50, blank=True, default=u'')
+    # industry = models.ForeignKey()
+    # region = models.ForeignKey()
+    company_size = models.CharField(max_length=50, default=u'')
+    promotion_code = models.CharField(max_length=50, default=u'')
+    directory = models.ForeignKey(Directory, blank=True, null=True)
+    invoice = models.ForeignKey(Invoice, editable=False)
+    sig_user_group_ids = models.CharField(max_length=100, blank=True)
 
 
 class Membership(TendenciBaseModel):

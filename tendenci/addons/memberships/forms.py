@@ -2,7 +2,7 @@ import sys
 from uuid import uuid4
 from captcha.fields import CaptchaField
 from os.path import join
-from datetime import datetime
+from datetime import date, datetime
 from hashlib import md5
 from haystack.query import SearchQuerySet
 from tinymce.widgets import TinyMCE
@@ -23,8 +23,8 @@ from tendenci.addons.corporate_memberships.models import (CorporateMembership,
     AuthorizedDomain)
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.perms.forms import TendenciBaseForm
-from tendenci.addons.memberships.models import (Membership, MembershipType, Notice, App,
-    AppEntry, AppField, AppFieldEntry)
+from tendenci.addons.memberships.models import (Membership, MembershipDefault, MembershipType,
+    Notice, App, AppEntry, AppField, AppFieldEntry)
 from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
     NoticeTimeTypeField)
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
@@ -1261,6 +1261,223 @@ class ReportForm(forms.Form):
     
     membership_type = forms.ModelChoiceField(queryset = MembershipType.objects.all(), required = False)
     membership_status = forms.ChoiceField(choices = STATUS_CHOICES, required = False)
+
+
+class MembershipDefaultForm(TendenciBaseForm):
+    """
+    Bound to the MembershipDefault model
+    """
+
+    salutation = forms.CharField(required=False)
+    first_name = forms.CharField(initial=u'')
+    last_name = forms.CharField(initial=u'')
+    display_name = forms.CharField(initial=u'', required=False)
+    company = forms.CharField(initial=u'', required=False)
+    title = forms.CharField(initial=u'', required=False)
+    functional_title = forms.CharField(initial=u'', required=False)
+    department = forms.CharField(initial=u'', required=False)
+    address = forms.CharField(initial=u'', required=False)
+    address2 = forms.CharField(initial=u'', required=False)
+    address_type = forms.CharField(initial=u'', required=False)
+    city = forms.CharField(initial=u'', required=False)
+    state = forms.CharField(initial=u'', required=False)
+    zip_code = forms.CharField(initial=u'', required=False)
+    country = forms.CharField(initial=u'', required=False)
+    phone = forms.CharField(initial=u'', required=False)
+    phone2 = forms.CharField(initial=u'', required=False)
+    work_phone = forms.CharField(initial=u'', required=False)
+    home_phone = forms.CharField(initial=u'', required=False)
+    mobile_phone = forms.CharField(initial=u'', required=False)
+    pager = forms.CharField(initial=u'', required=False)
+    fax = forms.CharField(initial=u'', required=False)
+    email = forms.CharField(initial=u'', required=False)
+    email2 = forms.CharField(initial=u'', required=False)
+    website = forms.CharField(initial=u'', required=False)
+    website2 = forms.CharField(initial=u'', required=False)
+
+    hide_in_search = forms.BooleanField(required=False)
+    hide_address = forms.BooleanField(required=False)
+    hide_email = forms.BooleanField(required=False)
+    hide_phone = forms.BooleanField(required=False)
+    dob = SplitDateTimeField(required=False,
+        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
+    gender = forms.CharField(initial=u'', required=False)
+    spouse = forms.CharField(initial=u'', required=False)
+    profession = forms.CharField(initial=u'', required=False)
+    custom1 = forms.CharField(initial=u'', required=False)
+    custom2 = forms.CharField(initial=u'', required=False)
+    custom3 = forms.CharField(initial=u'', required=False)
+    custom4 = forms.CharField(initial=u'', required=False)
+
+    username = forms.CharField(initial=u'', required=False)
+    password = forms.CharField(initial=u'', widget=forms.PasswordInput, required=False)
+
+    same_as_primary = forms.BooleanField(required=False)
+    extra_address = forms.CharField(initial=u'', required=False)
+    extra_address2 = forms.CharField(initial=u'', required=False)
+    extra_city = forms.CharField(initial=u'', required=False)
+    extra_state = forms.CharField(initial=u'', required=False)
+    extra_zip_code = forms.CharField(initial=u'', required=False)
+    extra_country = forms.CharField(initial=u'', required=False)
+    extra_address_type = forms.CharField(initial=u'', required=False)
+
+    class Meta:
+        model = MembershipDefault
+        fields = (
+            'member_number',
+            'membership_type',
+            'renewal',
+            'certifications',
+            'work_experience',
+            'referral_source',
+            'referral_source_other',
+            'referral_source_member_name',
+            'referral_source_member_number',
+            'affiliation_member_number',
+            'join_dt',
+            'expire_dt',
+            'primary_practice',
+            'how_long_in_practice',
+            'notes',
+            'admin_notes',
+            'newsletter_type',
+            'directory_type',
+            'generate_member_number',
+            'application_abandoned',
+            'application_abandoned_dt',
+            'application_abandoned_user',
+            'application_complete',
+            'application_complete_dt',
+            'application_complete_user',
+            'application_approved',
+            'application_approved_dt',
+            'application_approved_user',
+            'action_taken',
+            'action_taken_dt',
+            'action_taken_user',
+            'bod_dt',
+            'personnel_notified_dt',
+            'payment_received_dt',
+            'payment_method',
+            'override',
+            'override_price',
+            'application_approved_denied_dt',
+            'application_approved_denied_user',
+            'application_denied',
+            'chapter',
+            'areas_of_expertise',
+            'corporate_membership_id',
+            'renew_dt',
+            'home_state',
+            'year_left_native_country',
+            'network_sectors',
+            'networking',
+            'government_worker',
+            'government_agency',
+            'license_number',
+            'license_state',
+            'company_size',
+            'promotion_code',
+            'directory',
+            'sig_user_group_ids',
+        )
+        widgets = {
+            'membership_type': forms.RadioSelect,
+            'payment_method': forms.RadioSelect,
+            'bod_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
+            'join_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
+            'renew_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
+            'expire_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
+            'application_approved_denied_dt': forms.DateTimeInput(
+                attrs={'class': 'datepicker'}),
+            'application_complete_dt': forms.DateTimeInput(
+                attrs={'class': 'datepicker'}),
+            'action_taken_dt': forms.DateTimeInput(
+                attrs={'class': 'datepicker'}),
+            'personnel_notified_dt': forms.DateTimeInput(
+                attrs={'class': 'datepicker'}),
+            'payment_received_dt': forms.DateTimeInput(
+                attrs={'class': 'datepicker'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """
+        Setting foreign key fields with temporary objects.
+        """
+        # request_user = User() or None() object
+        request_user = kwargs.pop('request_user', AnonymousUser())
+        if not isinstance(request_user, User):
+            request_user = None
+
+        super(MembershipDefaultForm, self).__init__(*args, **kwargs)
+
+        # self.fields['payment_method'].empty_label = None
+
+        # set initial date time values of
+        # fields in admin section --------------------------
+        dt_fields = [
+            'application_approved_denied_dt',
+            'application_complete_dt',
+            'action_taken_dt',
+            # 'bod_dt',
+            'personnel_notified_dt',
+            'join_dt',
+            # 'renew_dt',
+            # 'expire_dt',
+            # 'payment_received_dt',
+        ]
+
+        for key in dt_fields:
+            self.fields[key].initial = '%s' % date.today()
+        # --------------------------------------------------
+
+        mts = MembershipType.objects.filter(status=True, status_detail='active')
+        mt_values = mts.values_list('pk', 'name', 'price', 'renewal_price', 'admin_fee')
+
+        # TODO: consider global renewal period
+        # which result in renewal price
+        # TODO: Include admin fee on join price
+
+        mt_choices = []
+        for pk, name, price, renewal_price, admin_fee in mt_values:
+            price = price or float()
+            renewal_price = renewal_price or float()
+            admin_fee = admin_fee or float()
+            mt_choices.append((pk, '$%s %s' % (price, name)))
+
+        self.fields['membership_type'].choices = mt_choices
+
+        # if request_user and not request_user.profile.is_superuser:
+
+        #     self.fields.pop('application_abandoned')
+        #     self.fields.pop('application_abandoned_dt')
+        #     self.field.pop('application_abandoned_user')
+
+        #     self.field.pop('application_complete')
+        #     self.field.pop('application_complete_dt')
+        #     self.field.pop('application_complete_user')
+
+        #     self.fields.pop('application_approved')
+        #     self.fields.pop('application_approved_dt')
+        #     self.fields.pop('application_approved_user')
+
+        #     self.fields.pop('application_approved_denied_dt')
+        #     self.fields.pop('application_approved_denied_user')
+
+        #     self.fields.pop('action_taken')
+        #     self.fields.pop('action_taken_dt')
+        #     self.fields.pop('action_taken_user')
+
+        #     self.fields.pop('bod_dt')
+
+        #     self.fields.pop('personnel_notified_dt')
+        #     self.fields.pop('join_dt')
+        #     self.fields.pop('renew_dt')
+        #     self.fields.pop('expire_dt')
+        #     self.fields.pop('payment_received_dt')
+        #     self.fields.pop('admin_notes')
+        #     self.fields.pop('status')
+        #     self.fields.pop('status_detail')
 
 
 class MembershipForm(TendenciBaseForm):

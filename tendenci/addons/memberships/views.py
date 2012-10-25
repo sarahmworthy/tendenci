@@ -1,4 +1,3 @@
-import os
 import hashlib
 from hashlib import md5
 from datetime import datetime, timedelta
@@ -30,7 +29,7 @@ from tendenci.core.exports.utils import render_csv
 
 from tendenci.addons.memberships.models import (App, AppEntry, Membership,
     MembershipType, Notice, AppField, MembershipImport)
-from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm,
+from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, MembershipDefaultForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
     AppEntryForm)
 from tendenci.addons.memberships.utils import (is_import_valid, prepare_chart_data,
@@ -154,6 +153,26 @@ def download_template(request, slug=''):
     """
     from tendenci.addons.memberships.utils import make_csv
     return make_csv(slug=slug)
+
+
+def application_detail_default(request, **kwargs):
+    """
+    Returns default membership applicaiton response
+    """
+    if request.method == 'POST':
+        form = MembershipDefaultForm(request.POST, request_user=request.user)
+
+        if form.is_valid():
+            membership = form.save(commit=False)
+            print membership
+        else:
+            print form.errors
+    else:
+        form = MembershipDefaultForm()
+
+    return render_to_response('memberships/applications/detail_default.html', {
+        'form': form,
+        }, context_instance=RequestContext(request))
 
 
 def application_details(request, template_name="memberships/applications/details.html", **kwargs):
