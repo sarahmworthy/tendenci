@@ -1334,8 +1334,8 @@ class MembershipDefaultForm(TendenciBaseForm):
             'referral_source_member_name',
             'referral_source_member_number',
             'affiliation_member_number',
-            'join_dt',
-            'expire_dt',
+            # 'join_dt',
+            # 'expire_dt',
             'primary_practice',
             'how_long_in_practice',
             'notes',
@@ -1343,31 +1343,31 @@ class MembershipDefaultForm(TendenciBaseForm):
             'newsletter_type',
             'directory_type',
             'generate_member_number',
-            'application_abandoned',
-            'application_abandoned_dt',
-            'application_abandoned_user',
-            'application_complete',
-            'application_complete_dt',
-            'application_complete_user',
+            # 'application_abandoned',
+            # 'application_abandoned_dt',
+            # 'application_abandoned_user',
+            # 'application_complete',
+            # 'application_complete_dt',
+            # 'application_complete_user',
             'application_approved',
-            'application_approved_dt',
-            'application_approved_user',
-            'action_taken',
-            'action_taken_dt',
-            'action_taken_user',
-            'bod_dt',
-            'personnel_notified_dt',
-            'payment_received_dt',
+            # 'application_approved_dt',
+            # 'application_approved_user',
+            # 'action_taken',
+            # 'action_taken_dt',
+            # 'action_taken_user',
+            # 'bod_dt',
+            # 'personnel_notified_dt',
+            # 'payment_received_dt',
             'payment_method',
-            'override',
-            'override_price',
-            'application_approved_denied_dt',
-            'application_approved_denied_user',
-            'application_denied',
+            # 'override',
+            # 'override_price',
+            # 'application_approved_denied_dt',
+            # 'application_approved_denied_user',
+            # 'application_denied',
             'chapter',
             'areas_of_expertise',
             'corporate_membership_id',
-            'renew_dt',
+            # 'renew_dt',
             'home_state',
             'year_left_native_country',
             'network_sectors',
@@ -1411,25 +1411,7 @@ class MembershipDefaultForm(TendenciBaseForm):
 
         super(MembershipDefaultForm, self).__init__(*args, **kwargs)
 
-        # self.fields['payment_method'].empty_label = None
-
-        # set initial date time values of
-        # fields in admin section --------------------------
-        dt_fields = [
-            'application_approved_denied_dt',
-            'application_complete_dt',
-            'action_taken_dt',
-            # 'bod_dt',
-            'personnel_notified_dt',
-            'join_dt',
-            # 'renew_dt',
-            # 'expire_dt',
-            # 'payment_received_dt',
-        ]
-
-        for key in dt_fields:
-            self.fields[key].initial = '%s' % date.today()
-        # --------------------------------------------------
+        self.fields['payment_method'].empty_label = None
 
         mts = MembershipType.objects.filter(status=True, status_detail='active')
         mt_values = mts.values_list('pk', 'name', 'price', 'renewal_price', 'admin_fee')

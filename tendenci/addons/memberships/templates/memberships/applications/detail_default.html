@@ -2077,60 +2077,13 @@
             </table></div></td></tr></table>
 
             {% if request.user.profile.is_superuser %}
-            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 9: Admin Only</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Approved&nbsp;&nbsp;&nbsp;<input name="application_approved" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
+            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 9: Superuser Only</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Approved&nbsp;&nbsp;&nbsp;<input name="application_approved" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
             <input name="application_approved" type="radio" value="0" checked>No
-            <br></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Application Denied</div></td><td align="left"><input name="application_denied" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
-            <input name="application_denied" type="radio" value="0" checked>No
-            <br></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Approved/Denied Date Time&nbsp;&nbsp;&nbsp;
+            <br></div></td><td>&nbsp;</td></tr></table>
 
-            {{ form.application_approved_denied_dt }}
+            <table border=0><tr><td colspan="3"><div style="margin-left: 2em;">Admin Notes</div></td></tr><tr><td colspan="3">{{ form.admin_notes }}</td></tr><tr><td colpspan="4">&nbsp;</td></tr></table>
 
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Approved/Denied User ID&nbsp;&nbsp;&nbsp;<input type="text" name="application_approved_denied_user_id"value="" size="10">
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Member ID (member record)&nbsp;&nbsp;&nbsp;<input type="text" name="member_number"value="" size="15">
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Member ID (user record:)&nbsp;&nbsp;&nbsp;<input type="text" name="member_id"value="" size="15">
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Abandoned?&nbsp;&nbsp;&nbsp;<input name="application_abandoned" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
-            <input name="application_abandoned" type="radio" value="0" checked>No
-            <br></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Abandoned Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.application_abandoned_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Abandoned User ID&nbsp;&nbsp;&nbsp;<input type="text" name="application_abandoned_user_id"value="" size="10">
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Complete Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.application_complete_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Complete User ID&nbsp;&nbsp;&nbsp;<input type="text" name="application_complete_user_id"value="" size="10">
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Action Taken</div></td><td align="left"><input type="text" name="action_taken"value="" size="28">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Action Taken Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.action_taken_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Action Taken User ID&nbsp;&nbsp;&nbsp;<input type="text" name="action_taken_user_id" value="{{ action_taken_user_id }}" size="10">
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Board of Directors Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.bod_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Personnell Notified Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.personnel_notified_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Join Date Time</div></td><td align="left">
-
-            {{ form.join_dt }}
-
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Renew Date Time</div></td><td align="left">
-
-            {{ form.renew_dt }}
-
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Expiration Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.expire_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Payment Received Date Time&nbsp;&nbsp;&nbsp;
-
-            {{ form.payment_received_dt }}
-
-            </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="3"><div style="margin-left: 2em;">Admin Notes</div></td></tr><tr><td colspan="3"></td></tr><tr><td colpspan="4">&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Status<span class="body_copy_alerts">*</span></div></td><td align="left">
+            <table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Status<span class="body_copy_alerts">*</span></div></td><td align="left">
 
             <select size="1"  name="status" class="body_copy">
             <option value="1" SELECTED>Active</option>
