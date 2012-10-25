@@ -399,27 +399,29 @@
             </td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="3"><div style="margin-left: 2em;">Body</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">
             </div></td></tr><tr><td colpspan="4">&nbsp;</td></tr></table> -->
 
-            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 6: Subscribe to Groups</span></td></tr><tr><td align="left" valign="top"><div style="margin-left: 2em;">Subscribe to groups<br><div class="memberships_list_items"><input name="usergroup_id" type="checkbox" class="body_copy" value="43">Newsletter Training Group<br><input name="usergroup_id" type="checkbox" class="body_copy" value="2">Schipul - the Web Marketing Company (test as user) Newsletter<br><input name="usergroup_id" type="checkbox" class="body_copy" value="16">Testing Alternate Editors<br></div></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 7: Education History</span></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">Enter your Education History</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;"><table width="100%"  border="0" cellpadding="1" cellspacing="0" >
+            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 6: Subscribe to Groups</span></td></tr><tr><td align="left" valign="top"><div style="margin-left: 2em;">Subscribe to groups<br><div class="memberships_list_items"><input name="usergroup_id" type="checkbox" class="body_copy" value="43">Newsletter Training Group<br><input name="usergroup_id" type="checkbox" class="body_copy" value="2">Schipul - the Web Marketing Company (test as user) Newsletter<br><input name="usergroup_id" type="checkbox" class="body_copy" value="16">Testing Alternate Editors<br></div></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 7: Education History</span></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">Enter your Education History</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">
+
+            <table width="100%"  border="0" cellpadding="1" cellspacing="0" >
             <input type="hidden" name="lookupkey_education_new0" value="new0">
             <tr>
             <td>School:</td>
             <td>
-            <input type="text" name="new0_school" value=""></td>
+            <input type="text" name="education_school" value="{{ request.POST.education_school.0 }}"></td>
             <td>Degree:</td>
             <td>
-            <input type="text" name="new0_degree" value="">
+            <input type="text" name="education_degree" value="">
             </td>
             </tr>
             <tr>
             <td>Major:</td>
             <td>
-            <input type="text" name="new0_major" value="">
+            <input type="text" name="education_major" value="">
             </td>
             <td nowrap>Year Graduated:</td>
             <td nowrap>
 
 
-            <select size="1"  name="new0_graduationdatetime_cefn_year" class="body_copy" id="new0_graduationdatetime_cefn_year">
+            <select size="1"  name="education_year" class="body_copy" id="new0_graduationdatetime_cefn_year">
             <option value="" SELECTED>?</option>
             <option value="1900">1900</option>
             <option value="1901">1901</option>
@@ -586,22 +588,22 @@
             <tr>
             <td>School:</td>
             <td>
-            <input type="text" name="new1_school" value=""></td>
+            <input type="text" name="education_school" value=""></td>
             <td>Degree:</td>
             <td>
-            <input type="text" name="new1_degree" value="">
+            <input type="text" name="education_degree" value="">
             </td>
             </tr>
             <tr>
             <td>Major:</td>
             <td>
-            <input type="text" name="new1_major" value="">
+            <input type="text" name="education_major" value="">
             </td>
             <td nowrap>Year Graduated:</td>
             <td nowrap>
 
 
-            <select size="1"  name="new1_graduationdatetime_cefn_year" class="body_copy" id="new1_graduationdatetime_cefn_year">
+            <select size="1"  name="education_year" class="body_copy" id="new1_graduationdatetime_cefn_year">
             <option value="" SELECTED>?</option>
             <option value="1900">1900</option>
             <option value="1901">1901</option>
@@ -768,22 +770,22 @@
             <tr>
             <td>School:</td>
             <td>
-            <input type="text" name="new2_school" value=""></td>
+            <input type="text" name="education_school" value=""></td>
             <td>Degree:</td>
             <td>
-            <input type="text" name="new2_degree" value="">
+            <input type="text" name="education_degree" value="">
             </td>
             </tr>
             <tr>
             <td>Major:</td>
             <td>
-            <input type="text" name="new2_major" value="">
+            <input type="text" name="education_major" value="">
             </td>
             <td nowrap>Year Graduated:</td>
             <td nowrap>
 
 
-            <select size="1"  name="new2_graduationdatetime_cefn_year" class="body_copy" id="new2_graduationdatetime_cefn_year">
+            <select size="1"  name="education_year" class="body_copy" id="new2_graduationdatetime_cefn_year">
             <option value="" SELECTED>?</option>
             <option value="1900">1900</option>
             <option value="1901">1901</option>
@@ -950,22 +952,22 @@
             <tr>
             <td>School:</td>
             <td>
-            <input type="text" name="new3_school" value=""></td>
+            <input type="text" name="education_school" value=""></td>
             <td>Degree:</td>
             <td>
-            <input type="text" name="new3_degree" value="">
+            <input type="text" name="education_degree" value="">
             </td>
             </tr>
             <tr>
             <td>Major:</td>
             <td>
-            <input type="text" name="new3_major" value="">
+            <input type="text" name="education_major" value="">
             </td>
             <td nowrap>Year Graduated:</td>
             <td nowrap>
 
 
-            <select size="1"  name="new3_graduationdatetime_cefn_year" class="body_copy" id="new3_graduationdatetime_cefn_year">
+            <select size="1"  name="education_year" class="body_copy" id="new3_graduationdatetime_cefn_year">
             <option value="" SELECTED>?</option>
             <option value="1900">1900</option>
             <option value="1901">1901</option>

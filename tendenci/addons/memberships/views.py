@@ -39,6 +39,9 @@ from tendenci.addons.memberships.importer.forms import ImportMapForm, UploadForm
 from tendenci.addons.memberships.importer.utils import parse_mems_from_csv
 from tendenci.addons.memberships.importer.tasks import ImportMembershipsTask
 
+from tendenci.addons.educations.models import Education
+from tendenci.addons.careers.models import Career
+
 
 def membership_index(request):
     return HttpResponseRedirect(reverse('membership.search'))
@@ -159,12 +162,30 @@ def application_detail_default(request, **kwargs):
     """
     Returns default membership applicaiton response
     """
+
     if request.method == 'POST':
         form = MembershipDefaultForm(request.POST, request_user=request.user)
 
         if form.is_valid():
             membership = form.save(commit=False)
-            print membership
+
+            educations = zip(
+                request.POST.getlist('education_school'),
+                request.POST.getlist('education_degree'),
+                request.POST.getlist('education_major'),
+                request.POST.getlist('education_year'),
+            )
+
+            for education in educations:
+                if any(education):
+                    school, degree, major, grad_dt = education
+                    Education.objects.create(
+                        user=membership.user,
+                        school=school,
+                        degree=degree,
+                        major=major,
+                        graduation_dt=grad_dt,
+                    )
         else:
             print form.errors
     else:
