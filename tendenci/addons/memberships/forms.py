@@ -1376,6 +1376,8 @@ class MembershipDefaultForm(TendenciBaseForm):
             'government_agency',
             'license_number',
             'license_state',
+            'region',
+            'industry',
             'company_size',
             'promotion_code',
             'directory',
@@ -1412,6 +1414,8 @@ class MembershipDefaultForm(TendenciBaseForm):
         super(MembershipDefaultForm, self).__init__(*args, **kwargs)
 
         self.fields['payment_method'].empty_label = None
+        self.fields['industry'].empty_label = 'Select One'
+        self.fields['region'].empty_label = 'Select One'
 
         mts = MembershipType.objects.filter(status=True, status_detail='active')
         mt_values = mts.values_list('pk', 'name', 'price', 'renewal_price', 'admin_fee')
