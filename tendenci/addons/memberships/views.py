@@ -186,6 +186,32 @@ def application_detail_default(request, **kwargs):
                     #     major=major,
                     #     graduation_dt=grad_dt,
                     # )
+
+            careers = zip(
+                request.POST.getlist('career_name'),
+                request.POST.getlist('career_description'),
+                request.POST.getlist('position_title'),
+                request.POST.getlist('position_description'),
+                request.POST.getlist('career_start_dt'),
+                request.POST.getlist('career_end_dt'),
+            )
+
+            for career in careers:
+
+                if any(career) and all(career[4:]):
+
+                    (career_name, career_description, position_title,
+                        position_description, career_start_dt, career_end_dt) = career
+
+                    # Career.objects.create(
+                    #     company=career_name,
+                    #     company_description=career_description,
+                    #     position_title=position_title,
+                    #     position_description=position_description,
+                    #     start_dt=career_start_dt,
+                    #     end_dt=career_end_dt,
+                    # )
+
         else:
             print form.errors
     else:
