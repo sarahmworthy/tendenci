@@ -572,7 +572,6 @@ class Membership(TendenciBaseModel):
             setattr(self.user, 'is_member', False)
 
 
-
 class MembershipImport(models.Model):
     INTERACTIVE_CHOICES = (
         (1, 'Interactive'),
@@ -592,7 +591,10 @@ class MembershipImport(models.Model):
         ('username', 'username'),
     )
 
-    app = models.ForeignKey('App')
+    app = models.ForeignKey('App', null=True)
+    upload_file = models.FileField("", max_length=260,
+                                   upload_to="imports/memberships",
+                                   null=True)
     # active users
     interactive = models.IntegerField(choices=INTERACTIVE_CHOICES, default=0)
     # overwrite already existing fields if match
