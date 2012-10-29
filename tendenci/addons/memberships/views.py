@@ -169,6 +169,47 @@ def application_detail_default(request, **kwargs):
         if form.is_valid():
             membership = form.save(commit=False)
 
+            user_dict = {
+                'username': form.cleaned_data.get('username'),
+                'first_name': form.cleaned_data.get('first_name'),
+                'last_name': form.cleaned_data.get('last_name'),
+                'email': form.cleaned_data.get('email')
+            }
+
+            profile_dict = {
+                'display_name': form.cleaned_data.get('display_name'),
+                'company': form.cleaned_data.get('company'),
+                'title': form.cleaned_data.get('title'),
+                'functional_title': form.cleaned_data.get('functional_title'),
+                'department': form.cleaned_data.get('department'),
+                'address': form.cleaned_data.get('address'),
+                'address2': form.cleaned_data.get('address2'),
+                'city': form.cleaned_data.get('city'),
+                'state': form.cleaned_data.get('state'),
+                'zip_code': form.cleaned_data.get('zip_code'),
+                'country': form.cleaned_data.get('country'),
+                'address_type': form.cleaned_data.get('address_type'),
+                'phone': form.cleaned_data.get('phone'),
+                'phone2': form.cleaned_data.get('phone2'),
+                'work_phone': form.cleaned_data.get('work_phone'),
+                'home_phone': form.cleaned_data.get('home_phone'),
+                'mobile_phone': form.cleaned_data.get('mobile_phone'),
+                'pager': form.cleaned_data.get('pager'),
+                'fax': form.cleaned_data.get('fax'),
+                'email': form.cleaned_data.get('email'),
+                'email2': form.cleaned_data.get('email2'),
+                'url': form.cleaned_data.get('url'),
+                'url2': form.cleaned_data.get('url2'),
+                'hide_in_search': form.cleaned_data.get('hide_in_search'),
+                'hide_address': form.cleaned_data.get('hide_address'),
+                'hide_email': form.cleaned_data.get('hide_email'),
+                'hide_phone': form.cleaned_data.get('hide_phone'),
+                'dob': form.cleaned_data.get('dob'),
+                'gender': form.cleaned_data.get('gender'),
+                'spouse': form.cleaned_data.get('spouse'),
+            }
+
+
             educations = zip(
                 request.POST.getlist('education_school'),
                 request.POST.getlist('education_degree'),
