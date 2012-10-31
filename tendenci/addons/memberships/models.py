@@ -365,11 +365,11 @@ class MembershipDefault(TendenciBaseModel):
         Return a user that's newly created or already existed.
         Return new or existing user.
         """
-        from memberships.utils import spawn_username
+        from tendenci.addons.memberships.utils import spawn_username
 
-        fn = kwargs.get('first_name', self.get_first_name())
-        ln = kwargs.get('last_name', self.get_last_name())
-        em = kwargs.get('email', self.get_email())
+        fn = kwargs.get('first_name', u'')
+        ln = kwargs.get('last_name', u'')
+        em = kwargs.get('email', u'')
 
         user = None
 
