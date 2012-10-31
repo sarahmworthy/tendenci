@@ -803,8 +803,8 @@ class MembershipImport(models.Model):
     key = models.CharField(_('Key'), max_length=50,
                            choices=KEY_CHOICES, default="email")
 
-    num_processed = models.IntegerField(default=0)
     total_rows = models.IntegerField(default=0)
+    num_processed = models.IntegerField(default=0)
     summary = models.CharField(_('Summary'), max_length=500,
                            null=True, default='')
     status = models.CharField(choices=STATUS_CHOICES,

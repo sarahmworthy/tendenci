@@ -20,6 +20,7 @@ from tendenci.addons.memberships.models import (App,
                                                 MembershipDefault)
 from tendenci.core.base.utils import normalize_newline
 from tendenci.apps.profiles.models import Profile
+from tendenci.core.imports.utils import get_unique_username
 
 
 def get_default_membership_fields(use_for_corp=False):
@@ -550,9 +551,11 @@ def memb_import_parse_csv(mimport):
     return fieldnames, data_list
 
 
-def process_default_membership(memb_data, mimport, dry_run=True):
+def process_default_membership(request_user, memb_data, mimport,
+                               dry_run=True, **kwargs):
     """
-    Check and do the membership import to the membership_default.
+    Check if it's insert or update. If dry_run is False,
+    do the import to the membership_default.
 
     :param memb_data: a dictionary that includes the info of a membership
     :param mimport: a instance of MembershipImport
@@ -560,6 +563,7 @@ def process_default_membership(memb_data, mimport, dry_run=True):
     """
     #fieldnames = memb_data.keys()
     user = None
+    memb = None
     user_display = {}
     user_display['error'] = ''
     missing_fields = []
@@ -643,8 +647,25 @@ def process_default_membership(memb_data, mimport, dry_run=True):
             user_display['memb_action'] = 'insert'
 
         if not dry_run:
-            # update or insert
-            pass
+            summary_d = kwargs.get('summary_d')
+            if all([
+                    user_display['user_action'] == 'insert',
+                    user_display['memb_action'] == 'insert'
+                    ]):
+                summary_d['insert'] += 1
+            elif all([
+                    user_display['user_action'] == 'update',
+                    user_display['memb_action'] == 'update'
+                    ]):
+                summary_d['update'] += 1
+            else:
+                summary_d['update_insert'] += 1
+
+            # now do the update or insert
+            do_import_membership_default(request_user, mimport,
+                                         user, memb, memb_data,
+                                         user_display)
+            return
 
     user_display.update({
                         'first_name': memb_data.get('first_name', ''),
@@ -658,11 +679,133 @@ def process_default_membership(memb_data, mimport, dry_run=True):
     return user_display
 
 
+def do_import_membership_default(request_user, mimport,
+                                 user, memb, memb_data,
+                                 action_info):
+    """
+    Database import here - insert or update
+    """
+    # handle user
+    if not user:
+        user = User()
+
+    field_names = memb_data.keys()
+    # exclude user
+    if 'user' in field_names:
+        field_names.remove('user')
+
+    assign_import_values_from_dict(user, mimport, memb_data,
+                            field_names, action_info['user_action'])
+
+    # make sure username is unique.
+    if action_info['user_action'] == 'insert':
+        user.username = get_unique_username(user)
+
+    if 'password' in field_names and mimport.override and user.password:
+        user.set_password(user.password)
+
+    if not user.password:
+        user.set_password(User.objects.make_random_password(length=8))
+
+    user.is_active = True
+
+    user.save()
+
+    # process profile
+    try:  # get or create
+        profile = user.get_profile()
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=user,
+           creator=request_user,
+           creator_username=request_user.username,
+           owner=request_user,
+           owner_username=request_user.username,
+        )
+    assign_import_values_from_dict(profile, mimport, memb_data,
+                        field_names, action_info['user_action'])
+
+    profile.save()
+
+    # membership
+    if not memb:
+        memb = MembershipDefault(
+                user=user,
+                creator=request_user,
+                creator_username=request_user.username,
+                owner=request_user,
+                owner_username=request_user.username,
+                                 )
+
+    assign_import_values_from_dict(profile, mimport, memb_data,
+                        field_names, action_info['memb_action'])
+    if memb.status == None:
+        memb.status = True
+    if not memb.status_detail:
+        memb.status_detail = 'active'
+    # membership type
+    if memb.membership_type.isdigit():
+        memb.membership_type = int(memb.membership_type)
+    if not isinstance(memb.membership_type, MembershipType):
+        if isinstance(memb.membership_type, int):
+            memb.membership_type = get_membership_type_by_id(memb.membership_type)
+        elif isinstance(memb.membership_type, str):
+            memb.membership_type = get_membership_type_by_name(memb.membership_type)
+
+    if not memb.membership_type:
+        # assign a default membership type
+        memb.membership_type = MembershipType.objects.filter(
+                                        status=True,
+                                        status_detail='active')[0]
+    memb.save()
+
+    # member_number
+    # TODO: create a function to assign a member number
+    if not memb.member_number:
+        if memb.status and memb.status_detail == 'active':
+            memb.member_number = 5100 + memb.pk
+    if memb.member_number:
+        if not profile.member_number:
+            profile.member_number = memb.member_number
+            profile.save()
+        else:
+            if profile.member_number != memb.member_number:
+                profile.member_number = memb.member_number
+                profile.save()
+    else:
+        if profile.member_number:
+            profile.member_number = ''
+            profile.save()
+
+    # group associated to membership type
+    params = {'creator_id': request_user.pk,
+              'creator_username': request_user.username,
+              'owner_id': request_user.pk,
+              'owner_username': request_user.username}
+    memb.membership_type.group.add_user(memb.user, **params)
 
 
+def assign_import_values_from_dict(instance, mimport, memb_data,
+                            field_names, action):
+    for field_name in field_names:
+        if hasattr(instance, field_name):
+            if action == 'insert':
+                setattr(instance, field_name, memb_data[field_name])
+            else:
+                if mimport.override or getattr(instance, field_name) == '':
+                    setattr(instance, field_name, memb_data[field_name])
 
 
+def get_membership_type_by_id(pk):
+    try:
+        memb_type = MembershipType.objects.get(pk=pk)
+    except MembershipType.DoesNotExist:
+        memb_type = None
+    return memb_type
 
 
-
-
+def get_membership_type_by_name(name):
+    try:
+        memb_type = MembershipType.objects.get(name=name)
+    except MembershipType.DoesNotExist:
+        memb_type = None
+    return memb_type
