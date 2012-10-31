@@ -782,6 +782,13 @@ class MembershipImport(models.Model):
         ('first_name,last_name,phone', 'first_name and last_name and phone'),
         ('first_name,last_name,company', 'first_name and last_name and company'), 
     )
+
+    STATUS_CHOICES = (
+        ('not_started', 'Not Started'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+    )
+
     UPLOAD_DIR = "imports/memberships"
 
     app = models.ForeignKey('App', null=True)
@@ -800,6 +807,9 @@ class MembershipImport(models.Model):
     total_rows = models.IntegerField(default=0)
     summary = models.CharField(_('Summary'), max_length=500,
                            null=True, default='')
+    status = models.CharField(choices=STATUS_CHOICES,
+                              max_length=50,
+                              default='not_started')
     complete_dt = models.DateTimeField(null=True)
 
     creator = models.ForeignKey(User)
