@@ -283,8 +283,8 @@ class MembershipDefault(TendenciBaseModel):
     referral_source_member_name = models.CharField(max_length=50, blank=True, default=u'')
     referral_source_member_number = models.CharField(max_length=50, blank=True, default=u'')
     affiliation_member_number = models.CharField(max_length=50, blank=True)
-    join_dt = models.DateTimeField()
-    expire_dt = models.DateTimeField()
+    join_dt = models.DateTimeField(null=True)
+    expire_dt = models.DateTimeField(null=True)
     primary_practice = models.CharField(max_length=100, blank=True, default=u'')
     how_long_in_practice = models.CharField(max_length=50, blank=True, default=u'')
     notes = models.CharField(max_length=500, blank=True)
@@ -292,41 +292,50 @@ class MembershipDefault(TendenciBaseModel):
     newsletter_type = models.CharField(max_length=50, blank=True)
     directory_type = models.CharField(max_length=50, blank=True)
     generate_member_number = models.BooleanField()
-    application_abandoned = models.BooleanField()
-    application_abandoned_dt = models.DateTimeField()
+
+    # workflow fields ------------------------------------------
+    application_abandoned = models.BooleanField(default=False)
+    application_abandoned_dt = models.DateTimeField(null=True, default=None)
     application_abandoned_user = models.ForeignKey(User,
-        related_name='application_abandond_set')
-    application_complete = models.BooleanField()
-    application_complete_dt = models.DateTimeField()
+        related_name='application_abandond_set', null=True)
+
+    application_complete = models.BooleanField(default=False)
+    application_complete_dt = models.DateTimeField(null=True, default=None)
     application_complete_user = models.ForeignKey(User,
-        related_name='application_complete_set')
-    application_approved = models.BooleanField()
-    application_approved_dt = models.DateTimeField()
+        related_name='application_complete_set', null=True)
+
+    application_approved = models.BooleanField(default=False)
+    application_approved_dt = models.DateTimeField(null=True, default=None)
     application_approved_user = models.ForeignKey(User,
-        related_name='application_approved_set')
-    action_taken = models.CharField(max_length=500, blank=True)
-    action_taken_dt = models.DateTimeField()
-    action_taken_user = models.ForeignKey(User,
-        related_name='action_taken_set')
-    bod_dt = models.DateTimeField()
-    personnel_notified_dt = models.DateTimeField()
-    payment_received_dt = models.DateTimeField()
-    payment_method = models.ForeignKey(PaymentMethod)
-    override = models.BooleanField()
-    override_price = models.FloatField()
-    exported = models.BooleanField()
-    application_approved_denied_dt = models.DateTimeField()
+        related_name='application_approved_set', null=True)
+
+    application_approved_denied_dt = models.DateTimeField(null=True, default=None)
     application_approved_denied_user = models.ForeignKey(User,
-        related_name='application_approved_denied_set')
-    application_denied = models.BooleanField()
+        related_name='application_approved_denied_set', null=True)
+
+    application_denied = models.BooleanField(default=False)
+
+    action_taken = models.CharField(max_length=500, blank=True)
+    action_taken_dt = models.DateTimeField(null=True, default=None)
+    action_taken_user = models.ForeignKey(User,
+        related_name='action_taken_set', null=True)
+    # workflow fields -----------------------------------------
+
+    bod_dt = models.DateTimeField(null=True)
+    personnel_notified_dt = models.DateTimeField(null=True)
+    payment_received_dt = models.DateTimeField(null=True)
+    payment_method = models.ForeignKey(PaymentMethod)
+    override = models.BooleanField(default=False)
+    override_price = models.FloatField(null=True)
+    exported = models.BooleanField()
     chapter = models.CharField(max_length=150, blank=True)
     areas_of_expertise = models.CharField(max_length=1000, blank=True)
     organization_entity = models.ForeignKey(Entity,
-        related_name='organization_set', editable=False)
+        related_name='organization_set', editable=False, null=True)
     corporate_entity = models.ForeignKey(Entity,
-        related_name='corporate_set', editable=False)
+        related_name='corporate_set', editable=False, null=True)
     corporate_membership_id = models.IntegerField()
-    renew_dt = models.DateTimeField()
+    renew_dt = models.DateTimeField(null=True)
     home_state = models.CharField(max_length=50, blank=True, default=u'')
     year_left_native_country = models.IntegerField(blank=True, null=True)
     network_sectors = models.CharField(max_length=250, blank=True, default=u'')
@@ -340,7 +349,6 @@ class MembershipDefault(TendenciBaseModel):
     company_size = models.CharField(max_length=50, blank=True, default=u'')
     promotion_code = models.CharField(max_length=50, blank=True, default=u'')
     directory = models.ForeignKey(Directory, blank=True, null=True)
-    invoice = models.ForeignKey(Invoice, editable=False)
     sig_user_group_ids = models.CharField(max_length=100, blank=True)
 
     def approval_required(self):
@@ -412,6 +420,28 @@ class MembershipDefault(TendenciBaseModel):
 
         return user, created
 
+    def get_invoice(self):
+        """
+        Get invoice object.  The invoice object is not
+        associated via ForeignKey, it's associated via ContentType.
+        """
+
+        content_type = ContentType.objects.get(
+            app_label=self._meta.app_label, model=self._meta.module_name)
+
+        try:
+            invoice = Invoice.objects.get(
+                object_type=content_type, object_id=self.pk
+            )
+        except Invoice.MultipleObjectsReturned:
+            invoice = Invoice.objects.filter(
+                object_type=content_type, object_id=self.pk
+            )[0]
+        except Invoice.DoesNotExist:
+            invoice = None
+
+        return invoice
+
     def save_invoice(self, **kwargs):
         """
         Update invoice; else create invoice.
@@ -427,37 +457,41 @@ class MembershipDefault(TendenciBaseModel):
         content_type = ContentType.objects.get(
             app_label=self._meta.app_label, model=self._meta.module_name)
 
-        if not self.invoice:
-            self.invoice = Invoice()
+        invoice = self.get_invoice()
 
-        self.invoice.object_type = content_type
-        self.invoice.object_id = self.pk
+        if not invoice:
+            invoice = Invoice()
+
+        # bind invoice to membership ------
+        invoice.object_type = content_type
+        invoice.object_id = self.pk
+        # ---------------------------------
 
         if status_detail == 'estimate':
-            self.invoice.estimate = True
-            self.invoice.status_detail = status_detail
+            invoice.estimate = True
+            invoice.status_detail = status_detail
 
-        self.invoice.bill_to_user(self.user)
-        self.invoice.ship_to_user(self.user)
-        self.invoice.set_creator(creator)
-        self.invoice.set_owner(self.user)
+        invoice.bill_to_user(self.user)
+        invoice.ship_to_user(self.user)
+        invoice.set_creator(creator)
+        invoice.set_owner(self.user)
 
         # price information ----------
         price = self.get_price()
-        self.invoice.subtotal = price
-        self.invoice.total = price
-        self.invoice.balance = price
+        invoice.subtotal = price
+        invoice.total = price
+        invoice.balance = price
 
-        self.invoice.due_date = self.invoice.due_date or datetime.now()
-        self.invoice.ship_date = self.invoice.ship_date or datetime.now()
+        invoice.due_date = invoice.due_date or datetime.now()
+        invoice.ship_date = invoice.ship_date or datetime.now()
 
-        self.invoice.save()
-        self.save()
+        invoice.save()
 
+        # saves invoice [as well]
         if status_detail == 'tendered':
-            self.invoice.tender(self.user)
+            invoice.tender(self.user)
 
-        return self.invoice
+        return invoice
 
     def get_price(self):
         """

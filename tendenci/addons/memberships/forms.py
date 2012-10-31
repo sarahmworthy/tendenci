@@ -2,7 +2,7 @@ import sys
 from uuid import uuid4
 from captcha.fields import CaptchaField
 from os.path import join
-from datetime import date, datetime
+from datetime import datetime
 from hashlib import md5
 from haystack.query import SearchQuerySet
 from tinymce.widgets import TinyMCE
@@ -28,10 +28,14 @@ from tendenci.addons.memberships.models import (Membership, MembershipDefault, M
 from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
     NoticeTimeTypeField)
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
-from tendenci.addons.memberships.utils import csv_to_dict, is_import_valid, NoMembershipTypes
+from tendenci.addons.memberships.utils import csv_to_dict, NoMembershipTypes
 from tendenci.addons.memberships.widgets import (CustomRadioSelect, TypeExpMethodWidget,
     NoticeTimeTypeWidget)
 from tendenci.addons.memberships.utils import get_notice_token_help_text
+from tendenci.apps.notifications.utils import send_welcome_email
+from tendenci.addons.educations.models import Education
+from tendenci.addons.careers.models import Career
+
 
 fs = FileSystemStorage(location=UPLOAD_ROOT)
 
@@ -1292,8 +1296,8 @@ class MembershipDefaultForm(TendenciBaseForm):
     fax = forms.CharField(initial=u'', required=False)
     email = forms.CharField(initial=u'', required=False)
     email2 = forms.CharField(initial=u'', required=False)
-    website = forms.CharField(initial=u'', required=False)
-    website2 = forms.CharField(initial=u'', required=False)
+    url = forms.CharField(initial=u'', required=False)
+    url2 = forms.CharField(initial=u'', required=False)
 
     hide_in_search = forms.BooleanField(required=False)
     hide_address = forms.BooleanField(required=False)
@@ -1342,8 +1346,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             'referral_source_member_name',
             'referral_source_member_number',
             'affiliation_member_number',
-            # 'join_dt',
-            # 'expire_dt',
             'primary_practice',
             'how_long_in_practice',
             'notes',
@@ -1351,31 +1353,11 @@ class MembershipDefaultForm(TendenciBaseForm):
             'newsletter_type',
             'directory_type',
             'generate_member_number',
-            # 'application_abandoned',
-            # 'application_abandoned_dt',
-            # 'application_abandoned_user',
-            # 'application_complete',
-            # 'application_complete_dt',
-            # 'application_complete_user',
             'application_approved',
-            # 'application_approved_dt',
-            # 'application_approved_user',
-            # 'action_taken',
-            # 'action_taken_dt',
-            # 'action_taken_user',
-            # 'bod_dt',
-            # 'personnel_notified_dt',
-            # 'payment_received_dt',
             'payment_method',
-            # 'override',
-            # 'override_price',
-            # 'application_approved_denied_dt',
-            # 'application_approved_denied_user',
-            # 'application_denied',
             'chapter',
             'areas_of_expertise',
             'corporate_membership_id',
-            # 'renew_dt',
             'home_state',
             'year_left_native_country',
             'network_sectors',
@@ -1440,38 +1422,125 @@ class MembershipDefaultForm(TendenciBaseForm):
             mt_choices.append((pk, '$%s %s' % (price, name)))
 
         self.fields['membership_type'].choices = mt_choices
+        # -----------------------------------------------------
 
-        # if request_user and not request_user.profile.is_superuser:
+    def save(self, *args, **kwargs):
+        """
+        Create membership record.
+        Handle all objects:
+            Membership
+            Membership.user
+            Membership.user.profile
+            Membership.invoice
+            Membership.user.group_set()
+        """
+        request = kwargs.pop('request')
+        membership = super(MembershipDefaultForm, self).save(*args, **kwargs)
 
-        #     self.fields.pop('application_abandoned')
-        #     self.fields.pop('application_abandoned_dt')
-        #     self.field.pop('application_abandoned_user')
+        # get or create user
+        membership.user, created = membership.get_or_create_user(**{
+            'username': self.cleaned_data.get('username'),
+            'first_name': self.cleaned_data.get('first_name'),
+            'last_name': self.cleaned_data.get('last_name'),
+            'email': self.cleaned_data.get('email')
+        })
 
-        #     self.field.pop('application_complete')
-        #     self.field.pop('application_complete_dt')
-        #     self.field.pop('application_complete_user')
+        membership.save()
 
-        #     self.fields.pop('application_approved')
-        #     self.fields.pop('application_approved_dt')
-        #     self.fields.pop('application_approved_user')
+        # send welcome email; if required
+        if created:
+            send_welcome_email(membership.user)
 
-        #     self.fields.pop('application_approved_denied_dt')
-        #     self.fields.pop('application_approved_denied_user')
+        # [un]subscribe to group
+        membership.group_refresh()
 
-        #     self.fields.pop('action_taken')
-        #     self.fields.pop('action_taken_dt')
-        #     self.fields.pop('action_taken_user')
+        profile_attrs = [
+            'display_name',
+            'company',
+            'title',
+            'functional_title',
+            'department',
+            'address',
+            'address2',
+            'city',
+            'state',
+            'zip_code',
+            'country',
+            'address_type',
+            'phone',
+            'phone2',
+            'work_phone',
+            'home_phone',
+            'mobile_phone',
+            'pager',
+            'fax',
+            'email',
+            'email2',
+            'url2',
+            'hide_in_search',
+            'hide_address',
+            'hide_email',
+            'hide_phone',
+            'dob',
+            'gender',
+            'spouse',
+        ]
 
-        #     self.fields.pop('bod_dt')
+        # map profile fields
+        for i in profile_attrs:
+            print i, self.cleaned_data.get(i, u'')
+            setattr(membership.user.profile, i, self.cleaned_data.get(i, u''))
+        membership.user.profile.save()
 
-        #     self.fields.pop('personnel_notified_dt')
-        #     self.fields.pop('join_dt')
-        #     self.fields.pop('renew_dt')
-        #     self.fields.pop('expire_dt')
-        #     self.fields.pop('payment_received_dt')
-        #     self.fields.pop('admin_notes')
-        #     self.fields.pop('status')
-        #     self.fields.pop('status_detail')
+        # create invoice (save as estimate or tendered)
+        if membership.approval_required():
+            membership.save_invoice()
+        else:
+            membership.save_invoice(status_detail='tendered')
+
+        # save education fields ----------------------------
+        educations = zip(
+            request.POST.getlist('education_school'),
+            request.POST.getlist('education_degree'),
+            request.POST.getlist('education_major'),
+            request.POST.getlist('education_grad_dt'),
+        )
+
+        for education in educations:
+            if any(education):
+                school, degree, major, grad_dt = education
+                Education.objects.create(
+                    user=membership.user,
+                    school=school,
+                    degree=degree,
+                    major=major,
+                    graduation_dt=grad_dt,
+                )
+        # --------------------------------------------------
+
+        # save career fields -------------------------------
+        careers = zip(
+            request.POST.getlist('career_name'),
+            request.POST.getlist('career_description'),
+            request.POST.getlist('position_title'),
+            request.POST.getlist('position_description'),
+            request.POST.getlist('career_start_dt'),
+            request.POST.getlist('career_end_dt'),
+        )
+
+        for career in careers:
+            if any(career) and all(career[4:]):
+                (career_name, career_description, position_title,
+                    position_description, career_start_dt, career_end_dt) = career
+                Career.objects.create(
+                    company=career_name,
+                    company_description=career_description,
+                    position_title=position_title,
+                    position_description=position_description,
+                    start_dt=career_start_dt,
+                    end_dt=career_end_dt,
+                )
+        # --------------------------------------------------
 
 
 class MembershipForm(TendenciBaseForm):

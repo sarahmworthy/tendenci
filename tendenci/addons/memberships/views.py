@@ -39,9 +39,6 @@ from tendenci.addons.memberships.importer.forms import ImportMapForm, UploadForm
 from tendenci.addons.memberships.importer.utils import parse_mems_from_csv
 from tendenci.addons.memberships.importer.tasks import ImportMembershipsTask
 
-from tendenci.addons.educations.models import Education
-from tendenci.addons.careers.models import Career
-
 
 def membership_index(request):
     return HttpResponseRedirect(reverse('membership.search'))
@@ -164,119 +161,18 @@ def application_detail_default(request, **kwargs):
     """
 
     if request.method == 'POST':
-        form = MembershipDefaultForm(request.POST, request_user=request.user)
+        form = MembershipDefaultForm(request.POST)
 
         if form.is_valid():
-            membership = form.save(commit=False)
-
-            user_dict = {
-                'username': form.cleaned_data.get('username'),
-                'first_name': form.cleaned_data.get('first_name'),
-                'last_name': form.cleaned_data.get('last_name'),
-                'email': form.cleaned_data.get('email')
-            }
-
-            membership.user, created = membership.get_or_create_user(**user_dict)
-            if created:
-                send_welcome_email(membership.user)
-
-            # [un]subscribe to group
-            membership.group_refresh()
-
-            profile_attrs = [
-                'display_name',
-                'company',
-                'title',
-                'functional_title',
-                'department',
-                'address',
-                'address2',
-                'city',
-                'state',
-                'zip_code',
-                'country',
-                'address_type',
-                'phone',
-                'phone2',
-                'work_phone',
-                'home_phone',
-                'mobile_phone',
-                'pager',
-                'fax',
-                'email',
-                'email2',
-                'url',
-                'url2',
-                'hide_in_search',
-                'hide_address',
-                'hide_email',
-                'hide_phone',
-                'dob',
-                'gender',
-                'spouse',
-            ]
-
-            for i in profile_attrs:
-                setattr(membership.user.profile, i, form.cleaned_data.get(i))
-
-            membership.user.profile.save()
-
-            if membership.approval_required():
-                membership.save_invoice()
-            else:
-                membership.save_invoice(status_detail='tendered')
-
-            educations = zip(
-                request.POST.getlist('education_school'),
-                request.POST.getlist('education_degree'),
-                request.POST.getlist('education_major'),
-                request.POST.getlist('education_grad_dt'),
-            )
-
-            for education in educations:
-                if any(education):
-                    school, degree, major, grad_dt = education
-                    # Education.objects.create(
-                    #     user=membership.user,
-                    #     school=school,
-                    #     degree=degree,
-                    #     major=major,
-                    #     graduation_dt=grad_dt,
-                    # )
-
-            careers = zip(
-                request.POST.getlist('career_name'),
-                request.POST.getlist('career_description'),
-                request.POST.getlist('position_title'),
-                request.POST.getlist('position_description'),
-                request.POST.getlist('career_start_dt'),
-                request.POST.getlist('career_end_dt'),
-            )
-
-            for career in careers:
-
-                if any(career) and all(career[4:]):
-
-                    (career_name, career_description, position_title,
-                        position_description, career_start_dt, career_end_dt) = career
-
-                    # Career.objects.create(
-                    #     company=career_name,
-                    #     company_description=career_description,
-                    #     position_title=position_title,
-                    #     position_description=position_description,
-                    #     start_dt=career_start_dt,
-                    #     end_dt=career_end_dt,
-                    # )
-
-        else:
-            print form.errors
+            form.save(request=request, commit=False)
     else:
         form = MembershipDefaultForm()
 
-    return render_to_response('memberships/applications/detail_default.html', {
+    return render_to_response(
+        'memberships/applications/detail_default.html', {
         'form': form,
-        }, context_instance=RequestContext(request))
+        }, context_instance=RequestContext(request)
+    )
 
 
 def application_details(request, template_name="memberships/applications/details.html", **kwargs):
