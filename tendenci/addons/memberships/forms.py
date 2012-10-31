@@ -35,6 +35,7 @@ from tendenci.addons.memberships.utils import get_notice_token_help_text
 from tendenci.apps.notifications.utils import send_welcome_email
 from tendenci.addons.educations.models import Education
 from tendenci.addons.careers.models import Career
+from tendenci.apps.entities.models import Entity
 
 
 fs = FileSystemStorage(location=UPLOAD_ROOT)
@@ -1435,7 +1436,21 @@ class MembershipDefaultForm(TendenciBaseForm):
             Membership.user.group_set()
         """
         request = kwargs.pop('request')
+
+        request_user = None
+        if hasattr(request, 'user'):
+            if isinstance(request.user, User):
+                request_user = request.user
+
         membership = super(MembershipDefaultForm, self).save(*args, **kwargs)
+
+        if request_user:
+            membership.creator = request_user
+            membership.creator_username = request_user.username
+            membership.owner = request_user
+            membership.owner_username = request_user.username
+
+        membership.entity = Entity.objects.first()
 
         # get or create user
         membership.user, created = membership.get_or_create_user(**{
@@ -1444,6 +1459,28 @@ class MembershipDefaultForm(TendenciBaseForm):
             'last_name': self.cleaned_data.get('last_name'),
             'email': self.cleaned_data.get('email')
         })
+
+        membership.renewal = membership.user.profile.can_renew()
+
+        # create invoice (save as estimate or tendered)
+        if not membership.approval_required():
+            membership.save_invoice(status_detail='estimate')
+        else:
+            membership.save_invoice(status_detail='tendered')
+            membership.join_dt = datetime.now()
+
+            if membership.renewal:
+                membership.renew_dt = datetime.now()
+                membership.expire_dt = membership.membership_type.get_expiration_dt(
+                    renewal=membership.renewal,
+                    renew_dt=membership.renew_dt
+                )
+            else:
+                membership.join_dt = datetime.now()
+                membership.expire_dt = membership.membership_type.get_expiration_dt(
+                    renewal=membership.renewal,
+                    join_dt=membership.join_dt
+                )
 
         membership.save()
 
@@ -1491,12 +1528,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             print i, self.cleaned_data.get(i, u'')
             setattr(membership.user.profile, i, self.cleaned_data.get(i, u''))
         membership.user.profile.save()
-
-        # create invoice (save as estimate or tendered)
-        if membership.approval_required():
-            membership.save_invoice()
-        else:
-            membership.save_invoice(status_detail='tendered')
 
         # save education fields ----------------------------
         educations = zip(
