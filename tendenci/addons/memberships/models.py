@@ -796,6 +796,12 @@ class MembershipImport(models.Model):
     key = models.CharField(_('Key'), max_length=50,
                            choices=KEY_CHOICES, default="email")
 
+    num_processed = models.IntegerField(default=0)
+    total_rows = models.IntegerField(default=0)
+    summary = models.CharField(_('Summary'), max_length=500,
+                           null=True, default='')
+    complete_dt = models.DateTimeField(null=True)
+
     creator = models.ForeignKey(User)
     create_dt = models.DateTimeField(auto_now_add=True)
 
