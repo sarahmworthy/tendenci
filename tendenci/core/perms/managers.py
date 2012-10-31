@@ -557,3 +557,17 @@ class TendenciBaseManager(models.Manager):
         sqs = self._permissions_sqs(sqs, user, status, status_detail, direct_db=direct_db)
 
         return sqs
+
+    def first(self, **kwargs):
+        """
+        Returns first instance that matches filters.
+        If no instance is found then a none type object is returned.
+        """
+        try:
+            instance = self.get(**kwargs)
+        except self.model.MultipleObjectsReturned:
+            instance = self.filter(**kwargs)[0]
+        except self.model.DoesNotExist:
+            instance = None
+
+        return instance
