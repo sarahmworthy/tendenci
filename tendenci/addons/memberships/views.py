@@ -221,6 +221,11 @@ def application_detail_default(request, **kwargs):
 
             membership.user.profile.save()
 
+            if membership.approval_required():
+                membership.save_invoice()
+            else:
+                membership.save_invoice(status_detail='tendered')
+
             educations = zip(
                 request.POST.getlist('education_school'),
                 request.POST.getlist('education_degree'),

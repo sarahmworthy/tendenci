@@ -343,6 +343,15 @@ class MembershipDefault(TendenciBaseModel):
     invoice = models.ForeignKey(Invoice, editable=False)
     sig_user_group_ids = models.CharField(max_length=100, blank=True)
 
+    def approval_required(self):
+        """
+        Returns a boolean value on whether approval is required
+        This is dependent on whether membership is a join or renewal.
+        """
+        if self.renewal:
+            return self.membership_type.renewal_require_approval
+        return self.membership_type.require_approval
+
     def group_refresh(self):
         """
         Look at the memberships status and decide
@@ -402,6 +411,93 @@ class MembershipDefault(TendenciBaseModel):
             Profile.objects.create_profile(user)
 
         return user, created
+
+    def save_invoice(self, **kwargs):
+        """
+        Update invoice; else create invoice.
+        Pass 'status_detail' to set estimate or tendered.
+        """
+
+        creator = kwargs.get('creator')
+        if not isinstance(creator, User):
+            creator = self.user
+
+        status_detail = kwargs.get('status_detail', 'estimate')
+
+        content_type = ContentType.objects.get(
+            app_label=self._meta.app_label, model=self._meta.module_name)
+
+        if not self.invoice:
+            self.invoice = Invoice()
+
+        self.invoice.object_type = content_type
+        self.invoice.object_id = self.pk
+
+        if status_detail == 'estimate':
+            self.invoice.estimate = True
+            self.invoice.status_detail = status_detail
+
+        self.invoice.bill_to_user(self.user)
+        self.invoice.ship_to_user(self.user)
+        self.invoice.set_creator(creator)
+        self.invoice.set_owner(self.user)
+
+        # price information ----------
+        price = self.get_price()
+        self.invoice.subtotal = price
+        self.invoice.total = price
+        self.invoice.balance = price
+
+        self.invoice.due_date = self.invoice.due_date or datetime.now()
+        self.invoice.ship_date = self.invoice.ship_date or datetime.now()
+
+        self.invoice.save()
+        self.save()
+
+        if status_detail == 'tendered':
+            self.invoice.tender(self.user)
+
+        return self.invoice
+
+    def get_price(self):
+        """
+        Returns price
+            Considers:
+                Join price
+                Renew price
+                Admin Price
+                Corporate price
+
+        Admin price is only included on joins.  Corporate price,
+        trumps all membership prices.
+        """
+        from corporate_memberships.models import CorporateMembership
+
+        try:
+            corporate = CorporateMembership.objects.get(
+                id=self.corporate_membership_id)
+        except CorporateMembership.DoesNotExist:
+            corporate = None
+
+        if corporate:
+            corporate_type = corporate.corporate_membership_type
+            threshold = corporate_type.apply_threshold
+            threshold_limit = corporate_type.individual_threshold
+            threshold_price = corporate_type.individual_threshold_price
+
+            if threshold and threshold_limit > 0:
+                membership_count = Membership.objects.filter(
+                    corporate_membership_id=corporate.pk,
+                    status=True,
+                    status_detail='active',
+                ).count()
+                if membership_count <= threshold_limit:
+                    return threshold_price
+
+        if self.user.profile.can_renew():
+            return self.membership_type.renewal_price or 0
+        else:
+            return (self.membership_type.price + self.membership_type.admin_fee) or 0
 
 
 class Membership(TendenciBaseModel):
