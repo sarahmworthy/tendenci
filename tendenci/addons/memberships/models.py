@@ -471,7 +471,7 @@ class MembershipDefault(TendenciBaseModel):
         Admin price is only included on joins.  Corporate price,
         trumps all membership prices.
         """
-        from corporate_memberships.models import CorporateMembership
+        from tendenci.addons.corporate_memberships.models import CorporateMembership
 
         try:
             corporate = CorporateMembership.objects.get(
