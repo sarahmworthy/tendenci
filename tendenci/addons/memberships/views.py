@@ -2,6 +2,7 @@ import math
 import hashlib
 from hashlib import md5
 from datetime import datetime, timedelta
+import subprocess
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -901,6 +902,7 @@ def membership_default_import_upload(request,
         }, context_instance=RequestContext(request))
 
 
+@login_required
 def membership_default_import_preview(request, mimport_id,
                 template_name='memberships/import_default/preview.html'):
     """
@@ -917,6 +919,10 @@ def membership_default_import_preview(request, mimport_id,
         curr_page = 1
     num_items_per_page = 20
     total_rows = len(data_list)
+    # if total_rows not updated, update it
+    if mimport.total_rows != total_rows:
+        mimport.total_rows = total_rows
+        mimport.save()
     num_pages = int(math.ceil(total_rows * 1.0 / num_items_per_page))
     page_nums = [x + 1 for x in range(0, num_pages)]
 
@@ -933,7 +939,8 @@ def membership_default_import_preview(request, mimport_id,
     users_list = []
     # to be efficient, we only process memberships on the current page
     for i, memb_data in enumerate(data_list_slice):
-        user_display = process_default_membership(memb_data,
+        user_display = process_default_membership(request.user,
+                                                  memb_data,
                                                   mimport,
                                                   dry_run=True)
         user_display['row_num'] = start_index + i + 1
@@ -951,8 +958,8 @@ def membership_default_import_preview(request, mimport_id,
         }, context_instance=RequestContext(request))
 
 
-def membership_default_import_process(request, mimport_id,
-                template_name='memberships/import_default/preview.html'):
+@login_required
+def membership_default_import_process(request, mimport_id):
     """
     Process the import
     """
@@ -960,7 +967,35 @@ def membership_default_import_process(request, mimport_id,
         raise Http403
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
-    
+    if mimport.status == 'not_started':
+        mimport.status = 'processing'
+        mimport.save()
+        # start the process
+#        subprocess.Popen(["python", "manage.py",
+#                          "import_membership_defaults",
+#                          str(mimport.pk),
+#                          str(request.user.pk)])
+
+    # redirect to status page
+    return redirect(reverse('memberships.default_import_status',
+                                     args=[mimport.id]))
+
+
+@login_required
+def membership_default_import_status(request, mimport_id,
+                    template_name='memberships/import_default/status.html'):
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(MembershipImport,
+                                    pk=mimport_id)
+    if mimport.status == 'not_started':
+        return redirect(reverse('memberships.default_import_process',
+                                     args=[mimport.id]))
+
+    return render_to_response(template_name, {
+        'mimport': mimport,
+        }, context_instance=RequestContext(request))
+
 
 
 @login_required

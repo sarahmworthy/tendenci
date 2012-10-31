@@ -1,0 +1,53 @@
+{% extends "memberships/base-wide.html" %}
+{% load membership_tags %}
+{% load base_tags %}
+{% load base_filters %}
+{% load styled_forms %}
+{% load i18n %}
+
+{% block title %}Import Memberships from CSV file - Status{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+    <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
+    <style>
+        
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="t">
+    <div id="import-wrap">
+        
+        <h1>{% trans "Import Status" %}</h1>
+        <p class="timestamp">{% trans "Step 3/3" %}</p>
+    
+        <div class="import-settings">
+        <table>
+        <tr>
+            <td class="name">{% trans "Identify Duplicates by:" %}</td>
+            <td class="value">{{ mimport.key }}</td>
+        </tr>
+        <tr>
+            <td class="name">{% trans "Update: " %}</td>
+            <td class="value">
+                {% if not mimport.override %}
+                Blank Fields
+                {% else %}
+                All Fields (override)
+                {% endif %}        
+            </td>
+        </tr>
+        </table>
+        
+        </div> <!-- import settings -->
+        
+        <div>
+            
+        </div>
+        
+    
+    </div>  
+    
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 import os
 import csv
 from datetime import datetime, date, timedelta
+import dateutil.parser as dparser
 
 from django.http import Http404, HttpResponseServerError
 from django.conf import settings
@@ -21,6 +22,8 @@ from tendenci.addons.memberships.models import (App,
 from tendenci.core.base.utils import normalize_newline
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.imports.utils import get_unique_username
+from tendenci.core.payments.models import PaymentMethod
+from tendenci.apps.entities.models import Entity
 
 
 def get_default_membership_fields(use_for_corp=False):
@@ -736,26 +739,109 @@ def do_import_membership_default(request_user, mimport,
                 owner_username=request_user.username,
                                  )
 
-    assign_import_values_from_dict(profile, mimport, memb_data,
+    assign_import_values_from_dict(memb, mimport, memb_data,
                         field_names, action_info['memb_action'])
     if memb.status == None:
         memb.status = True
     if not memb.status_detail:
         memb.status_detail = 'active'
-    # membership type
-    if memb.membership_type.isdigit():
-        memb.membership_type = int(memb.membership_type)
-    if not isinstance(memb.membership_type, MembershipType):
-        if isinstance(memb.membership_type, int):
-            memb.membership_type = get_membership_type_by_id(memb.membership_type)
-        elif isinstance(memb.membership_type, str):
-            memb.membership_type = get_membership_type_by_name(memb.membership_type)
 
-    if not memb.membership_type:
+    # membership type
+    if 'membership_type' in field_names:
+        if mimport.override or not hasattr(memb, 'membership_type'):
+            membership_type = get_membership_type_by_value(
+                        memb_data['membership_type'])
+            if membership_type:
+                memb.membership_type = membership_type
+
+    if not hasattr(memb, "membership_type"):
         # assign a default membership type
         memb.membership_type = MembershipType.objects.filter(
                                         status=True,
                                         status_detail='active')[0]
+
+    # prevent the not-null constrant violations
+    # join_dt
+    if not hasattr(memb, 'join_dt') or not memb.join_dt:
+        memb.join_dt = datetime.now()
+    # exire_dt
+    if not hasattr(memb, 'expire_dt') or not memb.expire_dt:
+        memb.expire_dt = datetime.now() + timedelta(days=365)
+    # renew_dt
+    if not hasattr(memb, 'renew_dt') or not memb.renew_dt:
+        memb.renew_dt = datetime.now()
+    # application_abandoned_dt
+    if not hasattr(memb, 'application_abandoned_dt') or \
+        not memb.application_abandoned_dt:
+        memb.application_abandoned_dt = datetime.now()
+    # application_abandoned_user_id
+    if not hasattr(memb, 'application_abandoned_user') or \
+        not memb.application_abandoned_user:
+        memb.application_abandoned_user = request_user
+    # application_complete_dt
+    if not hasattr(memb, 'application_complete_dt') or \
+        not memb.application_complete_dt:
+        memb.application_complete_dt = datetime.now()
+    # application_complete_user_id
+    if not hasattr(memb, 'application_complete_user') or \
+        not memb.application_complete_user:
+        memb.application_complete_user = request_user
+    # application_approved_dt
+    if not hasattr(memb, 'application_approved_dt') or \
+        not memb.application_approved_dt:
+        memb.application_approved_dt = datetime.now()
+    # application_approved_user_id
+    if not hasattr(memb, 'application_approved_user') or \
+        not memb.application_approved_user:
+        memb.application_approved_user = request_user
+    # action_taken_dt
+    if not hasattr(memb, 'action_taken_dt') or \
+        not memb.action_taken_dt:
+        memb.action_taken_dt = datetime.now()
+    # action_taken_user_id
+    if not hasattr(memb, 'action_taken_user') or \
+        not memb.action_taken_user:
+        memb.action_taken_user = request_user
+    # bod_dt
+    if not hasattr(memb, 'bod_dt') or \
+        not memb.bod_dt:
+        memb.bod_dt = datetime.now()
+    # personnel_notified_dt
+    if not hasattr(memb, 'personnel_notified_dt') or \
+        not memb.personnel_notified_dt:
+        memb.personnel_notified_dt = datetime.now()
+    # payment_received_dt
+    if not hasattr(memb, 'payment_received_dt') or \
+        not memb.payment_received_dt:
+        memb.payment_received_dt = datetime.now()
+    # payment_method_id
+    if not hasattr(memb, 'payment_method') or \
+        not memb.payment_method:
+        memb.payment_method = PaymentMethod.objects.all()[0]
+    # override_price
+    if memb.override_price == None:
+        memb.override_price = 0
+    # application_approved_denied_dt
+    if not hasattr(memb, 'application_approved_denied_dt') or \
+        not memb.application_approved_denied_dt:
+        memb.application_approved_denied_dt = datetime.now()
+    # application_approved_denied_user_id
+    if not hasattr(memb, 'application_approved_denied_user') or \
+        not memb.application_approved_denied_user:
+        memb.application_approved_denied_user = request_user
+    # organization_entity_id
+    if not hasattr(memb, 'organization_entity') or \
+        not memb.organization_entity:
+        memb.organization_entity = Entity.objects.all()[0]
+    # corporate_entity_id
+    if not hasattr(memb, 'corporate_entity') or \
+        not memb.corporate_entity:
+        memb.corporate_entity = Entity.objects.all()[0]
+    # corporate_membership_id
+    if not hasattr(memb, 'corporate_membership_id') or \
+        not memb.corporate_membership_id:
+        memb.corporate_membership_id = 0
+
     memb.save()
 
     # member_number
@@ -788,11 +874,35 @@ def assign_import_values_from_dict(instance, mimport, memb_data,
                             field_names, action):
     for field_name in field_names:
         if hasattr(instance, field_name):
+            # parse the datetime
+            if field_name in ['create_dt', 'update_dt',
+                              'dob_dt', 'dob_dt',
+                              'join_dt', 'expire_dt',
+                              'application_abandoned_dt',
+                              'application_complete_dt',
+                              'application_approved_dt', 'bod_dt',
+                              'personnel_notified_dt', 'payment_received_dt',
+                              'application_approved_denied_dt', 'renew_dt',
+                              'action_taken_dt',
+                              ]:
+                value = dparser.parse(memb_data[field_name])
+            else:
+                # TODO: take care of foreign keys
+                value = memb_data[field_name]
             if action == 'insert':
-                setattr(instance, field_name, memb_data[field_name])
+                setattr(instance, field_name, value)
             else:
                 if mimport.override or getattr(instance, field_name) == '':
-                    setattr(instance, field_name, memb_data[field_name])
+                    setattr(instance, field_name, value)
+
+
+def get_membership_type_by_value(value):
+    if value and value.isdigit():
+        value = int(value)
+    if isinstance(value, int):
+        return get_membership_type_by_id(value)
+    elif isinstance(value, str):
+        return get_membership_type_by_name(value)
 
 
 def get_membership_type_by_id(pk):

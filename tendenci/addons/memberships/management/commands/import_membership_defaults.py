@@ -10,7 +10,10 @@ class Command(BaseCommand):
     Import MembershipDefault.
 
     Usage:
-        python manage.py import_membership_defaults [mimport_id]
+        python manage.py import_membership_defaults [mimport_id] [request.user.id]
+
+        example:
+        python manage.py import_membership_defaults 10 1
     """
 
     def handle(self, *args, **options):
