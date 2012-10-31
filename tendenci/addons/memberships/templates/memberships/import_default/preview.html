@@ -1,0 +1,124 @@
+{% extends "memberships/base-wide.html" %}
+{% load membership_tags %}
+{% load base_tags %}
+{% load base_filters %}
+{% load styled_forms %}
+{% load i18n %}
+
+{% block title %}Import Memberships from CSV file - Preview{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+    <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
+    <style>
+        ul#import-preview-total li{
+            list-style: inline;
+            float: left;
+            padding-right: 1em;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="t">
+<div id="import-wrap">
+    
+    <h1>{% trans "Preview Your Import" %}</h1>
+    <p class="timestamp">{% trans "Step 2/4" %}</p>
+    
+    
+
+<p>{% trans "You're almost done!  Please review your settings.  To complete your import click 'Import Now.'" %}</p>
+
+<ul id="import-preview-total">
+    <li>{{ total_rows }} {% trans "Total Memberships" %}</li>
+</ul>
+
+
+<div style="clear: both; "></div>
+
+<div class="import-settings">
+<table>
+<tr>
+    <td class="name">{% trans "Identify Duplicates by:" %}</td>
+    <td class="value">{{ mimport.key }}</td>
+</tr>
+<tr>
+    <td class="name">{% trans "Update: " %}</td>
+    <td class="value">
+        {% if not mimport.override %}
+        Blank Fields
+        {% else %}
+        All Fields (override)
+        {% endif %}        
+    </td>
+</tr>
+</table>
+
+</div> <!-- import settings -->
+
+    <form class="import" method="post" action="">{% csrf_token %}
+
+    <div class="results">
+    {% for u in users_list %}
+        {%if u.error %}
+            <div class="result-error">
+                <p>{{ u.row_num }} - {{ u.error }}</p>
+                <em>{% trans "This user will be ignored (not added or updated)" %}</em>
+            </div>
+        {% else %}
+            {% if u.user_action == 'insert' or u.memb_action == 'insert' %}
+                <div class="body-copy-yellow">
+             {% else %}
+                <div>
+             {% endif %}
+            User {{ u.user_action }} Membership {{ u.memb_action }}
+            </div>
+        {% endif %}
+        <ul>
+            {% if u.first_name %}
+            <li>First Name: {{ u.first_name }}</li>
+            {% endif %}
+            {% if u.last_name %}
+            <li>Last Name: {{ u.last_name }}</li>
+            {% endif %}
+            {% if u.email %}
+            <li>Email: {{ u.email }}</li>
+            {% endif %}
+            {% if u.member_number %}
+            <li>Member Number: {{ u.member_number }}</li>
+            {% endif %}
+        </ul>
+    {% endfor %}
+    </div>
+    <div>
+        {% if prev %}
+        <a href="?page={{ prev }}">Prev</a>
+        {% else %}
+        Prev
+         {% endif %}
+         
+        {% for page in page_nums %}
+        {% if page == curr_page %}
+        {{ page }}
+        {% else %}
+        <a href="?page={{ page }}">{{ page }}</a>
+        {% endif %}
+        {% endfor %}
+        
+        {% if curr_page >= num_pages  %}
+        Next
+        {% else %}
+        <a href="?page={{ next }}">Next</a>
+         {% endif %}
+    </div>
+
+    <div>
+    <input type="submit" class="submit-btn" name="submit" value="Import Now" >
+    </div>
+
+    </form>
+
+</div>
+</div>
+{% endblock %}

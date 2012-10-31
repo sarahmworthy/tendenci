@@ -1,0 +1,119 @@
+{% extends "memberships/base-wide.html" %}
+{% load membership_tags %}
+{% load base_tags %}
+{% load base_filters %}
+{% load styled_forms %}
+{% load i18n %}
+
+{% block title %}Import Memberships from CSV file{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+    <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
+    <style>
+        div.import-field{
+            margin: 1em 0;
+            
+        }
+        div.fields-block{
+            margin-top: 2em;
+        }
+        .error{
+            font: red;
+        }
+        
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="t">
+<div id="import-wrap">
+    
+    <h1>{% trans "Import Membership" %}</h1>
+    <p class="timestamp">{% trans "Step 1/4" %}</p>
+
+    <p style="margin-bottom:0;">{% trans "<strong>Download</strong> and <strong>fill in</strong> your spreadsheet. <strong>Upload</strong> your updated spreadsheet, <strong>preview</strong>, and then <strong>submit</strong>." %}</p>
+
+    <p style="margin-top:0;">Please review your membership <a href="{% url settings.index 'module' 'memberships' %}">privacy settings</a> before importing.</p>
+
+
+    <form method='post' action='{% url memberships.default_import %}' enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+        <div class="download-template">
+            <img src="{{ STATIC_URL }}images/icons/xls-icon.gif" alt="Download CSV Template" title="Download CSV Template"/>
+
+            <div class="link">
+                <a href="{% url memberships.download_default_template %}">{% trans "Download Template" %}</a>
+                
+            </div>
+        </div>
+ 
+        <div class="clear"></div>
+        
+        {% if form.errors.values %}
+        <div class="errors">
+        There were some problems in the form. Please review. Thanks!
+        {% for error in form.non_field_errors %}
+            <p><a href="#">{{ error }}</a></p>
+        {% endfor %}
+       
+        {% for field in form %}
+            {% if field.errors %}
+                  {% for error in field.errors %}
+                    <p><a href="{{ request.get_full_path }}#{{ field.auto_id }}">{{ field.label }} - {{ error }}</a></p>
+                  {% endfor %}
+            {% endif %}
+        {% endfor %}
+            
+        </div>
+        {% endif %}
+
+        <div class="fields-block">
+            <div>{{ form.interactive }}</div>
+            
+            {% if form.override.errors %}
+            <div class="error">
+                {% for error in form.override.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+                        
+            <div class="import-field">
+                <div class="field-label">Update</div>
+                <div>{{ form.override }}</div>
+            </div>
+            
+            {% if form.key.errors %}
+            <div class="error">
+                {% for error in form.key.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="import-field">
+                 <div class="field-label">Identify duplicates by</div>
+                <div>{{ form.key }}</div>
+            </div>
+        
+            {% if form.upload_file.errors %}
+            <div class="error">
+                {% for error in form.upload_file.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+             <div class="import-field">{{ form.upload_file }}</div>
+
+            <div class="prev-btn"><input type="submit" value="Preview Import"></div>
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}
+

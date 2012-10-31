@@ -12,12 +12,14 @@ from django.db.models import Q
 from django.core.files.storage import default_storage
 
 from tendenci.core.perms.utils import has_perm
-from tendenci.addons.memberships.models import (App, 
-                                                AppField, 
-                                                AppEntry, 
+from tendenci.addons.memberships.models import (App,
+                                                AppField,
+                                                AppEntry,
                                                 Membership,
-                                                MembershipType)
+                                                MembershipType,
+                                                MembershipDefault)
 from tendenci.core.base.utils import normalize_newline
+from tendenci.apps.profiles.models import Profile
 
 
 def get_default_membership_fields(use_for_corp=False):
@@ -528,3 +530,139 @@ def render_to_max_types(*args, **kwargs):
     response = HttpResponseServerError(loader.render_to_string(*args, **kwargs), **httpresponse_kwargs)
     
     return response
+
+
+def memb_import_parse_csv(mimport):
+    normalize_newline(mimport.upload_file.name)
+    csv_reader = csv.reader(
+        default_storage.open(mimport.upload_file.name, 'rb'))
+    fieldnames = csv_reader.next()
+    # clean up the fieldnames
+    # ex: change First Name to first_name
+    for i in range(0, len(fieldnames)):
+        fieldnames[i] = fieldnames[i].lower().replace(' ', '_')
+
+    data_list = []
+
+    for row in csv_reader:
+        data_list.append(dict(zip(fieldnames, row)))
+
+    return fieldnames, data_list
+
+
+def process_default_membership(memb_data, mimport, dry_run=True):
+    """
+    Check and do the membership import to the membership_default.
+
+    :param memb_data: a dictionary that includes the info of a membership
+    :param mimport: a instance of MembershipImport
+    :param dry_run: if True, do everything except updating the database.
+    """
+    #fieldnames = memb_data.keys()
+    user = None
+    user_display = {}
+    user_display['error'] = ''
+    missing_fields = []
+    user_filters = None
+    profile_filters = None
+    key = mimport.key
+
+    key_value_dict = {}
+    key_list = key.split(',')
+    for k in key_list:
+        key_value_dict[k] = memb_data[k]
+        if not key_value_dict[k]:
+            missing_fields.append(k)
+
+    # it's okay if we have one of the required fields
+    if key == 'email,member_number' and len(missing_fields) == 1:
+        missing_fields = None
+
+    # don't process if we have missing value of required fields
+    if missing_fields:
+        if key == 'email,member_number':
+            user_display['error'] = 'Missing required field(s) %s' % (
+                                        ' or '.join(missing_fields))
+        else:
+            user_display['error'] = 'Missing required field(s) %s' % (
+                                        ' and '.join(missing_fields))
+    else:
+        if key == 'email':
+            user_filters = Q(email=key_value_dict['email'])
+        elif key == 'username':
+            user_filters = Q(username=key_value_dict['username'])
+        elif key == 'member_number':
+            profile_filters = Q(member_number=key_value_dict['member_number'])
+        elif key == 'email,member_number':
+            if key_value_dict['email']:
+                user_filters = Q(email=key_value_dict['email'])
+            if key_value_dict['member_number']:
+                profile_filters = Q(member_number=key_value_dict['member_number'])
+        elif key == 'first_name,last_name,email':
+            user_filters = Q(first_name=key_value_dict['first_name']
+                             ) & Q(last_name=key_value_dict['last_name']
+                                   ) & Q(email=key_value_dict['email'])
+        elif key == 'first_name,last_name,phone':
+            profile_filters = Q(user__first_name=key_value_dict['first_name']
+                            ) & Q(
+                            user__last_name=key_value_dict['last_name']
+                            ) & Q(
+                            phone=key_value_dict['phone'])
+        elif key == 'first_name,last_name,company':
+            profile_filters = Q(user__first_name=key_value_dict['first_name']
+                            ) & Q(
+                            user__last_name=key_value_dict['last_name']
+                            ) & Q(
+                            company=key_value_dict['company'])
+
+        if user_filters:
+            [user] = User.objects.filter(user_filters).order_by(
+                            '-is_active', '-is_superuser', '-is_staff'
+                                )[:1] or [None]
+            if not user and key == 'email,member_number':
+                [profile] = Profile.objects.filter(
+                                        profile_filters)[:1] or [None]
+                if profile:
+                    user = profile.user
+        if profile_filters and key != 'email,member_number':
+            [profile] = Profile.objects.filter(profile_filters)[:1] or [None]
+            if profile:
+                user = profile.user
+
+        if user:
+            user_display['user_action'] = 'update'
+            [memb] = MembershipDefault.objects.filter(user=user).exclude(
+                      status_detail='archive'
+                            )[:1] or [None]
+            if memb:
+                user_display['memb_action'] = 'update'
+            else:
+                user_display['memb_action'] = 'insert'
+        else:
+            user_display['user_action'] = 'insert'
+            user_display['memb_action'] = 'insert'
+
+        if not dry_run:
+            # update or insert
+            pass
+
+    user_display.update({
+                        'first_name': memb_data.get('first_name', ''),
+                        'last_name': memb_data.get('last_name', ''),
+                        'email': memb_data.get('email', ''),
+                        'username': memb_data.get('username', ''),
+                        'member_number': memb_data.get('member_number', ''),
+                        'phone': memb_data.get('phone', ''),
+                        'company': memb_data.get('company', ''),
+                         })
+    return user_display
+
+
+
+
+
+
+
+
+
+

@@ -775,27 +775,34 @@ class MembershipImport(models.Model):
 
     KEY_CHOICES = (
         ('email', 'email'),
+        ('username', 'username'),
+        ('member_number', 'member_number'),
+        ('email,member_number', 'email then member_number'),
         ('first_name,last_name,email', 'first_name and last_name and email'),
         ('first_name,last_name,phone', 'first_name and last_name and phone'),
-        ('first_name,last_name,company', 'first_name and last_name and company'),
-        ('username', 'username'),
+        ('first_name,last_name,company', 'first_name and last_name and company'), 
     )
+    UPLOAD_DIR = "imports/memberships"
 
     app = models.ForeignKey('App', null=True)
-    upload_file = models.FileField("", max_length=260,
-                                   upload_to="imports/memberships",
+    upload_file = models.FileField(_("Upload File"), max_length=260,
+                                   upload_to=UPLOAD_DIR,
                                    null=True)
     # active users
     interactive = models.IntegerField(choices=INTERACTIVE_CHOICES, default=0)
     # overwrite already existing fields if match
     override = models.IntegerField(choices=OVERRIDE_CHOICES, default=0)
     # uniqueness key
-    key = models.CharField(max_length=50, choices=KEY_CHOICES, default="email")
+    key = models.CharField(_('Key'), max_length=50,
+                           choices=KEY_CHOICES, default="email")
 
     creator = models.ForeignKey(User)
     create_dt = models.DateTimeField(auto_now_add=True)
 
     def get_file(self):
+        if self.upload_file:
+            return self.upload_file
+
         file = File.objects.get_for_model(self)[0]
         return file
 

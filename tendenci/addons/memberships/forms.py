@@ -17,6 +17,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django.utils.importlib import import_module
 from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import default_storage
 
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.addons.corporate_memberships.models import (CorporateMembership,
@@ -24,7 +25,7 @@ from tendenci.addons.corporate_memberships.models import (CorporateMembership,
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.addons.memberships.models import (Membership, MembershipDefault, MembershipType,
-    Notice, App, AppEntry, AppField, AppFieldEntry)
+    Notice, App, AppEntry, AppField, AppFieldEntry, MembershipImport)
 from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
     NoticeTimeTypeField)
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
@@ -340,8 +341,48 @@ class MembershipTypeForm(forms.ModelForm):
     
     def save(self, *args, **kwargs):
         return super(MembershipTypeForm, self).save(*args, **kwargs)
-    
-    
+
+
+class MembershipDefaultUploadForm(forms.ModelForm):
+    interactive = forms.HiddenInput()
+
+    class Meta:
+        model = MembershipImport
+        fields = (
+                'key',
+                'override',
+                'interactive',
+                'upload_file',
+                  )
+
+    def __init__(self, *args, **kwargs): 
+        super(MembershipDefaultUploadForm, self).__init__(*args, **kwargs)
+        self.fields['interactive'].initial = 1
+        self.fields['interactive'].widget = forms.HiddenInput()
+
+    def clean_upload_file(self):
+        key = self.cleaned_data['key']
+        upload_file = self.cleaned_data['upload_file']
+        if not key:
+            raise forms.ValidationError('Please specify the key to identify duplicates')
+
+        file_content = upload_file.read()
+        upload_file.seek(0)
+        header_line_index = file_content.find('\n')
+        header_list = ((file_content[:header_line_index]
+                            ).strip('\r')).split(',')
+        key_list = key.split(',')
+        for item in key_list:
+            if not item in header_list:
+                raise forms.ValidationError(
+                            """
+                            'Field "%s" used to identify the duplicates 
+                            should be included in the .csv file.'
+                            """ % item)
+
+        return upload_file
+
+
 class NoticeForm(forms.ModelForm):
     notice_time_type = NoticeTimeTypeField(label='When to Send',
                                           widget=NoticeTimeTypeWidget)

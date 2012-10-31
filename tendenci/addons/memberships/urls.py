@@ -19,6 +19,14 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r"^import/confirm/(?P<id>\d+)/$", "membership_import_confirm", name="membership_import_confirm"),
     url(r"^import/status/(?P<task_id>[-\w]+)/$", "membership_import_status", name='membership_import_status'),
 
+    # import to membership default
+    url(r"^import_default/$", "membership_default_import_upload",
+        name="memberships.default_import"),
+    url(r"^import_default/download/$", "download_default_template",
+        name="memberships.download_default_template"),
+    url(r"^import_default/preview/(?P<mimport_id>\d+)/$", "membership_default_import_preview",
+        name="memberships.default_import_preview"),
+
     # export
     url(r"^export/$", "membership_export", name="membership_export"),
 

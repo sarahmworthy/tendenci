@@ -1,3 +1,4 @@
+import math
 import hashlib
 from hashlib import md5
 from datetime import datetime, timedelta
@@ -11,6 +12,8 @@ from django.contrib import messages
 from django.shortcuts import render_to_response, redirect, get_object_or_404
 from django.template import RequestContext
 from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.db.models.fields import AutoField
+from django.utils.encoding import smart_str
 
 from djcelery.models import TaskMeta
 from geraldo.generators import PDFGenerator
@@ -28,15 +31,16 @@ from tendenci.core.files.models import File
 from tendenci.core.exports.utils import render_csv
 
 from tendenci.addons.memberships.models import (App, AppEntry, Membership,
-    MembershipType, Notice, AppField, MembershipImport)
+    MembershipType, Notice, AppField, MembershipImport, MembershipDefault)
 from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, MembershipDefaultForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
-    AppEntryForm)
+    AppEntryForm, MembershipDefaultUploadForm)
 from tendenci.addons.memberships.utils import (is_import_valid, prepare_chart_data,
     get_days, get_over_time_stats, get_status_filter,
-    get_membership_stats, NoMembershipTypes)
+    get_membership_stats, NoMembershipTypes, process_default_membership)
 from tendenci.addons.memberships.importer.forms import ImportMapForm, UploadForm
 from tendenci.addons.memberships.importer.utils import parse_mems_from_csv
+from tendenci.addons.memberships.utils import memb_import_parse_csv
 from tendenci.addons.memberships.importer.tasks import ImportMembershipsTask
 
 
@@ -874,6 +878,125 @@ def membership_import_status(request, task_id, template_name='memberships/import
             'task': task,
             'datetime': datetime,
         }, context_instance=RequestContext(request))
+
+
+def membership_default_import_upload(request,
+            template_name='memberships/import_default/upload.html'):
+    """
+    Import memberships to the MembershipDefault
+    """
+    form = MembershipDefaultUploadForm(request.POST or None,
+                                       request.FILES or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            memb_import = form.save(commit=False)
+            memb_import.creator = request.user
+            memb_import.save()
+            # redirect to preview page.
+            return redirect(reverse('memberships.default_import_preview',
+                                     args=[memb_import.id]))
+
+    return render_to_response(template_name, {
+        'form': form,
+        }, context_instance=RequestContext(request))
+
+
+def membership_default_import_preview(request, mimport_id,
+                template_name='memberships/import_default/preview.html'):
+    """
+    Preview the import
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(MembershipImport,
+                                    pk=mimport_id)
+    fieldnames, data_list = memb_import_parse_csv(mimport)
+    try:
+        curr_page = int(request.GET.get('page', 1))
+    except:
+        curr_page = 1
+    num_items_per_page = 20
+    total_rows = len(data_list)
+    num_pages = int(math.ceil(total_rows * 1.0 / num_items_per_page))
+    page_nums = [x + 1 for x in range(0, num_pages)]
+
+    if curr_page <= 0 or curr_page > num_pages:
+        curr_page = 1
+
+    # slice the data_list
+    start_index = (curr_page - 1) * num_items_per_page
+    end_index = curr_page * num_items_per_page
+    if end_index > total_rows:
+        end_index = total_rows
+    data_list_slice = data_list[start_index:end_index]
+
+    users_list = []
+    # to be efficient, we only process memberships on the current page
+    for i, memb_data in enumerate(data_list_slice):
+        user_display = process_default_membership(memb_data,
+                                                  mimport,
+                                                  dry_run=True)
+        user_display['row_num'] = start_index + i + 1
+        users_list.append(user_display)
+
+    return render_to_response(template_name, {
+        'mimport': mimport,
+        'users_list': users_list,
+        'curr_page': curr_page,
+        'page_nums': page_nums,
+        'total_rows': total_rows,
+        'prev': curr_page - 1,
+        'next': curr_page + 1,
+        'num_pages': num_pages,
+        }, context_instance=RequestContext(request))
+
+
+def membership_default_import_process(request, mimport_id,
+                template_name='memberships/import_default/preview.html'):
+    """
+    Process the import
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(MembershipImport,
+                                    pk=mimport_id)
+    
+
+
+@login_required
+def download_default_template(request):
+    """
+    Download import template for membership defaults
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+
+    filename = "memberships_import_template.csv"
+
+    title_list = [field for field in MembershipDefault._meta.fields \
+                     if not field.__class__ == AutoField]
+    title_list = [smart_str(field.name) for field in title_list ]
+    # adjust the order for some fields
+    title_list = title_list[14:] + title_list[:14]
+
+    if 'sig_user_group_ids' in title_list:
+        title_list.remove('sig_user_group_ids')
+    # replace user field with fields in auth_user and profile
+    title_list.remove('user')
+    title_list = ['first_name', 'last_name', 'username', 'email', 'email2',
+                  'phone', 'salutation', 'company',
+                  'position_title', 'sex',  'address',
+                  'address2', 'city', 'state',
+                  'zipcode', 'county', 'country',
+                  'url', 'url2', 'address_type', 'fax',
+                  'work_phone', 'home_phone', 'mobile_phone',
+                  'dob', 'ssn', 'spouse',
+                  'department'
+                  ] + title_list
+    data_row_list = []
+
+    return render_csv(filename, title_list,
+                        data_row_list)
 
 
 @staff_member_required
