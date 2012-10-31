@@ -183,38 +183,43 @@ def application_detail_default(request, **kwargs):
             # [un]subscribe to group
             membership.group_refresh()
 
-            profile_dict = {
-                'display_name': form.cleaned_data.get('display_name'),
-                'company': form.cleaned_data.get('company'),
-                'title': form.cleaned_data.get('title'),
-                'functional_title': form.cleaned_data.get('functional_title'),
-                'department': form.cleaned_data.get('department'),
-                'address': form.cleaned_data.get('address'),
-                'address2': form.cleaned_data.get('address2'),
-                'city': form.cleaned_data.get('city'),
-                'state': form.cleaned_data.get('state'),
-                'zip_code': form.cleaned_data.get('zip_code'),
-                'country': form.cleaned_data.get('country'),
-                'address_type': form.cleaned_data.get('address_type'),
-                'phone': form.cleaned_data.get('phone'),
-                'phone2': form.cleaned_data.get('phone2'),
-                'work_phone': form.cleaned_data.get('work_phone'),
-                'home_phone': form.cleaned_data.get('home_phone'),
-                'mobile_phone': form.cleaned_data.get('mobile_phone'),
-                'pager': form.cleaned_data.get('pager'),
-                'fax': form.cleaned_data.get('fax'),
-                'email': form.cleaned_data.get('email'),
-                'email2': form.cleaned_data.get('email2'),
-                'url': form.cleaned_data.get('url'),
-                'url2': form.cleaned_data.get('url2'),
-                'hide_in_search': form.cleaned_data.get('hide_in_search'),
-                'hide_address': form.cleaned_data.get('hide_address'),
-                'hide_email': form.cleaned_data.get('hide_email'),
-                'hide_phone': form.cleaned_data.get('hide_phone'),
-                'dob': form.cleaned_data.get('dob'),
-                'gender': form.cleaned_data.get('gender'),
-                'spouse': form.cleaned_data.get('spouse'),
-            }
+            profile_attrs = [
+                'display_name',
+                'company',
+                'title',
+                'functional_title',
+                'department',
+                'address',
+                'address2',
+                'city',
+                'state',
+                'zip_code',
+                'country',
+                'address_type',
+                'phone',
+                'phone2',
+                'work_phone',
+                'home_phone',
+                'mobile_phone',
+                'pager',
+                'fax',
+                'email',
+                'email2',
+                'url',
+                'url2',
+                'hide_in_search',
+                'hide_address',
+                'hide_email',
+                'hide_phone',
+                'dob',
+                'gender',
+                'spouse',
+            ]
+
+            for i in profile_attrs:
+                setattr(membership.user.profile, i, form.cleaned_data.get(i))
+
+            membership.user.profile.save()
 
             educations = zip(
                 request.POST.getlist('education_school'),
