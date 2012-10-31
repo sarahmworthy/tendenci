@@ -169,7 +169,10 @@ def application_detail_default(request, **kwargs):
         if form.is_valid():
             membership = form.save(commit=False)
 
-            # TODO: add or create membership.user
+            membership.user, created = membership.get_or_create_user()
+            if created:
+                send_welcome_email(membership.user)
+
             membership.group_refresh()
 
             user_dict = {

@@ -360,6 +360,49 @@ class MembershipDefault(TendenciBaseModel):
                 group=self.membership_type.group
             ).delete()
 
+    def get_or_create_user(self, **kwargs):
+        """
+        Return a user that's newly created or already existed.
+        Return new or existing user.
+        """
+        from memberships.utils import spawn_username
+
+        fn = kwargs.get('first_name', self.get_first_name())
+        ln = kwargs.get('last_name', self.get_last_name())
+        em = kwargs.get('email', self.get_email())
+
+        user = None
+
+        # get user -------------
+        if hasattr(self, 'user'):
+            created = False
+            user = self.user
+        elif em:
+            try:
+                created = True
+                user = User.objects.get(email=em)
+            except User.MultipleObjectsReturned:
+                created = True
+                user = User.objects.filter(email=em)[0]
+            except User.DoesNotExist:
+                user = None
+
+        if not user:
+            created = True
+            user = User.objects.create_user(**{
+                'username': spawn_username(fn[:1], ln),
+                'email': em,
+                'password': hashlib.sha1(em).hexdigest()[:6],
+            })
+
+            user.first_name = fn
+            user.last_name = ln
+            user.save()
+
+            Profile.objects.create_profile(user)
+
+        return user, created
+
 
 class Membership(TendenciBaseModel):
     """
