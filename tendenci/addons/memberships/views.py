@@ -169,18 +169,19 @@ def application_detail_default(request, **kwargs):
         if form.is_valid():
             membership = form.save(commit=False)
 
-            membership.user, created = membership.get_or_create_user()
-            if created:
-                send_welcome_email(membership.user)
-
-            membership.group_refresh()
-
             user_dict = {
                 'username': form.cleaned_data.get('username'),
                 'first_name': form.cleaned_data.get('first_name'),
                 'last_name': form.cleaned_data.get('last_name'),
                 'email': form.cleaned_data.get('email')
             }
+
+            membership.user, created = membership.get_or_create_user(**user_dict)
+            if created:
+                send_welcome_email(membership.user)
+
+            # [un]subscribe to group
+            membership.group_refresh()
 
             profile_dict = {
                 'display_name': form.cleaned_data.get('display_name'),
