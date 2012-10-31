@@ -343,6 +343,23 @@ class MembershipDefault(TendenciBaseModel):
     invoice = models.ForeignKey(Invoice, editable=False)
     sig_user_group_ids = models.CharField(max_length=100, blank=True)
 
+    def group_refresh(self):
+        """
+        Look at the memberships status and decide
+        whether the user should or should not be in
+        the group.
+        """
+
+        active = (self.status == True, self.status_detail == 'active')
+
+        if all(active):  # should be in group; make sure they're in
+            self.membership_type.group.add_user(self.user)
+        else:  # should not be in group; make sure they're out
+            GroupMembership.objects.filter(
+                member=self.user,
+                group=self.membership_type.group
+            ).delete()
+
 
 class Membership(TendenciBaseModel):
     """

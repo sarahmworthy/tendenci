@@ -169,6 +169,9 @@ def application_detail_default(request, **kwargs):
         if form.is_valid():
             membership = form.save(commit=False)
 
+            # TODO: add or create membership.user
+            membership.group_refresh()
+
             user_dict = {
                 'username': form.cleaned_data.get('username'),
                 'first_name': form.cleaned_data.get('first_name'),
@@ -208,7 +211,6 @@ def application_detail_default(request, **kwargs):
                 'gender': form.cleaned_data.get('gender'),
                 'spouse': form.cleaned_data.get('spouse'),
             }
-
 
             educations = zip(
                 request.POST.getlist('education_school'),
