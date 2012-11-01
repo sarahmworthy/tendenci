@@ -102,6 +102,9 @@ class Group(TendenciBaseModel):
         except IntegrityError:
             transaction.rollback()
             return user, False
+        except Exception:
+            transaction.rollback()
+            return user, False
 
 
 class GroupMembership(models.Model):
