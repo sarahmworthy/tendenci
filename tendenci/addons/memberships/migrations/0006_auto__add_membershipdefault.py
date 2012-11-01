@@ -8,44 +8,95 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding field 'MembershipImport.total_rows'
-        db.add_column('memberships_membershipimport', 'total_rows', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
-
-        # Adding field 'MembershipImport.num_processed'
-        db.add_column('memberships_membershipimport', 'num_processed', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
-
-        # Adding field 'MembershipImport.summary'
-        db.add_column('memberships_membershipimport', 'summary', self.gf('django.db.models.fields.CharField')(default='', max_length=500, null=True), keep_default=False)
-
-        # Adding field 'MembershipImport.status'
-        db.add_column('memberships_membershipimport', 'status', self.gf('django.db.models.fields.CharField')(default='not_started', max_length=50), keep_default=False)
-
-        # Adding field 'MembershipImport.complete_dt'
-        db.add_column('memberships_membershipimport', 'complete_dt', self.gf('django.db.models.fields.DateTimeField')(null=True), keep_default=False)
-
-        # Changing field 'MembershipDefault.sig_user_group_ids'
-        db.alter_column('memberships_membershipdefault', 'sig_user_group_ids', self.gf('django.db.models.fields.CharField')(max_length=100, null=True))
+        # Adding model 'MembershipDefault'
+        db.create_table('memberships_membershipdefault', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('allow_anonymous_view', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('allow_user_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_user_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('entity', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='memberships_membershipdefault_entity', null=True, blank=True, to=orm['entities.Entity'])),
+            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('update_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='memberships_membershipdefault_creator', null=True, to=orm['auth.User'])),
+            ('creator_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='memberships_membershipdefault_owner', null=True, to=orm['auth.User'])),
+            ('owner_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('status', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('status_detail', self.gf('django.db.models.fields.CharField')(default='active', max_length=50)),
+            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('lang', self.gf('django.db.models.fields.CharField')(default='eng', max_length=10)),
+            ('member_number', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
+            ('membership_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['memberships.MembershipType'])),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+            ('renewal', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('certifications', self.gf('django.db.models.fields.CharField')(max_length=500, blank=True)),
+            ('work_experience', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('referral_source', self.gf('django.db.models.fields.CharField')(max_length=150, blank=True)),
+            ('referral_source_other', self.gf('django.db.models.fields.CharField')(max_length=150, blank=True)),
+            ('referral_source_member_name', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('referral_source_member_number', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('affiliation_member_number', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
+            ('join_dt', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('expire_dt', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('renew_dt', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('primary_practice', self.gf('django.db.models.fields.CharField')(default=u'', max_length=100, blank=True)),
+            ('how_long_in_practice', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('notes', self.gf('django.db.models.fields.CharField')(max_length=500, blank=True)),
+            ('admin_notes', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('newsletter_type', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
+            ('directory_type', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
+            ('generate_member_number', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('application_abandoned', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('application_abandoned_dt', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True)),
+            ('application_abandoned_user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='application_abandond_set', null=True, to=orm['auth.User'])),
+            ('application_complete', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('application_complete_dt', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True)),
+            ('application_complete_user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='application_complete_set', null=True, to=orm['auth.User'])),
+            ('application_approved', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('application_approved_dt', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True)),
+            ('application_approved_user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='application_approved_set', null=True, to=orm['auth.User'])),
+            ('application_approved_denied_dt', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True)),
+            ('application_approved_denied_user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='application_approved_denied_set', null=True, to=orm['auth.User'])),
+            ('application_denied', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('action_taken', self.gf('django.db.models.fields.CharField')(max_length=500, blank=True)),
+            ('action_taken_dt', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True)),
+            ('action_taken_user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='action_taken_set', null=True, to=orm['auth.User'])),
+            ('bod_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('personnel_notified_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('payment_received_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('payment_method', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['payments.PaymentMethod'])),
+            ('override', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('override_price', self.gf('django.db.models.fields.FloatField')(null=True)),
+            ('exported', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('chapter', self.gf('django.db.models.fields.CharField')(max_length=150, blank=True)),
+            ('areas_of_expertise', self.gf('django.db.models.fields.CharField')(max_length=1000, blank=True)),
+            ('organization_entity', self.gf('django.db.models.fields.related.ForeignKey')(related_name='organization_set', null=True, to=orm['entities.Entity'])),
+            ('corporate_entity', self.gf('django.db.models.fields.related.ForeignKey')(related_name='corporate_set', null=True, to=orm['entities.Entity'])),
+            ('corporate_membership_id', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('home_state', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('year_left_native_country', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('network_sectors', self.gf('django.db.models.fields.CharField')(default=u'', max_length=250, blank=True)),
+            ('networking', self.gf('django.db.models.fields.CharField')(default=u'', max_length=250, blank=True)),
+            ('government_worker', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('government_agency', self.gf('django.db.models.fields.CharField')(default=u'', max_length=250, blank=True)),
+            ('license_number', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('license_state', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('industry', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['industries.Industry'], null=True, blank=True)),
+            ('region', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['regions.Region'], null=True, blank=True)),
+            ('company_size', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('promotion_code', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
+            ('directory', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['directories.Directory'], null=True, blank=True)),
+            ('sig_user_group_ids', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, blank=True)),
+        ))
+        db.send_create_signal('memberships', ['MembershipDefault'])
 
 
     def backwards(self, orm):
         
-        # Deleting field 'MembershipImport.total_rows'
-        db.delete_column('memberships_membershipimport', 'total_rows')
-
-        # Deleting field 'MembershipImport.num_processed'
-        db.delete_column('memberships_membershipimport', 'num_processed')
-
-        # Deleting field 'MembershipImport.summary'
-        db.delete_column('memberships_membershipimport', 'summary')
-
-        # Deleting field 'MembershipImport.status'
-        db.delete_column('memberships_membershipimport', 'status')
-
-        # Deleting field 'MembershipImport.complete_dt'
-        db.delete_column('memberships_membershipimport', 'complete_dt')
-
-        # Changing field 'MembershipDefault.sig_user_group_ids'
-        db.alter_column('memberships_membershipdefault', 'sig_user_group_ids', self.gf('django.db.models.fields.CharField')(default='', max_length=100))
+        # Deleting model 'MembershipDefault'
+        db.delete_table('memberships_membershipdefault')
 
 
     models = {
@@ -64,7 +115,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 31, 22, 10, 18, 254044)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 1, 13, 39, 54, 255789)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -72,7 +123,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 31, 22, 10, 18, 253869)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 1, 13, 39, 54, 255698)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -443,14 +494,14 @@ class Migration(SchemaMigration):
             'chapter': ('django.db.models.fields.CharField', [], {'max_length': '150', 'blank': 'True'}),
             'company_size': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
             'corporate_entity': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'corporate_set'", 'null': 'True', 'to': "orm['entities.Entity']"}),
-            'corporate_membership_id': ('django.db.models.fields.IntegerField', [], {}),
+            'corporate_membership_id': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'memberships_membershipdefault_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
             'creator_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'directory': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['directories.Directory']", 'null': 'True', 'blank': 'True'}),
             'directory_type': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
             'entity': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'memberships_membershipdefault_entity'", 'null': 'True', 'blank': 'True', 'to': "orm['entities.Entity']"}),
-            'expire_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'expire_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'exported': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'generate_member_number': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'government_agency': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '250', 'blank': 'True'}),
@@ -460,7 +511,7 @@ class Migration(SchemaMigration):
             'how_long_in_practice': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'industry': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['industries.Industry']", 'null': 'True', 'blank': 'True'}),
-            'join_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'join_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'lang': ('django.db.models.fields.CharField', [], {'default': "'eng'", 'max_length': '10'}),
             'license_number': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
             'license_state': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
@@ -485,7 +536,7 @@ class Migration(SchemaMigration):
             'referral_source_member_number': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
             'referral_source_other': ('django.db.models.fields.CharField', [], {'max_length': '150', 'blank': 'True'}),
             'region': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['regions.Region']", 'null': 'True', 'blank': 'True'}),
-            'renew_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'renew_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'renewal': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'sig_user_group_ids': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),

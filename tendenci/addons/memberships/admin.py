@@ -46,8 +46,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         {'fields': (
             ('first_name', 'last_name'),
             ('email', 'email2'),
-            ('company', 'department'),
-            ('position_title', 'functional_title'),
+            ('company', 'department', 'position_title'),
             ('address', 'address2', 'address_type'),
             ('city', 'state', 'zipcode', 'country'),
             ('phone', 'phone2'),
@@ -92,7 +91,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
             'industry',
             'company_size',
             'promotion_code',
-            'directory',
+            # 'directory',
             'sig_user_group_ids',
         )}
     )

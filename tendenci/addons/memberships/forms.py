@@ -1320,7 +1320,7 @@ class MembershipDefaultForm(TendenciBaseForm):
     display_name = forms.CharField(initial=u'', required=False)
     company = forms.CharField(initial=u'', required=False)
     position_title = forms.CharField(initial=u'', required=False)
-    functional_title = forms.CharField(initial=u'', required=False)
+    # functional_title = forms.CharField(initial=u'', required=False)
     department = forms.CharField(initial=u'', required=False)
     address = forms.CharField(initial=u'', required=False)
     address2 = forms.CharField(initial=u'', required=False)
@@ -1484,6 +1484,7 @@ class MembershipDefaultForm(TendenciBaseForm):
                 'company',
                 'department',
                 'position_title',
+                # 'functional_title',
                 'address',
                 'address2',
                 'address_type',
@@ -1510,10 +1511,6 @@ class MembershipDefaultForm(TendenciBaseForm):
                 'hide_phone',
             ]
 
-            # self.fields['first_name'].initial = self.instance.user.first_name
-            # self.fields['last_name'].initial = self.instance.user.last_name
-            # self.fields['email'].initial = self.instance.user.email
-
             # initialize user fields
             for user_attr in user_attrs:
                 self.fields[user_attr].initial = \
@@ -1523,13 +1520,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             for profile_attr in profile_attrs:
                 self.fields[profile_attr].initial = \
                     getattr(self.instance.user.profile, profile_attr)
-
-            # self.fields['email2'].initial = self.instance.user.profile.email2
-            # self.fields['company'].initial = self.instance.user.profile.company
-            # self.fields['department'].initial = self.instance.user.profile.department
-            # self.fields['title'].initial = self.instance.user.profile.title
-            # self.fields['functional_title'].initial = self.instance.user.profile.functional_title
-
         # -----------------------------------------------------
 
     def save(self, *args, **kwargs):
@@ -1567,7 +1557,8 @@ class MembershipDefaultForm(TendenciBaseForm):
             'email': self.cleaned_data.get('email')
         })
 
-        membership.renewal = membership.user.profile.can_renew()
+        if not membership.pk:
+            membership.renewal = membership.user.profile.can_renew()
 
         # create invoice (save as estimate or tendered)
         if not membership.approval_required():
@@ -1598,17 +1589,32 @@ class MembershipDefaultForm(TendenciBaseForm):
         # [un]subscribe to group
         membership.group_refresh()
 
+        # loop through & set these user attributes
+        # user.first_name = self.cleaned_data.get('first_name', u'')
+        user_attrs = [
+            'first_name',
+            'last_name',
+            'email',
+        ]
+
+        for i in user_attrs:
+            setattr(membership.user, i, self.cleaned_data.get(i, u''))
+        membership.user.save()
+        # -----------------------------------------------------------
+
+        # loop through & set these profile attributes
+        # profile.display_name = self.cleaned_data.get('display_name', u'')
         profile_attrs = [
             'display_name',
             'company',
-            'title',
-            'functional_title',
+            'position_title',
+            # 'functional_title',
             'department',
             'address',
             'address2',
             'city',
             'state',
-            'zip_code',
+            'zipcode',
             'country',
             'address_type',
             'phone',
@@ -1620,6 +1626,7 @@ class MembershipDefaultForm(TendenciBaseForm):
             'fax',
             'email',
             'email2',
+            'url',
             'url2',
             'hide_in_search',
             'hide_address',
@@ -1630,10 +1637,10 @@ class MembershipDefaultForm(TendenciBaseForm):
             'spouse',
         ]
 
-        # map & save profile fields
         for i in profile_attrs:
             setattr(membership.user.profile, i, self.cleaned_data.get(i, u''))
         membership.user.profile.save()
+        # -----------------------------------------------------------------
 
         # save education fields ----------------------------
         educations = zip(
