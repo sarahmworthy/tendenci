@@ -126,11 +126,10 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         # status,
     )
 
-    def save_model(self, request, object, form, change):
+    def save_form(self, request, form, change):
         """
         Save membership [+ more] model
         """
-        print 'save model'
         return form.save(request=request, commit=False)
 
 
