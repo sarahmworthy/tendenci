@@ -137,18 +137,12 @@
             </div></td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">How long in practice?&nbsp;&nbsp;&nbsp;<input type="text" name="how_long_in_practice" value="{{ form.how_long_in_practice.value }}" size="5">
             </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">License Number</div></td><td align="left"><input type="text" name="license_number" value="{{ form.license_number.value }}" size="15">
             </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Licensed in State</div></td><td align="left"><input type="text" name="license_state" value="{{ form.license_state.value }}" size="10">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Chapter&nbsp;&nbsp;&nbsp;<table>
-            <tr>
-            <td width="30">&nbsp;</td>
-            <td>
-            <input name="chapter" type="radio" value="Charlotte Women's Bar (CWB)">Charlotte Women's Bar (CWB)
-            <br><input name="chapter" type="radio" value="Durham/Orange Women Attorneys (DOWA)">Durham/Orange Women Attorneys (DOWA)
-            <br><input name="chapter" type="radio" value="Eastern North Carolina (ENC)">Eastern North Carolina (ENC)
-            <br><input name="chapter" type="radio" value="Wake Women Attorneys (WWA)">Wake Women Attorneys (WWA)
-            <br><input name="chapter" type="radio" value="Western North Carolina (WNC)">Western North Carolina (WNC)
-            <br></td>
-            </tr>
-            </table>
+            </td><td>&nbsp;</td></tr></table>
+
+            <table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Chapter&nbsp;&nbsp;&nbsp;
+
+            {{ form.chapter }}
+
             </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Complete?&nbsp;&nbsp;&nbsp;<input name="application_complete" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
             <input name="application_complete" type="radio" value="0" checked>No
             <br></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="3"><div style="margin-left: 2em;">Notes</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">
