@@ -122,8 +122,20 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         profile,
         membership,
         money,
-        # status,
+        status,
     )
+
+    def first_name(self, instance):
+        return instance.user.first_name
+
+    def last_name(self, instance):
+        return instance.user.last_name
+
+    def email(self, instance):
+        return instance.user.email
+
+    list_display = ['first_name', 'last_name', 'email', 'member_number', 'create_dt']
+    list_filter = ['membership_type', 'status_detail']
 
     def save_form(self, request, form, change):
         """
@@ -134,7 +146,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
 class MembershipTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'price', 'admin_fee', 'group', 'require_approval',
-                     'allow_renewal', 'renewal_price', 'renewal',  
+                     'allow_renewal', 'renewal_price', 'renewal',
                      'admin_only', 'status_detail']
     list_filter = ['name', 'price', 'status_detail']
 
