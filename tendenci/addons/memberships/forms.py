@@ -1558,6 +1558,8 @@ class MembershipDefaultForm(TendenciBaseForm):
         if not membership.pk:
             membership.renewal = membership.user.profile.can_renew()
 
+        membership.save()
+
         # create invoice (save as estimate or tendered)
         if not membership.approval_required():
             membership.save_invoice(status_detail='estimate')
@@ -1577,8 +1579,6 @@ class MembershipDefaultForm(TendenciBaseForm):
                     renewal=membership.renewal,
                     join_dt=membership.join_dt
                 )
-
-        membership.save()
 
         # send welcome email; if required
         if created:

@@ -169,7 +169,23 @@ def application_detail_default(request, **kwargs):
         form = MembershipDefaultForm(request.POST)
 
         if form.is_valid():
-            form.save(request=request, commit=False)
+            membership = form.save(request=request, commit=False)
+
+            if membership.get_invoice():
+                online_payment_requirements = (
+                    membership.get_invoice().total > 0,
+                    membership.payment_method,
+                    membership.payment_method.is_online,
+                )
+
+                # online payment
+                if all(online_payment_requirements):
+                    return HttpResponseRedirect(reverse(
+                        'payment.pay_online',
+                        args=[membership.get_invoice().pk,
+                            membership.get_invoice().guid]
+                    ))
+
     else:
         form = MembershipDefaultForm()
 
