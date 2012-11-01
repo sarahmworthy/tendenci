@@ -1421,9 +1421,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             'membership_type': forms.RadioSelect,
             'payment_method': forms.RadioSelect,
             'bod_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
-            'join_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
-            'renew_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
-            'expire_dt': forms.DateTimeInput(attrs={'class': 'datepicker'}),
             'application_approved_denied_dt': forms.DateTimeInput(
                 attrs={'class': 'datepicker'}),
             'application_complete_dt': forms.DateTimeInput(
