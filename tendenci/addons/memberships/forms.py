@@ -1679,6 +1679,8 @@ class MembershipDefaultForm(TendenciBaseForm):
                 )
         # --------------------------------------------------
 
+        return membership
+
 
 class MembershipForm(TendenciBaseForm):
     STATUS_CHOICES = (
