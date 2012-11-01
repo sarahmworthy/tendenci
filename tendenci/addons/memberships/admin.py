@@ -92,7 +92,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
             'company_size',
             'promotion_code',
             # 'directory',
-            'sig_user_group_ids',
+            # 'sig_user_group_ids',
         )}
     )
 

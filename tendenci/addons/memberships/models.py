@@ -349,7 +349,7 @@ class MembershipDefault(TendenciBaseModel):
     company_size = models.CharField(max_length=50, blank=True, default=u'')
     promotion_code = models.CharField(max_length=50, blank=True, default=u'')
     directory = models.ForeignKey(Directory, blank=True, null=True)
-    sig_user_group_ids = models.CharField(max_length=100, blank=True, null=True)
+    # sig_user_group_ids = models.CharField(max_length=100, blank=True, null=True)
 
     def approval_required(self):
         """

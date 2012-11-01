@@ -88,7 +88,6 @@ class Migration(SchemaMigration):
             ('company_size', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
             ('promotion_code', self.gf('django.db.models.fields.CharField')(default=u'', max_length=50, blank=True)),
             ('directory', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['directories.Directory'], null=True, blank=True)),
-            ('sig_user_group_ids', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, blank=True)),
         ))
         db.send_create_signal('memberships', ['MembershipDefault'])
 
@@ -115,7 +114,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 1, 13, 39, 54, 255789)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 1, 15, 1, 37, 4493)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -123,7 +122,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 1, 13, 39, 54, 255698)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 1, 15, 1, 37, 4388)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -538,7 +537,6 @@ class Migration(SchemaMigration):
             'region': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['regions.Region']", 'null': 'True', 'blank': 'True'}),
             'renew_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'renewal': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'sig_user_group_ids': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'status_detail': ('django.db.models.fields.CharField', [], {'default': "'active'", 'max_length': '50'}),
             'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),

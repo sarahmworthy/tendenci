@@ -1413,7 +1413,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             'company_size',
             'promotion_code',
             'directory',
-            'sig_user_group_ids',
             'join_dt',
             'renew_dt',
             'expire_dt',
