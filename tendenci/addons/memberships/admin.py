@@ -11,10 +11,9 @@ from django.core.urlresolvers import reverse
 
 from tendenci.addons.memberships.forms import MembershipTypeForm
 from tendenci.apps.user_groups.models import Group
-from tendenci.core.event_logs.models import EventLog
-from tendenci.core.perms.utils import update_perms_and_save 
-from tendenci.addons.memberships.models import  Membership, MembershipType, Notice, App, AppField, AppEntry
-from tendenci.addons.memberships.forms import AppForm, NoticeForm, AppFieldForm, AppEntryForm
+from tendenci.core.perms.utils import update_perms_and_save
+from tendenci.addons.memberships.models import  Membership, MembershipDefault, MembershipType, Notice, App, AppField
+from tendenci.addons.memberships.forms import MembershipDefaultForm, AppForm, NoticeForm, AppFieldForm, AppEntryForm
 from tendenci.addons.memberships.utils import get_default_membership_fields, edit_app_update_corp_fields
 from tendenci.addons.memberships.middleware import ExceededMaxTypes
 from tendenci.core.payments.models import PaymentMethod
@@ -34,6 +33,106 @@ class MembershipAdmin(admin.ModelAdmin):
     def __init__(self, *args, **kwargs):
         super(MembershipAdmin, self).__init__(*args, **kwargs)
         self.list_display_links = (None, )
+
+
+class MembershipDefaultAdmin(admin.ModelAdmin):
+    """
+    MembershipDefault model
+    """
+
+    form = MembershipDefaultForm
+
+    profile = ('Profile',
+        {'fields': (
+            ('first_name', 'last_name'),
+            ('email', 'email2'),
+            ('company', 'department'),
+            ('position_title', 'functional_title'),
+            ('address', 'address2', 'address_type'),
+            ('city', 'state', 'zipcode', 'country'),
+            ('phone', 'phone2'),
+            ('work_phone', 'home_phone', 'mobile_phone'),
+            ('fax'),
+            ('url', 'url2'),
+            ('dob', 'sex', 'spouse'),
+            ('hide_in_search', 'hide_address', 'hide_email', 'hide_phone'),
+        )}
+    )
+
+    membership = ('Membership',
+        {'fields': (
+            'member_number',
+            'renewal',
+            'certifications',
+            'work_experience',
+            'referral_source',
+            'referral_source_other',
+            'referral_source_member_name',
+            'referral_source_member_number',
+            'affiliation_member_number',
+            'primary_practice',
+            'how_long_in_practice',
+            'notes',
+            'admin_notes',
+            'newsletter_type',
+            'directory_type',
+            'generate_member_number',
+            'chapter',
+            'areas_of_expertise',
+            'corporate_membership_id',
+            'home_state',
+            'year_left_native_country',
+            'network_sectors',
+            'networking',
+            'government_worker',
+            'government_agency',
+            'license_number',
+            'license_state',
+            'region',
+            'industry',
+            'company_size',
+            'promotion_code',
+            'directory',
+            'sig_user_group_ids',
+        )}
+    )
+
+    money = ('Money',
+        {'fields': (
+            'payment_method',
+            'membership_type',
+        )}
+    )
+
+    extra = ('Extra',
+        {'fields': (
+            'industry',
+            'region',
+        )}
+    )
+
+    status = ('Status',
+        {'fields': (
+            'join_dt',
+            'renew_dt',
+            'expire_dt',
+        )}
+    )
+
+    fieldsets = (
+        profile,
+        membership,
+        money,
+        # status,
+    )
+
+    def save_model(self, request, object, form, change):
+        """
+        Save membership [+ more] model
+        """
+        print 'save model'
+        return form.save(request=request, commit=False)
+
 
 class MembershipTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'price', 'admin_fee', 'group', 'require_approval',
@@ -386,10 +485,7 @@ class AppEntryAdmin(admin.ModelAdmin):
         self.list_display_links = (None, )
 
 
-# these get auto-created when the application gets filled out
-# admin.site.register(Membership, MembershipAdmin)
-
+admin.site.register(MembershipDefault, MembershipDefaultAdmin)
 admin.site.register(MembershipType, MembershipTypeAdmin)
 admin.site.register(Notice, NoticeAdmin)
 admin.site.register(App, AppAdmin)
-# admin.site.register(AppEntry, AppEntryAdmin)

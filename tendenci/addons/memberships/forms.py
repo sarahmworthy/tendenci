@@ -1319,7 +1319,7 @@ class MembershipDefaultForm(TendenciBaseForm):
     last_name = forms.CharField(initial=u'')
     display_name = forms.CharField(initial=u'', required=False)
     company = forms.CharField(initial=u'', required=False)
-    title = forms.CharField(initial=u'', required=False)
+    position_title = forms.CharField(initial=u'', required=False)
     functional_title = forms.CharField(initial=u'', required=False)
     department = forms.CharField(initial=u'', required=False)
     address = forms.CharField(initial=u'', required=False)
@@ -1327,7 +1327,7 @@ class MembershipDefaultForm(TendenciBaseForm):
     address_type = forms.CharField(initial=u'', required=False)
     city = forms.CharField(initial=u'', required=False)
     state = forms.CharField(initial=u'', required=False)
-    zip_code = forms.CharField(initial=u'', required=False)
+    zipcode = forms.CharField(initial=u'', required=False)
     country = forms.CharField(initial=u'', required=False)
     phone = forms.CharField(initial=u'', required=False)
     phone2 = forms.CharField(initial=u'', required=False)
@@ -1355,7 +1355,7 @@ class MembershipDefaultForm(TendenciBaseForm):
     career_end_dt = forms.DateTimeField(required=False,
         widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
 
-    gender = forms.CharField(initial=u'', required=False)
+    sex = forms.CharField(initial=u'', required=False)
     spouse = forms.CharField(initial=u'', required=False)
     profession = forms.CharField(initial=u'', required=False)
     custom1 = forms.CharField(initial=u'', required=False)
@@ -1414,6 +1414,9 @@ class MembershipDefaultForm(TendenciBaseForm):
             'promotion_code',
             'directory',
             'sig_user_group_ids',
+            'join_dt',
+            'renew_dt',
+            'expire_dt',
         )
         widgets = {
             'membership_type': forms.RadioSelect,
@@ -1445,6 +1448,7 @@ class MembershipDefaultForm(TendenciBaseForm):
 
         super(MembershipDefaultForm, self).__init__(*args, **kwargs)
 
+        # initialize field widgets ---------------------------
         self.fields['payment_method'].empty_label = None
         self.fields['industry'].empty_label = 'Select One'
         self.fields['region'].empty_label = 'Select One'
@@ -1464,6 +1468,68 @@ class MembershipDefaultForm(TendenciBaseForm):
             mt_choices.append((pk, '$%s %s' % (price, name)))
 
         self.fields['membership_type'].choices = mt_choices
+        # -----------------------------------------------------
+
+        # change form -----------------------------------------
+        if self.instance.pk:
+
+            user_attrs = [
+                'first_name',
+                'last_name',
+                'email',
+            ]
+
+            profile_attrs = [
+                'email2',
+                'company',
+                'department',
+                'position_title',
+                'address',
+                'address2',
+                'address_type',
+                'city',
+                'state',
+                'zipcode',
+                'country',
+                'phone',
+                'phone2',
+                'work_phone',
+                'home_phone',
+                'mobile_phone',
+                # 'pager',
+                'fax',
+                'url',
+                'url2',
+                'dob',
+                'sex',
+                'spouse',
+                # 'profession',
+                'hide_in_search',
+                'hide_address',
+                'hide_email',
+                'hide_phone',
+            ]
+
+            # self.fields['first_name'].initial = self.instance.user.first_name
+            # self.fields['last_name'].initial = self.instance.user.last_name
+            # self.fields['email'].initial = self.instance.user.email
+
+            # initialize user fields
+            for user_attr in user_attrs:
+                self.fields[user_attr].initial = \
+                    getattr(self.instance.user, user_attr)
+
+            # initialize profile fields
+            for profile_attr in profile_attrs:
+                self.fields[profile_attr].initial = \
+                    getattr(self.instance.user.profile, profile_attr)
+
+            # self.fields['email2'].initial = self.instance.user.profile.email2
+            # self.fields['company'].initial = self.instance.user.profile.company
+            # self.fields['department'].initial = self.instance.user.profile.department
+            # self.fields['title'].initial = self.instance.user.profile.title
+            # self.fields['functional_title'].initial = self.instance.user.profile.functional_title
+
         # -----------------------------------------------------
 
     def save(self, *args, **kwargs):
@@ -1550,7 +1616,7 @@ class MembershipDefaultForm(TendenciBaseForm):
             'work_phone',
             'home_phone',
             'mobile_phone',
-            'pager',
+            # 'pager',
             'fax',
             'email',
             'email2',
@@ -1560,13 +1626,12 @@ class MembershipDefaultForm(TendenciBaseForm):
             'hide_email',
             'hide_phone',
             'dob',
-            'gender',
+            'sex',
             'spouse',
         ]
 
-        # map profile fields
+        # map & save profile fields
         for i in profile_attrs:
-            print i, self.cleaned_data.get(i, u'')
             setattr(membership.user.profile, i, self.cleaned_data.get(i, u''))
         membership.user.profile.save()
 
