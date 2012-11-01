@@ -1346,14 +1346,10 @@ class MembershipDefaultForm(TendenciBaseForm):
     hide_email = forms.BooleanField(required=False)
     hide_phone = forms.BooleanField(required=False)
 
-    dob = forms.DateTimeField(required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
-    education_grad_dt = forms.DateTimeField(required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
-    career_start_dt = forms.DateTimeField(required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
-    career_end_dt = forms.DateTimeField(required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'datepicker'}))
+    dob = forms.DateTimeField(required=False)
+    education_grad_dt = forms.DateTimeField(required=False)
+    career_start_dt = forms.DateTimeField(required=False)
+    career_end_dt = forms.DateTimeField(required=False)
 
     sex = forms.CharField(initial=u'', required=False)
     spouse = forms.CharField(initial=u'', required=False)
@@ -1448,6 +1444,12 @@ class MembershipDefaultForm(TendenciBaseForm):
         self.fields['payment_method'].empty_label = None
         self.fields['industry'].empty_label = 'Select One'
         self.fields['region'].empty_label = 'Select One'
+
+        if not self.instance.pk:
+            self.fields['dob'].widget = forms.DateTimeInput(attrs={'class': 'datepicker'})
+            self.fields['education_grad_dt'].widget = forms.DateTimeInput(attrs={'class': 'datepicker'})
+            self.fields['career_start_dt'].widget = forms.DateTimeInput(attrs={'class': 'datepicker'})
+            self.fields['career_end_dt'].widget = forms.DateTimeInput(attrs={'class': 'datepicker'})
 
         mts = MembershipType.objects.filter(status=True, status_detail='active')
         mt_values = mts.values_list('pk', 'name', 'price', 'renewal_price', 'admin_fee')
