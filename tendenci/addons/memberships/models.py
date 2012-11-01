@@ -288,7 +288,7 @@ class MembershipDefault(TendenciBaseModel):
     renew_dt = models.DateTimeField(blank=True, null=True)
     primary_practice = models.CharField(max_length=100, blank=True, default=u'')
     how_long_in_practice = models.CharField(max_length=50, blank=True, default=u'')
-    notes = models.CharField(max_length=500, blank=True)
+    notes = models.TextField(blank=True)
     admin_notes = models.TextField(blank=True)
     newsletter_type = models.CharField(max_length=50, blank=True)
     directory_type = models.CharField(max_length=50, blank=True)
