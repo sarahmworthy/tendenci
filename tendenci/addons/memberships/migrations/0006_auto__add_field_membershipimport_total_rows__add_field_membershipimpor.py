@@ -17,11 +17,11 @@ class Migration(SchemaMigration):
         # Adding field 'MembershipImport.summary'
         db.add_column('memberships_membershipimport', 'summary', self.gf('django.db.models.fields.CharField')(default='', max_length=500, null=True), keep_default=False)
 
+        # Adding field 'MembershipImport.status'
+        db.add_column('memberships_membershipimport', 'status', self.gf('django.db.models.fields.CharField')(default='not_started', max_length=50), keep_default=False)
+
         # Adding field 'MembershipImport.complete_dt'
         db.add_column('memberships_membershipimport', 'complete_dt', self.gf('django.db.models.fields.DateTimeField')(null=True), keep_default=False)
-
-        # Adding field 'MembershipDefault.invoice'
-        db.add_column('memberships_membershipdefault', 'invoice', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['invoices.Invoice'], null=True), keep_default=False)
 
         # Changing field 'MembershipDefault.sig_user_group_ids'
         db.alter_column('memberships_membershipdefault', 'sig_user_group_ids', self.gf('django.db.models.fields.CharField')(max_length=100, null=True))
@@ -38,11 +38,11 @@ class Migration(SchemaMigration):
         # Deleting field 'MembershipImport.summary'
         db.delete_column('memberships_membershipimport', 'summary')
 
+        # Deleting field 'MembershipImport.status'
+        db.delete_column('memberships_membershipimport', 'status')
+
         # Deleting field 'MembershipImport.complete_dt'
         db.delete_column('memberships_membershipimport', 'complete_dt')
-
-        # Deleting field 'MembershipDefault.invoice'
-        db.delete_column('memberships_membershipdefault', 'invoice_id')
 
         # Changing field 'MembershipDefault.sig_user_group_ids'
         db.alter_column('memberships_membershipdefault', 'sig_user_group_ids', self.gf('django.db.models.fields.CharField')(default='', max_length=100))
@@ -64,7 +64,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 31, 19, 8, 34, 389902)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 31, 22, 10, 18, 254044)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -72,7 +72,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 31, 19, 8, 34, 389794)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 10, 31, 22, 10, 18, 253869)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -460,7 +460,6 @@ class Migration(SchemaMigration):
             'how_long_in_practice': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'industry': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['industries.Industry']", 'null': 'True', 'blank': 'True'}),
-            'invoice': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['invoices.Invoice']", 'null': 'True'}),
             'join_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'lang': ('django.db.models.fields.CharField', [], {'default': "'eng'", 'max_length': '10'}),
             'license_number': ('django.db.models.fields.CharField', [], {'default': "u''", 'max_length': '50', 'blank': 'True'}),
@@ -507,6 +506,7 @@ class Migration(SchemaMigration):
             'key': ('django.db.models.fields.CharField', [], {'default': "'email'", 'max_length': '50'}),
             'num_processed': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'override': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'status': ('django.db.models.fields.CharField', [], {'default': "'not_started'", 'max_length': '50'}),
             'summary': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '500', 'null': 'True'}),
             'total_rows': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'upload_file': ('django.db.models.fields.files.FileField', [], {'max_length': '260', 'null': 'True'})
