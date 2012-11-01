@@ -96,8 +96,8 @@ class Invoice(models.Model):
     class Meta:
         permissions = (("view_invoice", "Can view invoice"), )
 
-    def __unicode__(self):
-        return u'%s' % (self.title)
+    # def __unicode__(self):
+    #     return u'%s' % (self.title)
 
     def set_creator(self, user):
         self.creator = user
