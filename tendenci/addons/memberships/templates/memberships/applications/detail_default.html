@@ -103,20 +103,9 @@
             <table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">User Name</div></td><td align="left"><input type="text" name="username" value="{{ form.username.value}}" size="20">
             </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Password</div></td><td align="left"><input type="password" name="password"value="">
             <br><input type="password" name="confirm_password"value=""> <span class="body_copy_alerts">confirm password</span> 
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 2: Additional Addresses</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Same as Primary Address&nbsp;&nbsp;&nbsp;<input type="checkbox" name="same_as_primary" value="1" ></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Address</div></td><td align="left"><input type="text" name="extra_address"value="{{ form.address.value }}" size="28">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Address 2</div></td><td align="left"><input type="text" name="extra_address2" value="{{ form.extra_address2.value }}" size="28">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">City</div></td><td align="left"><input type="text" name="extra_city" value="{{ form.extra_city.value }}" size="24">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">State</div></td><td align="left"><input type="text" name="extra_state" value="{{ form.extra_state.value }}" size="12">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Zip Code</div></td><td align="left"><input type="text" name="extra_zip_code"value="" size="12">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Country</div></td><td align="left"><input type="text" name="extra_country" value="{{ form.extra_country.value }}" size="14">
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Address Type</div></td><td align="left">
+            </td><td>&nbsp;</td></tr></table>
 
-            <select size="1"  name="extra_address_type" class="body_copy">
-            <option value="0">SELECT ONE</option>
-            <option value="primaryhome">Home</option>
-            <option value="primarywork">Work</option>
-            </select>
-            </td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 3: Membership Information</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Corporate Membership ID&nbsp;&nbsp;&nbsp;
+            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 2: Membership Information</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Corporate Membership ID&nbsp;&nbsp;&nbsp;
 
             <select size="1" NAME="corporate_membership_id"  class="body_copy" >
             <option value="0" SELECTED>SELECT ONE</option>
@@ -334,17 +323,17 @@
             </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="3"><div style="margin-left: 2em;">Referral Source Member Name</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;"><input type="text" name="referral_source_member_name" value="{{ form.referral_source_member_name.value }}" size="40">
             </div></td></tr></table><table border=0><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Referral Source Member Number&nbsp;&nbsp;&nbsp;<input type="text" name="referral_source_member_number" value="{{ form.referral_source_member_number.value }}" size="20">
             </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4">
-            <span class="subtitles">Section 4: Membership Type</span></td></tr><tr><td align="left" valign="top"><div style="margin-left: 2em;">Membership Type<span class="body_copy_alerts">*</span><br>
+            <span class="subtitles">Section 3: Membership Type</span></td></tr><tr><td align="left" valign="top"><div style="margin-left: 2em;">Membership Type<span class="body_copy_alerts">*</span><br>
             <div class="memberships_list_items"><div id="membershiptype_block">
             {{ form.membership_type }}
-            </div><div id="membershiptype_block_d" style="display:none;"></div></div></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 5: Payment</span></td></tr><tr><td align="left" valign="top"><div style="margin-left: 2em;">Payment Method<span class="body_copy_alerts">*</span><br>
+            </div><div id="membershiptype_block_d" style="display:none;"></div></div></div></td><td>&nbsp;</td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 4: Payment</span></td></tr><tr><td align="left" valign="top"><div style="margin-left: 2em;">Payment Method<span class="body_copy_alerts">*</span><br>
 
             {{ form.payment_method }}
 
             </div></td><td>&nbsp;</td></tr></table><table border=0><tr><td align="left" nowrap valign="top" width="125"><div style="margin-left: 2em;">Promotion Code</div></td><td align="left"><input type="text" name="promotion_code" value="{{ form.promotion_code.value }}" size="20">
             </td><td>&nbsp;</td></tr></table>
 
-            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 7: Education History</span></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">Enter your Education History</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">
+            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 5: Education History</span></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">Enter your Education History</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">
 
             <table width="100%"  border="0" cellpadding="1" cellspacing="0" >
             <input type="hidden" name="lookupkey_education_new0" value="new0">
@@ -459,7 +448,7 @@
             <td>&nbsp;</td>
             <td>&nbsp;</td>
             </tr>
-            </table></div></td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 8: Career History</span></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">Enter your Career History</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;"><table width="100%"  border="0" cellpadding="1" cellspacing="0" >
+            </table></div></td></tr></table><table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 6: Career History</span></td></tr><tr><td colspan="3"><div style="margin-left: 2em;">Enter your Career History</div></td></tr><tr><td colspan="3"><div style="margin-left: 2em;"><table width="100%"  border="0" cellpadding="1" cellspacing="0" >
             <input type="hidden" name="lookupkey_career_new0" value="new0">
             <tr>
             <td colspan="4"><hr></td>
@@ -582,7 +571,7 @@
             </table></div></td></tr></table>
 
             {% if request.user.profile.is_superuser %}
-            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 9: Superuser Only</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Approved&nbsp;&nbsp;&nbsp;<input name="application_approved" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
+            <table border=0><tr><td colspan="4">&nbsp;</td></tr><tr bgcolor="#f2f2f2"><td colspan="4"><span class="subtitles">Section 7: Superuser Only</span></td></tr><tr><td align="left"  valign="top" colspan="2" ><div style="margin-left: 2em;">Application Approved&nbsp;&nbsp;&nbsp;<input name="application_approved" type="radio" value="1">Yes&nbsp;&nbsp;&nbsp;
             <input name="application_approved" type="radio" value="0" checked>No
             <br></div></td><td>&nbsp;</td></tr></table>
 
