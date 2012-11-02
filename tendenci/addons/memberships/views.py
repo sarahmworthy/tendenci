@@ -186,6 +186,12 @@ def application_detail_default(request, **kwargs):
                             membership.get_invoice().guid]
                     ))
 
+            if request.user.profile.is_superuser:
+                return HttpResponseRedirect(reverse(
+                'admin:memberships_membershipdefault_change',
+                args=[membership.pk]
+                ))
+
             return HttpResponseRedirect(reverse(
                 'membership.application_confirmation_default',
                 args=[membership.guid]
