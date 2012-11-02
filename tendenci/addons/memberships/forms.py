@@ -1555,48 +1555,101 @@ class MembershipDefaultForm(TendenciBaseForm):
             'email': self.cleaned_data.get('email')
         })
 
-        if not membership.pk:
+        if membership.pk:
+            # changing membership record
+            membership.set_member_number()
+
+        else:
+            # adding membership record
             membership.renewal = membership.user.profile.can_renew()
 
-        membership.set_member_number()
+            # create record in database
+            # helps with associating invoice record
+            membership.save()
 
-        # create record in database
-        # helps with associating invoice record
-        membership.save()
+            NOW = datetime.now()
 
-        NOW = datetime.now()
+            if not membership.approval_required():  # approval not required
 
-        if not membership.approval_required():  # approval not required
+                # save invoice estimate
+                membership.save_invoice(status_detail='estimate')
 
-            # save invoice estimate
-            membership.save_invoice(status_detail='estimate')
+                # auto approve
+                membership.application_approved = True
+                membership.application_approved_dt = NOW
 
-            # auto approve
-            membership.application_approved = True
-            membership.application_approved_dt = NOW
+                membership.set_join_dt()
+                membership.set_renew_dt()
+                membership.set_expire_dt()
 
-            membership.set_join_dt()
-            membership.set_renew_dt()
-            membership.set_expire_dt()
+                membership.archive_old_memberships()
 
-        else:  # approval required
-            # save invoice tendered
-            membership.save_invoice(status_detail='tendered')
+            else:  # approval required
+                # save invoice tendered
+                membership.save_invoice(status_detail='tendered')
 
-        # application complete
-        membership.application_complete_dt = NOW
-        membership.application_complete_user = membership.user
+            # application complete
+            membership.application_complete_dt = NOW
+            membership.application_complete_user = membership.user
 
-        # save application fields
-        # save join, renew, and expire dt
-        membership.save()
+            # save application fields
+            # save join, renew, and expire dt
+            membership.save()
 
-        # send welcome email; if required
-        if created:
-            send_welcome_email(membership.user)
+            # save education fields ----------------------------
+            educations = zip(
+                request.POST.getlist('education_school'),
+                request.POST.getlist('education_degree'),
+                request.POST.getlist('education_major'),
+                request.POST.getlist('education_grad_dt'),
+            )
+
+            for education in educations:
+                if any(education):
+                    school, degree, major, grad_dt = education
+                    Education.objects.create(
+                        user=membership.user,
+                        school=school,
+                        degree=degree,
+                        major=major,
+                        graduation_dt=grad_dt,
+                    )
+            # --------------------------------------------------
+
+            # save career fields -------------------------------
+            careers = zip(
+                request.POST.getlist('career_name'),
+                request.POST.getlist('career_description'),
+                request.POST.getlist('position_title'),
+                request.POST.getlist('position_description'),
+                request.POST.getlist('career_start_dt'),
+                request.POST.getlist('career_end_dt'),
+            )
+
+            for career in careers:
+                if any(career) and all(career[4:]):
+                    (career_name, career_description, position_title,
+                        position_description, career_start_dt, career_end_dt) = career
+                    Career.objects.create(
+                        company=career_name,
+                        company_description=career_description,
+                        position_title=position_title,
+                        position_description=position_description,
+                        start_dt=career_start_dt,
+                        end_dt=career_end_dt,
+                    )
+            # --------------------------------------------------
+
+            # send welcome email; if required
+            if created:
+                send_welcome_email(membership.user)
 
         # [un]subscribe to group
         membership.group_refresh()
+
+        if membership.application_approved:
+            membership.archive_old_memberships()
+            membership.save_invoice(status_detail='tendered')
 
         # loop through & set these user attributes
         # user.first_name = self.cleaned_data.get('first_name', u'')
@@ -1650,50 +1703,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             setattr(membership.user.profile, i, self.cleaned_data.get(i, u''))
         membership.user.profile.save()
         # -----------------------------------------------------------------
-
-        # save education fields ----------------------------
-        educations = zip(
-            request.POST.getlist('education_school'),
-            request.POST.getlist('education_degree'),
-            request.POST.getlist('education_major'),
-            request.POST.getlist('education_grad_dt'),
-        )
-
-        for education in educations:
-            if any(education):
-                school, degree, major, grad_dt = education
-                Education.objects.create(
-                    user=membership.user,
-                    school=school,
-                    degree=degree,
-                    major=major,
-                    graduation_dt=grad_dt,
-                )
-        # --------------------------------------------------
-
-        # save career fields -------------------------------
-        careers = zip(
-            request.POST.getlist('career_name'),
-            request.POST.getlist('career_description'),
-            request.POST.getlist('position_title'),
-            request.POST.getlist('position_description'),
-            request.POST.getlist('career_start_dt'),
-            request.POST.getlist('career_end_dt'),
-        )
-
-        for career in careers:
-            if any(career) and all(career[4:]):
-                (career_name, career_description, position_title,
-                    position_description, career_start_dt, career_end_dt) = career
-                Career.objects.create(
-                    company=career_name,
-                    company_description=career_description,
-                    position_title=position_title,
-                    position_description=position_description,
-                    start_dt=career_start_dt,
-                    end_dt=career_end_dt,
-                )
-        # --------------------------------------------------
 
         return membership
 

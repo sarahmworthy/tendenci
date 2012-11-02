@@ -352,6 +352,35 @@ class MembershipDefault(TendenciBaseModel):
     directory = models.ForeignKey(Directory, blank=True, null=True)
     # sig_user_group_ids = models.CharField(max_length=100, blank=True, null=True)
 
+    @classmethod
+    def QS_ACTIVE(cls):
+        """
+        Returns memberships of status_detail='active'
+        """
+        return MembershipDefault.objects.filter(status_detail='active')
+
+    @classmethod
+    def QS_PENDING(cls):
+        """
+        Returns memberships of status_detail='pending'
+        """
+        return MembershipDefault.objects.filter(status_detail='pending')
+
+    def archive_old_memberships(self):
+        """
+        Archive old memberships that are active, pending, and expired
+        and of the same membership type.  Making sure not to
+        archive the newest membership.
+        """
+
+        memberships = self.qs_memberships() & \
+            (MembershipDefault.QS_ACTIVE() | MembershipDefault.QS_PENDING())
+
+        for membership in memberships:
+            if membership != self:
+                membership.status_detail = 'archived'
+                membership.save()
+
     def approval_required(self):
         """
         Returns a boolean value on whether approval is required
@@ -609,15 +638,8 @@ class MembershipDefault(TendenciBaseModel):
             ).exclude(status_detail='disapproved'
             ).exclude(status_detail='pending')
 
-        print 'memberships', memberships
-
-        for membership in memberships:
-            print 'membership.pk', membership.pk
-
         if self.pk:
             memberships = memberships.exclude(pk=self.pk)
-
-        print 'memberships', memberships
 
         if memberships:
             self.renew_dt = self.application_approved_dt
