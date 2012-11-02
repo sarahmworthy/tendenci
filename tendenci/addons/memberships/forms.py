@@ -1317,6 +1317,8 @@ class MembershipDefaultForm(TendenciBaseForm):
     salutation = forms.CharField(required=False)
     first_name = forms.CharField(initial=u'')
     last_name = forms.CharField(initial=u'')
+    email = forms.CharField(initial=u'')
+    email2 = forms.CharField(initial=u'', required=False)
     display_name = forms.CharField(initial=u'', required=False)
     company = forms.CharField(initial=u'', required=False)
     position_title = forms.CharField(initial=u'', required=False)
@@ -1336,8 +1338,6 @@ class MembershipDefaultForm(TendenciBaseForm):
     mobile_phone = forms.CharField(initial=u'', required=False)
     pager = forms.CharField(initial=u'', required=False)
     fax = forms.CharField(initial=u'', required=False)
-    email = forms.CharField(initial=u'', required=False)
-    email2 = forms.CharField(initial=u'', required=False)
     url = forms.CharField(initial=u'', required=False)
     url2 = forms.CharField(initial=u'', required=False)
 
@@ -1560,27 +1560,36 @@ class MembershipDefaultForm(TendenciBaseForm):
 
         membership.set_member_number()
 
+        # create record in database
+        # helps with associating invoice record
         membership.save()
 
-        # create invoice (save as estimate or tendered)
-        if not membership.approval_required():
-            membership.save_invoice(status_detail='estimate')
-        else:
-            membership.save_invoice(status_detail='tendered')
-            membership.join_dt = datetime.now()
+        NOW = datetime.now()
 
-            if membership.renewal:
-                membership.renew_dt = datetime.now()
-                membership.expire_dt = membership.membership_type.get_expiration_dt(
-                    renewal=membership.renewal,
-                    renew_dt=membership.renew_dt
-                )
-            else:
-                membership.join_dt = datetime.now()
-                membership.expire_dt = membership.membership_type.get_expiration_dt(
-                    renewal=membership.renewal,
-                    join_dt=membership.join_dt
-                )
+        if not membership.approval_required():  # approval not required
+
+            # save invoice estimate
+            membership.save_invoice(status_detail='estimate')
+
+            # auto approve
+            membership.application_approved = True
+            membership.application_approved_dt = NOW
+
+            membership.set_join_dt()
+            membership.set_renew_dt()
+            membership.set_expire_dt()
+
+        else:  # approval required
+            # save invoice tendered
+            membership.save_invoice(status_detail='tendered')
+
+        # application complete
+        membership.application_complete_dt = NOW
+        membership.application_complete_user = membership.user
+
+        # save application fields
+        # save join, renew, and expire dt
+        membership.save()
 
         # send welcome email; if required
         if created:

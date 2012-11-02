@@ -542,7 +542,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         Get all memberships of this type for this user.
         """
-        return Membership.objects.filter(
+        return MembershipDefault.objects.filter(
             user=self.user, membership_type=self.membership_type
         )
 
@@ -575,6 +575,65 @@ class MembershipDefault(TendenciBaseModel):
             return '%s' % (max(numbers) + 1)
 
         return '%s' % (count + 1)
+
+    def set_join_dt(self):
+        """
+        Looks through old memberships to discover join dt
+        """
+        memberships = self.qs_memberships().filter(
+            join_dt__isnull=False
+            ).exclude(status_detail='disapproved'
+            ).exclude(status_detail='pending')
+
+        if self.pk:
+            memberships = memberships.exclude(pk=self.pk)
+
+        if memberships:
+            self.join_dt = memberships[0].join_dt
+        else:
+            self.join_dt = self.join_dt or datetime.now()
+
+    def set_renew_dt(self):
+        """
+        If qualified memberships exists for this
+        Membership.user set
+        Membership.renew_dt = Membership.application_approved_dt
+        """
+
+        # cannot set renew dt if approved dt
+        # does not exist (DNE)
+        if not self.application_approved_dt:
+            return None
+
+        memberships = self.qs_memberships(
+            ).exclude(status_detail='disapproved'
+            ).exclude(status_detail='pending')
+
+        print 'memberships', memberships
+
+        for membership in memberships:
+            print 'membership.pk', membership.pk
+
+        if self.pk:
+            memberships = memberships.exclude(pk=self.pk)
+
+        print 'memberships', memberships
+
+        if memberships:
+            self.renew_dt = self.application_approved_dt
+
+    def set_expire_dt(self):
+        """
+        User MembershipType to set expiration dt
+        """
+        if self.renew_dt:
+            self.expire_dt = self.membership_type.get_expiration_dt(
+                renewal=self.renewal, renew_dt=self.renew_dt
+            )
+        elif self.join_dt:
+            self.expire_dt = self.membership_type.get_expiration_dt(
+                renewal=self.renewal, join_dt=self.join_dt
+            )
 
     def set_member_number(self):
         """
