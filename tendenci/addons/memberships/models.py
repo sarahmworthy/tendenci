@@ -538,6 +538,58 @@ class MembershipDefault(TendenciBaseModel):
         else:
             return (self.membership_type.price + self.membership_type.admin_fee) or 0
 
+    def qs_memberships(self, **kwargs):
+        """
+        Get all memberships of this type for this user.
+        """
+        return Membership.objects.filter(
+            user=self.user, membership_type=self.membership_type
+        )
+
+    def create_member_number(self):
+        """
+        Returns a unique member number that is greater than 1000
+        and not already taken by a membership record.
+        """
+        numbers = MembershipDefault.objects.values_list(
+            'member_number', flat=True).exclude(member_number=u'')
+
+        numbers = set(numbers)  # remove duplicates
+        numbers = [n for n in numbers if n.isdigit()]  # only keep digits
+        numbers = map(int, numbers)  # convert strings to ints
+        numbers = sorted(numbers)  # sort integers
+
+        count = 1000
+        gap_list = []
+        for number in numbers:
+            while True:
+                count += 1
+                if count >= number:
+                    break
+                gap_list.append(count)
+
+        if gap_list:
+            return '%s' % gap_list[0]
+
+        if numbers:
+            return '%s' % (max(numbers) + 1)
+
+        return '%s' % (count + 1)
+
+    def set_member_number(self):
+        """
+        Sets membership number via previous
+        membership record.
+        """
+        memberships = self.qs_memberships().exclude(
+            member_number__exact=u'').order_by('-pk')
+
+        if memberships:
+            self.member_number = memberships[0].member_number
+
+        if not self.member_number:
+            self.member_number = self.create_member_number()
+
 
 class Membership(TendenciBaseModel):
     """

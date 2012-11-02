@@ -1558,6 +1558,8 @@ class MembershipDefaultForm(TendenciBaseForm):
         if not membership.pk:
             membership.renewal = membership.user.profile.can_renew()
 
+        membership.set_member_number()
+
         membership.save()
 
         # create invoice (save as estimate or tendered)
