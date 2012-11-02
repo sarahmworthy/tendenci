@@ -11,7 +11,32 @@
 {{ block.super }}
     <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
     <style>
-        
+        div#progressbar{
+            width: 400px;
+            margin-left: 2em;
+            font-size: 10px;
+            float: left;
+        }
+        div#complete-rate{
+            float: left;
+            padding-left: 1em;
+            font-size: 0.8em;
+        }
+        div#progressbar-container{
+            margin: 2em;
+        }
+        #num-processed{
+            color: #39B54A;
+        }
+        div#summary{
+            display: none;
+        }
+        .clear-left{
+            clear: left;
+        }
+       .ui-progressbar .ui-progressbar-value { 
+           background-image: url({{ STATIC_URL }}images/pbar-ani.gif); 
+        }
     </style>
 {% endblock %}
 
@@ -42,12 +67,80 @@
         
         </div> <!-- import settings -->
         
-        <div>
+        <div id="progressbar-container">
             
+        <div id="progressbar">   
         </div>
         
-    
+        <div id="complete-rate">
+            <span id="num-processed">{{ mimport.num_processed}}</span>
+            /
+           <span id="total">{{ mimport.total_rows}}</span> 
+           completed
+        </div>
+        
+        <div class="clear-left"></div>
+         </div>
+         
+         <div id="summary">
+             <div>Done!</div>
+             <div>Total Processed: {{ mimport.total_rows}}</div>
+             <div># inserts: <span id="num-insert"></span></div>
+             <div># updates: <span id="num-update"></span></div>
+             <div># mixed (user update, membership insert):
+                 <span id="num-update-insert"></span></div>
+             <div># invalid: <span id="num-invalid"></span></div>
+         </div>
     </div>  
     
 </div>
+{% endblock %}
+
+{% block extra_body %}
+<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+  
+<script type="text/javascript">
+
+  $(document).ready(function() {
+    // http://jqueryui.com/progressbar/#animated
+    $this_bar = $("#progressbar");
+    $this_bar.progressbar({ value: Math.ceil(100 * {{ mimport.num_processed }}/{{ mimport.total_rows }} ) });
+   var value;
+   var status_check_intval;
+        
+    status_check_intval = setInterval(function() {
+        status_check();  // check every 5 seconds
+    }, 5000);
+    
+    var status_check = function(){
+        $.ajax({
+           type: "POST",
+           url: "{% url memberships.default_import_get_status mimport.id %}",
+           success: function(status_data){
+               var obj = $.parseJSON(status_data);
+               //var obj = status_data;
+
+               value = Math.ceil(100*parseInt(obj.num_processed)/parseInt(obj.total_rows));
+               $this_bar.progressbar("option", "value", value);
+               $('#num-processed').html(obj.num_processed);
+               
+               if (obj.status == 'completed'){
+                   clearInterval(status_check_intval);
+                   $('#progressbar').progressbar( "destroy" );
+                   $('#complete-rate').remove();
+                   
+                   $('#summary').css({'display': 'block'});
+                   $('#num-insert').html(obj.num_insert);
+                   $('#num-update').html(obj.num_update);
+                   $('#num-update-insert').html(obj.num_update_insert);
+                   $('#num-invalid').html(obj.num_invalid);
+
+               }
+           }
+         });
+    }
+  });
+ 
+</script>
 {% endblock %}

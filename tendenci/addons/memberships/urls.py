@@ -33,6 +33,9 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r"^import_default/status/(?P<mimport_id>\d+)/$",
         "membership_default_import_status",
         name="memberships.default_import_status"),
+    url(r"^import_default/get_status/(?P<mimport_id>\d+)/$",
+        "membership_default_import_get_status",
+        name="memberships.default_import_get_status"),
 
     # export
     url(r"^export/$", "membership_export", name="membership_export"),

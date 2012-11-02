@@ -15,6 +15,8 @@ from django.template import RequestContext
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.db.models.fields import AutoField
 from django.utils.encoding import smart_str
+from django.utils import simplejson
+from django.views.decorators.csrf import csrf_exempt
 
 from djcelery.models import TaskMeta
 from geraldo.generators import PDFGenerator
@@ -1009,12 +1011,13 @@ def membership_default_import_process(request, mimport_id):
                                     pk=mimport_id)
     if mimport.status == 'not_started':
         mimport.status = 'processing'
+        mimport.num_processed = 0
         mimport.save()
         # start the process
-#        subprocess.Popen(["python", "manage.py",
-#                          "import_membership_defaults",
-#                          str(mimport.pk),
-#                          str(request.user.pk)])
+        subprocess.Popen(["python", "manage.py",
+                          "import_membership_defaults",
+                          str(mimport.pk),
+                          str(request.user.pk)])
 
     # redirect to status page
     return redirect(reverse('memberships.default_import_status',
@@ -1024,6 +1027,9 @@ def membership_default_import_process(request, mimport_id):
 @login_required
 def membership_default_import_status(request, mimport_id,
                     template_name='memberships/import_default/status.html'):
+    """
+    Display import status
+    """
     if not request.user.profile.is_superuser:
         raise Http403
     mimport = get_object_or_404(MembershipImport,
@@ -1036,6 +1042,33 @@ def membership_default_import_status(request, mimport_id,
         'mimport': mimport,
         }, context_instance=RequestContext(request))
 
+
+@csrf_exempt
+@login_required
+def membership_default_import_get_status(request, mimport_id):
+    """
+    Get the import status and return as json
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(MembershipImport,
+                                    pk=mimport_id)
+
+    status_data = {'status': mimport.status,
+                   'total_rows': str(mimport.total_rows),
+                   'num_processed': str(mimport.num_processed)}
+
+    if mimport.status == 'completed':
+        summary_list = mimport.summary.split(',')
+        status_data['num_insert'] = summary_list[0].split(':')[1]
+        status_data['num_update'] = summary_list[1].split(':')[1]
+        status_data['num_update_insert'] = summary_list[2].split(':')[1]
+        status_data['num_invalid'] = int(status_data['total_rows']) \
+                                    - int(status_data['num_processed'])
+        if status_data['num_invalid'] < 0:
+            status_data['num_invalid'] = 0
+
+    return HttpResponse(simplejson.dumps(status_data))
 
 
 @login_required
