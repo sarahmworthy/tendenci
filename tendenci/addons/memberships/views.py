@@ -186,6 +186,11 @@ def application_detail_default(request, **kwargs):
                             membership.get_invoice().guid]
                     ))
 
+            return HttpResponseRedirect(reverse(
+                'membership.application_confirmation_default',
+                args=[membership.guid]
+            ))
+
     else:
         form = MembershipDefaultForm()
 
@@ -499,6 +504,19 @@ def verify_email(request, id=0, guid=None, template_name="memberships/applicatio
                                   indiv_veri.corporate_membership.id,
                                   indiv_veri.pk,
                                   indiv_veri.guid]))
+
+
+def application_confirmation_default(request, hash):
+    """
+    Responds with default confirmation
+    """
+    membership = get_object_or_404(MembershipDefault, guid=hash)
+
+    return render_to_response(
+        'memberships/applications/confirmation_default.html', {
+        'is_confirmation': True,
+        'membership': membership
+        }, context_instance=RequestContext(request))
 
 
 def application_confirmation(request, hash=None, template_name="memberships/entries/details.html"):

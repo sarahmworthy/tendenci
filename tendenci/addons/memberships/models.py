@@ -292,9 +292,10 @@ class MembershipDefault(TendenciBaseModel):
     admin_notes = models.TextField(blank=True)
     newsletter_type = models.CharField(max_length=50, blank=True)
     directory_type = models.CharField(max_length=50, blank=True)
-    generate_member_number = models.BooleanField()
 
     # workflow fields ------------------------------------------
+    generate_member_number = models.BooleanField()
+
     application_abandoned = models.BooleanField(default=False)
     application_abandoned_dt = models.DateTimeField(null=True, default=None)
     application_abandoned_user = models.ForeignKey(User,
@@ -441,6 +442,10 @@ class MembershipDefault(TendenciBaseModel):
             invoice = None
 
         return invoice
+
+    def save(self, *args, **kwargs):
+        self.guid = self.guid or uuid.uuid1().get_hex()
+        super(MembershipDefault, self).save(*args, **kwargs)
 
     def save_invoice(self, **kwargs):
         """

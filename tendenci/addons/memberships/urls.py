@@ -62,6 +62,7 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
 
     # application
     url(r"^confirmation/(?P<hash>[\w]+)/$", "application_confirmation", name="membership.application_confirmation"),
+    url(r"^default-confirmation/(?P<hash>[\w]+)/$", "application_confirmation_default", name="membership.application_confirmation_default"),
     url(r"^(?P<slug>[\w\-]+)/template/$", "download_template", name="membership.download_template"),
     url(r"^default-application/$", "application_detail_default", name="membership.application_detail_default"),
     url(r"^(?P<slug>[\w\-]+)/(?P<cmb_id>\d+)?/?$", "application_details", name="membership.application_details"),
