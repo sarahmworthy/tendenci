@@ -747,20 +747,19 @@ def do_import_membership_default(request_user, mimport,
         memb.status_detail = 'active'
 
     # membership type
-    if 'membership_type' in field_names:
-        if mimport.override or not hasattr(memb, 'membership_type'):
+    if not hasattr(memb, "membership_type"):
+        membership_type = None
+        if 'membership_type' in field_names:
             membership_type = get_membership_type_by_value(
                         memb_data['membership_type'])
-            if membership_type:
-                memb.membership_type = membership_type
+        if not membership_type:
+            # last resort - assign a default membership type
+            membership_type = MembershipType.objects.filter(
+                                            status=True,
+                                            status_detail='active')[0]
+        memb.membership_type = membership_type
 
-    if not hasattr(memb, "membership_type"):
-        # assign a default membership type
-        memb.membership_type = MembershipType.objects.filter(
-                                        status=True,
-                                        status_detail='active')[0]
-
-    # prevent the not-null constrant violations
+    # prevent the not-null constraint violations
     # join_dt
     if not hasattr(memb, 'join_dt') or not memb.join_dt:
         memb.join_dt = datetime.now()
@@ -889,10 +888,14 @@ def assign_import_values_from_dict(instance, mimport, memb_data,
             else:
                 # TODO: take care of foreign keys
                 value = memb_data[field_name]
+                if field_name == 'membership_type':
+                    value = get_membership_type_by_value(value)
+
             if action == 'insert':
                 setattr(instance, field_name, value)
             else:
-                if mimport.override or getattr(instance, field_name) == '':
+                if mimport.override or (getattr(instance, field_name) == '' \
+                                        or getattr(instance, field_name) == None):
                     setattr(instance, field_name, value)
 
 
