@@ -85,7 +85,7 @@ class Group(TendenciBaseModel):
         return (user, created)
         """
         from django.db import IntegrityError
-        from django.db import transaction
+        from django.db import transaction, connection
 
         try:
             GroupMembership.objects.create(**{
@@ -100,7 +100,7 @@ class Group(TendenciBaseModel):
             })
             return user, True  # created
         except IntegrityError:
-            transaction.rollback()
+            connection._rollback()
             return user, False
         except Exception:
             transaction.rollback()
