@@ -29,7 +29,8 @@ class Command(BaseCommand):
         summary_d = {
                      'insert': 0,
                      'update': 0,
-                     'update_insert': 0
+                     'update_insert': 0,
+                     'invalid': 0
                      }
 
         for memb_data in data_list:
@@ -43,10 +44,11 @@ class Command(BaseCommand):
             mimport.save()
 
         # we are done. save the status
-        summary = 'insert:%d,update:%d,update_insert:%d' % (
+        summary = 'insert:%d,update:%d,update_insert:%d,invalid:%d' % (
                                     summary_d['insert'],
                                     summary_d['update'],
-                                    summary_d['update_insert']
+                                    summary_d['update_insert'],
+                                    summary_d['invalid']
                                     )
         mimport.summary = summary
         mimport.status = 'completed'

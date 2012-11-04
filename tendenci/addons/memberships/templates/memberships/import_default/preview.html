@@ -16,6 +16,51 @@
             float: left;
             padding-right: 1em;
         }
+        .import-preview table{
+            border: 1px solid #d4d4d4;
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+        }
+        .import-preview th,
+        .import-preview td{
+            border: 1px solid #b2d1ff;
+            padding: 5px 7px 3px;
+        }
+        .import-preview th{
+            background-color: #5c85ff;
+            color: #ffffff;
+        }
+        tr.row-update{
+            background-color: #fff;
+        }
+        tr.row-insert{
+            background-color: #ffffcc;
+        }
+        tr.row-skip{
+            background-color: #ffebe6;
+        }
+        #import-paginate{
+            margin: 1em 0;
+        }.action-update{
+            color: #39B54A;
+        }
+        .action-skip{
+            color: red;
+        }
+        .action-insert{
+            color: #e65c00;
+        }
+        .action-mixed{
+            color: #006b24;
+        }
+        .dimport-settings{
+            background-color: #FFF8E7;
+            border-radius: 3px;
+            padding: 10px;
+            width: 300px;
+            margin: 1em 0;
+        }
     </style>
 {% endblock %}
 
@@ -23,75 +68,87 @@
 <div class="t">
 <div id="import-wrap">
     
-    <h1>{% trans "Preview Your Import" %}</h1>
-    <p class="timestamp">{% trans "Step 2/3" %}</p>
+    <h1>{% trans "Import Membership" %}</h1>
+    <h3 class="import-step">{% trans "Step 2/3 - Preview" %}</h3>
     
     
 
-<p>{% trans "You're almost done!  Please review your settings.  To complete your import click 'Import Now.'" %}</p>
-
-<ul id="import-preview-total">
-    <li>{{ total_rows }} {% trans "Total Memberships" %}</li>
-</ul>
+<p>{% trans "You're almost done!  Please review your settings.  To complete your import, click the button"%} <strong>Import Now</strong>. </p>
 
 
-<div style="clear: both; "></div>
-
-<div class="import-settings">
-<table>
-<tr>
-    <td class="name">{% trans "Identify Duplicates by:" %}</td>
-    <td class="value">{{ mimport.key }}</td>
-</tr>
-<tr>
-    <td class="name">{% trans "Update: " %}</td>
-    <td class="value">
+<div class="dimport-settings">
+    <div>{% trans "Update" %}:
+        <strong>
         {% if not mimport.override %}
         Blank Fields
         {% else %}
         All Fields (override)
-        {% endif %}        
-    </td>
-</tr>
-</table>
+        {% endif %} 
+        </strong>    
+        </div>
+    <div>{% trans "Identify Duplicates by" %}: <strong>{{ mimport.key }}</strong> </div>
 
-</div> <!-- import settings -->
+    
+</div> <!-- dimport settings -->
 
     <form class="import" method="post" action="{% url memberships.default_import_process mimport.id %}">{% csrf_token %}
 
-    <div class="results">
-    {% for u in users_list %}
-        {%if u.error %}
-            <div class="result-error">
-                <p>{{ u.row_num }} - {{ u.error }}</p>
-                <em>{% trans "This user will be ignored (not added or updated)" %}</em>
-            </div>
-        {% else %}
-            {% if u.user_action == 'insert' or u.memb_action == 'insert' %}
-                <div class="body-copy-yellow">
-             {% else %}
-                <div>
-             {% endif %}
-            User {{ u.user_action }} Membership {{ u.memb_action }}
-            </div>
-        {% endif %}
-        <ul>
-            {% if u.first_name %}
-            <li>First Name: {{ u.first_name }}</li>
-            {% endif %}
-            {% if u.last_name %}
-            <li>Last Name: {{ u.last_name }}</li>
-            {% endif %}
-            {% if u.email %}
-            <li>Email: {{ u.email }}</li>
-            {% endif %}
-            {% if u.member_number %}
-            <li>Member Number: {{ u.member_number }}</li>
-            {% endif %}
-        </ul>
-    {% endfor %}
+    <div class="import-preview">
+        <table>
+            <tr>
+                <th>Row #</th>
+                <th>Action</th>
+                {% if 'first_name' in fieldnames or 'last_name' in fieldnames %}
+                <th>Name</th>
+                {% endif %}
+                {% if 'email' in fieldnames %}
+                <th>Email</th>
+                {% endif %}
+                {% if 'username' in fieldnames %}
+                <th>Username</th>
+                {% endif %}
+                {% if 'member_number' in fieldnames %}
+                <th>Member Number</th>
+                {% endif %}
+                <th>Reason if to be skipped</th>
+            </tr>
+            
+            {% for u in users_list %}
+            <tr class="row-{{ u.action }}">
+                <td>{{ u.row_num }}</td>
+                <td class="action-{{ u.action }}">{{ u.action }}</td>
+                {% if 'first_name' in fieldnames or 'last_name' in fieldnames %}
+                <td>
+                    {% if u.user %}
+                    <a href="{% url profile u.user.username %}" target="_blank">{{ u.first_name }} {{ u.last_name }}</a>
+                    {% else %}
+                    {{ u.first_name }} {{ u.last_name }}
+                    {% endif %}
+                </td>
+                {% endif %}
+                {% if 'email' in fieldnames %}
+                <td>{{ u.email }}</td>
+                {% endif %}
+                {% if 'username' in fieldnames %}
+                <td>{{ u.username }}</td>
+                {% endif %}
+                {% if 'member_number' in fieldnames %}
+                <td>{{ u.member_number }}</td>
+                {% endif %}
+                <td>
+                    {% if u.error %}
+                    {{ u.error }}
+                    {% endif %}
+                </td>
+                
+            </tr>
+            
+            {% endfor %}
+        </table>
+        
     </div>
-    <div>
+    
+    <div id="import-paginate">
         {% if prev %}
         <a href="?page={{ prev }}">Prev</a>
         {% else %}
@@ -100,7 +157,7 @@
          
         {% for page in page_nums %}
         {% if page == curr_page %}
-        {{ page }}
+        <strong>{{ page }}</strong>
         {% else %}
         <a href="?page={{ page }}">{{ page }}</a>
         {% endif %}
@@ -114,7 +171,7 @@
     </div>
 
     <div>
-    <input type="submit" class="submit-btn" name="submit" value="Import Now" >
+    <input type="submit" class="submit-btn btn" name="submit" value="Import Now" >
     </div>
 
     </form>

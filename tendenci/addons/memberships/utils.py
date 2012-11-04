@@ -569,7 +569,9 @@ def process_default_membership(request_user, memb_data, mimport,
     memb = None
     user_display = {}
     user_display['error'] = ''
+    user_display['user'] = None
     missing_fields = []
+    summary_d = kwargs.get('summary_d')
     user_filters = None
     profile_filters = None
     key = mimport.key
@@ -593,6 +595,9 @@ def process_default_membership(request_user, memb_data, mimport,
         else:
             user_display['error'] = 'Missing required field(s) %s' % (
                                         ' and '.join(missing_fields))
+        user_display['action'] = 'skip'
+        if not dry_run:
+            summary_d['invalid'] += 1
     else:
         if key == 'email':
             user_filters = Q(email=key_value_dict['email'])
@@ -638,19 +643,22 @@ def process_default_membership(request_user, memb_data, mimport,
 
         if user:
             user_display['user_action'] = 'update'
+            user_display['user'] = user
             [memb] = MembershipDefault.objects.filter(user=user).exclude(
                       status_detail='archive'
                             )[:1] or [None]
             if memb:
                 user_display['memb_action'] = 'update'
+                user_display['action'] = 'update'
             else:
                 user_display['memb_action'] = 'insert'
+                user_display['action'] = 'mixed'
         else:
             user_display['user_action'] = 'insert'
             user_display['memb_action'] = 'insert'
+            user_display['action'] = 'insert'
 
         if not dry_run:
-            summary_d = kwargs.get('summary_d')
             if all([
                     user_display['user_action'] == 'insert',
                     user_display['memb_action'] == 'insert'

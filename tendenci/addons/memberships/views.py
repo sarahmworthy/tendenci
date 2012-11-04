@@ -997,6 +997,7 @@ def membership_default_import_preview(request, mimport_id,
         'prev': curr_page - 1,
         'next': curr_page + 1,
         'num_pages': num_pages,
+        'fieldnames': fieldnames,
         }, context_instance=RequestContext(request))
 
 
@@ -1063,10 +1064,7 @@ def membership_default_import_get_status(request, mimport_id):
         status_data['num_insert'] = summary_list[0].split(':')[1]
         status_data['num_update'] = summary_list[1].split(':')[1]
         status_data['num_update_insert'] = summary_list[2].split(':')[1]
-        status_data['num_invalid'] = int(status_data['total_rows']) \
-                                    - int(status_data['num_processed'])
-        if status_data['num_invalid'] < 0:
-            status_data['num_invalid'] = 0
+        status_data['num_invalid'] = summary_list[3].split(':')[1]
 
     return HttpResponse(simplejson.dumps(status_data))
 
