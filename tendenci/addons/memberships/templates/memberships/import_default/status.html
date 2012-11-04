@@ -9,45 +9,7 @@
 
 {% block extra_head %}
 {{ block.super }}
-    <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
-    <style>
-        div#progressbar{
-            width: 400px;
-            font-size: 10px;
-            float: left;
-        }
-        div#complete-rate{
-            float: left;
-            padding-left: 1em;
-            font-size: 0.8em;
-        }
-        div#progressbar-container{
-            margin: 2em 0;
-        }
-        #num-processed{
-            color: #39B54A;
-        }
-        div#summary{
-            display: none;
-        }
-        .clear-left{
-            clear: left;
-        }
-       .ui-progressbar .ui-progressbar-value { 
-           background-image: url({{ STATIC_URL }}images/pbar-ani.gif); 
-        }
-        
-        .dimport-settings{
-            background-color: #FFF8E7;
-            border-radius: 3px;
-            padding: 10px;
-            width: 300px;
-            margin: 1em 0;
-        }
-        #summary div{
-            margin: 5px 0;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/membership-default-import.css">
 {% endblock %}
 
 {% block body %}
@@ -68,10 +30,6 @@
                 </strong>    
                 </div>
             <div>{% trans "Identify Duplicates by" %}: <strong>{{ mimport.key }}</strong> </div>
-            <div>&nbsp;</div>
-            <div>
-             <strong>{% trans "Total Rows" %}:  {{ total_rows }}</strong>    
-            </div>
             
         </div> <!-- dimport settings -->
         
@@ -91,7 +49,7 @@
          </div>
          
          <div id="summary">
-             <div><strong>Complete.</strong></div>
+             <div><strong>Done.</strong></div>
              <div>&nbsp;</div>
              <div>Total Processed: <strong>{{ mimport.total_rows}}</strong></div>
              <div>Inserts: <strong><span id="num-insert"></span></strong></div>

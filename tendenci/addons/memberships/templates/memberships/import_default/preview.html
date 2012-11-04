@@ -9,59 +9,7 @@
 
 {% block extra_head %}
 {{ block.super }}
-    <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
-    <style>
-        ul#import-preview-total li{
-            list-style: inline;
-            float: left;
-            padding-right: 1em;
-        }
-        .import-preview table{
-            border: 1px solid #d4d4d4;
-            border-collapse: collapse;
-            border-spacing: 0;
-            width: 100%;
-        }
-        .import-preview th,
-        .import-preview td{
-            border: 1px solid #b2d1ff;
-            padding: 5px 7px 3px;
-        }
-        .import-preview th{
-            background-color: #5c85ff;
-            color: #ffffff;
-        }
-        tr.row-update{
-            background-color: #fff;
-        }
-        tr.row-insert{
-            background-color: #ffffcc;
-        }
-        tr.row-skip{
-            background-color: #ffebe6;
-        }
-        #import-paginate{
-            margin: 1em 0;
-        }.action-update{
-            color: #39B54A;
-        }
-        .action-skip{
-            color: red;
-        }
-        .action-insert{
-            color: #e65c00;
-        }
-        .action-mixed{
-            color: #006b24;
-        }
-        .dimport-settings{
-            background-color: #FFF8E7;
-            border-radius: 3px;
-            padding: 10px;
-            width: 300px;
-            margin: 1em 0;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/membership-default-import.css">
 {% endblock %}
 
 {% block body %}
@@ -77,16 +25,20 @@
 
 
 <div class="dimport-settings">
-    <div>{% trans "Update" %}:
-        <strong>
-        {% if not mimport.override %}
-        Blank Fields
-        {% else %}
-        All Fields (override)
-        {% endif %} 
-        </strong>    
+        <div>{% trans "Update" %}:
+            <strong>
+            {% if not mimport.override %}
+            Blank Fields
+            {% else %}
+            All Fields (override)
+            {% endif %} 
+            </strong>    
         </div>
-    <div>{% trans "Identify Duplicates by" %}: <strong>{{ mimport.key }}</strong> </div>
+        <div>{% trans "Identify Duplicates by" %}: <strong>{{ mimport.key }}</strong> </div>
+        <div>&nbsp;</div>
+        <div>
+         <strong>{% trans "Total Rows" %}:  {{ total_rows }}</strong>    
+        </div>
 
     
 </div> <!-- dimport settings -->

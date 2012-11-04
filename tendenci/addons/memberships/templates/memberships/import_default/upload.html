@@ -9,28 +9,8 @@
 
 {% block extra_head %}
 {{ block.super }}
-    <link rel="stylesheet" href="{{ LOCAL_STATIC_URL }}css/memberships.css">
-    <style>
-        div.import-field{
-            margin: 1em 0;
-            
-        }
-        div.fields-block{
-            margin-top: 2em;
-        }
-        .error{
-            font: red;
-        }
-        #upload-form-wrap{
-            border-top: 1px dashed #ccc;
-            margin-top: 2em;
-            padding-top: 1em;
-        }
-        #upload-form-wrap input[type=file]{
-            font-size: 1.2em;
-        }
-        
-    </style>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/membership-default-import.css">
+
 {% endblock %}
 
 {% block body %}
