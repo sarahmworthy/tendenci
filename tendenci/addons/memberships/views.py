@@ -200,7 +200,7 @@ def application_detail_default(request, **kwargs):
             ))
 
     else:
-        form = MembershipDefaultForm()
+        form = MembershipDefaultForm(request=request)
 
     return render_to_response(
         'memberships/applications/detail_default.html', {

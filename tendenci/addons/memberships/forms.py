@@ -1456,10 +1456,12 @@ class MembershipDefaultForm(TendenciBaseForm):
         """
         Setting foreign key fields with temporary objects.
         """
-        # request_user = User() or None() object
-        request_user = kwargs.pop('request_user', AnonymousUser())
-        if not isinstance(request_user, User):
-            request_user = None
+        request = kwargs.pop('request', None)
+
+        request_user = None
+        if hasattr(request, 'user'):
+            if isinstance(request.user, User):
+                request_user = request.user
 
         super(MembershipDefaultForm, self).__init__(*args, **kwargs)
 
@@ -1477,16 +1479,25 @@ class MembershipDefaultForm(TendenciBaseForm):
         mts = MembershipType.objects.filter(status=True, status_detail='active')
         mt_values = mts.values_list('pk', 'name', 'price', 'renewal_price', 'admin_fee')
 
-        # TODO: consider global renewal period
-        # which result in renewal price
-        # TODO: Include admin fee on join price
+        renew_mode = False
+        if hasattr(request_user, 'profile'):
+            renew_mode = request_user.profile.can_renew()
+
+        # only include admin fee on join
 
         mt_choices = []
         for pk, name, price, renewal_price, admin_fee in mt_values:
             price = price or float()
             renewal_price = renewal_price or float()
             admin_fee = admin_fee or float()
-            mt_choices.append((pk, '$%s %s' % (price, name)))
+
+            if renew_mode:
+                mt_choices.append((pk, '%s $%s' % (name, renewal_price)))
+            else:
+                if admin_fee:
+                    mt_choices.append((pk, '%s $%s ($%s admin fee)' % (name, price, admin_fee)))
+                else:
+                    mt_choices.append((pk, '%s $%s' % (name, price)))
 
         self.fields['membership_type'].choices = mt_choices
         # -----------------------------------------------------

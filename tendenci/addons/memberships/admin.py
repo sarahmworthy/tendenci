@@ -8,6 +8,7 @@ from django.template.defaultfilters import slugify
 from django.http import HttpResponse
 from django.utils.html import escape
 from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 
 from tendenci.addons.memberships.forms import MembershipTypeForm
 from tendenci.apps.user_groups.models import Group
@@ -143,6 +144,14 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         return form.save(request=request, commit=False)
 
+    def add_view(self, request, form_url='', extra_context=None):
+        """
+        Intercept add page and redirect to form.
+        """
+        return HttpResponseRedirect(
+            reverse('membership.application_detail_default')
+        )
+
 
 class MembershipTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'price', 'admin_fee', 'group', 'require_approval',
@@ -155,7 +164,7 @@ class MembershipTypeAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {'fields': ('name', 'price', 'admin_fee', 'description')}),
         ('Expiration Method', {'fields': ('never_expires', 'type_exp_method',)}),
-        ('Renewal Options', {'fields': (('allow_renewal','renewal', 'renewal_require_approval'), 
+        ('Renewal Options', {'fields': (('allow_renewal','renewal', 'renewal_require_approval'),
                                         'renewal_price', 
                                         'renewal_period_start', 
                                         'renewal_period_end',)}),
