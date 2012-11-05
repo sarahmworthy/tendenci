@@ -911,16 +911,6 @@ class MembershipImport(models.Model):
         (1, 'All Fields (override)'),
     )
 
-    KEY_CHOICES = (
-        ('email', 'email'),
-        ('username', 'username'),
-        ('member_number', 'member_number'),
-        ('email,member_number', 'email then member_number'),
-        ('first_name,last_name,email', 'first_name and last_name and email'),
-        ('first_name,last_name,phone', 'first_name and last_name and phone'),
-        ('first_name,last_name,company', 'first_name and last_name and company'), 
-    )
-
     STATUS_CHOICES = (
         ('not_started', 'Not Started'),
         ('processing', 'Processing'),
@@ -939,7 +929,7 @@ class MembershipImport(models.Model):
     override = models.IntegerField(choices=OVERRIDE_CHOICES, default=0)
     # uniqueness key
     key = models.CharField(_('Key'), max_length=50,
-                           choices=KEY_CHOICES, default="email")
+                           default="email/member_number/fn_ln_phone")
 
     total_rows = models.IntegerField(default=0)
     num_processed = models.IntegerField(default=0)

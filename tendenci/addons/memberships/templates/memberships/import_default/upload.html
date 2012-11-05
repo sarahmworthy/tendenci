@@ -9,7 +9,13 @@
 
 {% block extra_head %}
 {{ block.super }}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/memberships.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}css/membership-default-import.css">
+    <style>
+        .error{
+            color: red;
+        }
+    </style>
 
 {% endblock %}
 

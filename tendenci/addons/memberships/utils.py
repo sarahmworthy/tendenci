@@ -536,15 +536,21 @@ def render_to_max_types(*args, **kwargs):
     return response
 
 
+def normalize_field_names(fieldnames):
+    for i in range(0, len(fieldnames)):
+        # clean up the fieldnames
+        # ex: change First Name to first_name
+        fieldnames[i] = fieldnames[i].lower().replace(' ', '_')
+
+    return fieldnames
+
+
 def memb_import_parse_csv(mimport):
     normalize_newline(mimport.upload_file.name)
     csv_reader = csv.reader(
         default_storage.open(mimport.upload_file.name, 'rb'))
     fieldnames = csv_reader.next()
-    # clean up the fieldnames
-    # ex: change First Name to first_name
-    for i in range(0, len(fieldnames)):
-        fieldnames[i] = fieldnames[i].lower().replace(' ', '_')
+    fieldnames = normalize_field_names(fieldnames)
 
     data_list = []
 
@@ -552,6 +558,69 @@ def memb_import_parse_csv(mimport):
         data_list.append(dict(zip(fieldnames, row)))
 
     return fieldnames, data_list
+
+
+def check_missing_fields(memb_data, key):
+    """
+    Check if we have enough data to process for this row.
+    """
+    missing_field_msg = ''
+    if key in ['member_number/email/fn_ln_phone',
+               'email/member_number/fn_ln_phone']:
+        if not any([memb_data['member_number'],
+                    memb_data['email'],
+                    all([memb_data['first_name'],
+                         memb_data['last_name'],
+                         memb_data['phone']])]):
+            missing_field_msg = "Missing key(s) member_number or " + \
+                                "'email' or ('first name', 'last name' and 'phone')"
+
+    elif key in ['member_number/email', 'email/member_number']:
+        if not any([memb_data['member_number'],
+                    memb_data['email']]):
+            missing_field_msg = "Missing key 'member_number' or 'email'"
+    elif key == 'member_number':
+        if not memb_data['member_number']:
+            missing_field_msg = "Missing key 'member_number'"
+    else:  # email
+        if not memb_data['email']:
+            missing_field_msg = "Missing key 'email'"
+
+    return missing_field_msg
+
+
+def get_user_by_email(email):
+    """
+    Get user by email address.
+    """
+    [user] = User.objects.filter(email=email).order_by(
+                    '-is_active', '-is_superuser', '-is_staff'
+                        )[:1] or [None]
+    return user
+
+
+def get_user_by_members_number(member_number):
+    """
+    Get user by member number.
+    """
+    [profile] = Profile.objects.filter(
+                member_number=member_number)[:1] or [None]
+    if profile:
+        return profile.user
+    return None
+
+
+def get_user_by_fn_ln_phone(first_name, last_name, phone):
+    """
+    Get user by first name, last name and phone.
+    """
+    [profile] = Profile.objects.filter(
+                user__first_name=first_name,
+                user__last_name=last_name,
+                phone=phone)[:1] or [None]
+    if profile:
+        return profile.user
+    return None
 
 
 def process_default_membership(request_user, memb_data, mimport,
@@ -570,76 +639,47 @@ def process_default_membership(request_user, memb_data, mimport,
     user_display = {}
     user_display['error'] = ''
     user_display['user'] = None
-    missing_fields = []
     summary_d = kwargs.get('summary_d')
-    user_filters = None
-    profile_filters = None
     key = mimport.key
 
-    key_value_dict = {}
-    key_list = key.split(',')
-    for k in key_list:
-        key_value_dict[k] = memb_data[k]
-        if not key_value_dict[k]:
-            missing_fields.append(k)
-
-    # it's okay if we have one of the required fields
-    if key == 'email,member_number' and len(missing_fields) == 1:
-        missing_fields = None
+    missing_fields_msg = check_missing_fields(memb_data, key)
 
     # don't process if we have missing value of required fields
-    if missing_fields:
-        if key == 'email,member_number':
-            user_display['error'] = 'Missing required field(s) %s' % (
-                                        ' or '.join(missing_fields))
-        else:
-            user_display['error'] = 'Missing required field(s) %s' % (
-                                        ' and '.join(missing_fields))
+    if missing_fields_msg:
+        user_display['error'] = missing_fields_msg
         user_display['action'] = 'skip'
         if not dry_run:
             summary_d['invalid'] += 1
     else:
-        if key == 'email':
-            user_filters = Q(email=key_value_dict['email'])
-        elif key == 'username':
-            user_filters = Q(username=key_value_dict['username'])
+        if key == 'member_number/email/fn_ln_phone':
+            user = get_user_by_members_number(memb_data['member_number'])
+            if not user:
+                user = get_user_by_email(memb_data['email'])
+                if not user:
+                    user = get_user_by_fn_ln_phone(memb_data['first_name'],
+                                                   memb_data['last_name'],
+                                                   memb_data['phone']
+                                                   )
+        elif key == 'email/member_number/fn_ln_phone':
+            user = get_user_by_email(memb_data['email'])
+            if not user:
+                user = get_user_by_members_number(memb_data['member_number'])
+                if not user:
+                    user = get_user_by_fn_ln_phone(memb_data['first_name'],
+                                                   memb_data['last_name'],
+                                                   memb_data['phone'])
+        elif key == 'member_number/email':
+            user = get_user_by_members_number(memb_data['member_number'])
+            if not user:
+                user = get_user_by_email(memb_data['email'])
+        elif key == 'email/member_number':
+            user = get_user_by_email(memb_data['email'])
+            if not user:
+                user = get_user_by_members_number(memb_data['member_number'])
         elif key == 'member_number':
-            profile_filters = Q(member_number=key_value_dict['member_number'])
-        elif key == 'email,member_number':
-            if key_value_dict['email']:
-                user_filters = Q(email=key_value_dict['email'])
-            if key_value_dict['member_number']:
-                profile_filters = Q(member_number=key_value_dict['member_number'])
-        elif key == 'first_name,last_name,email':
-            user_filters = Q(first_name=key_value_dict['first_name']
-                             ) & Q(last_name=key_value_dict['last_name']
-                                   ) & Q(email=key_value_dict['email'])
-        elif key == 'first_name,last_name,phone':
-            profile_filters = Q(user__first_name=key_value_dict['first_name']
-                            ) & Q(
-                            user__last_name=key_value_dict['last_name']
-                            ) & Q(
-                            phone=key_value_dict['phone'])
-        elif key == 'first_name,last_name,company':
-            profile_filters = Q(user__first_name=key_value_dict['first_name']
-                            ) & Q(
-                            user__last_name=key_value_dict['last_name']
-                            ) & Q(
-                            company=key_value_dict['company'])
-
-        if user_filters:
-            [user] = User.objects.filter(user_filters).order_by(
-                            '-is_active', '-is_superuser', '-is_staff'
-                                )[:1] or [None]
-            if not user and key == 'email,member_number':
-                [profile] = Profile.objects.filter(
-                                        profile_filters)[:1] or [None]
-                if profile:
-                    user = profile.user
-        if profile_filters and key != 'email,member_number':
-            [profile] = Profile.objects.filter(profile_filters)[:1] or [None]
-            if profile:
-                user = profile.user
+            user = get_user_by_members_number(memb_data['member_number'])
+        else:   # email
+            user = get_user_by_email(memb_data['email'])
 
         if user:
             user_display['user_action'] = 'update'

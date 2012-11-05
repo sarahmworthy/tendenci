@@ -30,6 +30,7 @@ from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
     NoticeTimeTypeField)
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
 from tendenci.addons.memberships.utils import csv_to_dict, NoMembershipTypes
+from tendenci.addons.memberships.utils import normalize_field_names
 from tendenci.addons.memberships.widgets import (CustomRadioSelect, TypeExpMethodWidget,
     NoticeTimeTypeWidget)
 from tendenci.addons.memberships.utils import get_notice_token_help_text
@@ -344,7 +345,19 @@ class MembershipTypeForm(forms.ModelForm):
 
 
 class MembershipDefaultUploadForm(forms.ModelForm):
+    KEY_CHOICES = (
+        ('email', 'email'),
+        ('member_number', 'member_number'),
+        ('email/member_number', 'email then member_number'),
+        ('member_number/email', 'member_number then email'),
+        ('email/member_number/fn_ln_phone',
+         'email/member_number/first_name,last_name,phone'),
+        ('member_number/email/fn_ln_phone',
+         'member_number/email/first_name,last_name,phone'),
+        )
     interactive = forms.HiddenInput()
+    key = forms.ChoiceField(label="Key",
+                            choices=KEY_CHOICES)
 
     class Meta:
         model = MembershipImport
@@ -355,10 +368,11 @@ class MembershipDefaultUploadForm(forms.ModelForm):
                 'upload_file',
                   )
 
-    def __init__(self, *args, **kwargs): 
+    def __init__(self, *args, **kwargs):
         super(MembershipDefaultUploadForm, self).__init__(*args, **kwargs)
         self.fields['interactive'].initial = 1
         self.fields['interactive'].widget = forms.HiddenInput()
+        self.fields['key'].initial = 'email/member_number/fn_ln_phone'
 
     def clean_upload_file(self):
         key = self.cleaned_data['key']
@@ -371,14 +385,23 @@ class MembershipDefaultUploadForm(forms.ModelForm):
         header_line_index = file_content.find('\n')
         header_list = ((file_content[:header_line_index]
                             ).strip('\r')).split(',')
-        key_list = key.split(',')
+        header_list = normalize_field_names(header_list)
+        key_list = []
+        for key in key.split('/'):
+            if key == 'fn_ln_phone':
+                key_list.extend(['first_name', 'last_name', 'phone'])
+            else:
+                key_list.append(key)
+        missing_columns = []
         for item in key_list:
             if not item in header_list:
-                raise forms.ValidationError(
-                            """
-                            'Field "%s" used to identify the duplicates 
-                            should be included in the .csv file.'
-                            """ % item)
+                missing_columns.append(item)
+        if missing_columns:
+            raise forms.ValidationError(
+                        """
+                        'Field(s) %s used to identify the duplicates
+                        should be included in the .csv file.'
+                        """ % (', '.join(missing_columns)))
 
         return upload_file
 
