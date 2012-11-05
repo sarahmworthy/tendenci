@@ -107,6 +107,15 @@ class Profile(Person):
     def is_superuser(self):
         return all([self._can_login(), self.user.is_superuser])
 
+    def get_name(self):
+
+        user = self.user
+
+        name = "%s %s" % (user.first_name, user.last_name)
+        name = name.strip()
+
+        return self.display_name or name or user.email or user.username
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.guid = str(uuid.uuid1())
