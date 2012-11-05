@@ -1608,9 +1608,14 @@ class MembershipDefaultForm(TendenciBaseForm):
                 # save invoice estimate
                 membership.save_invoice(status_detail='estimate')
 
-                # auto approve
+                # auto approve -------------------------
                 membership.application_approved = True
+                membership.application_approved_user = \
+                    request_user or membership.user
                 membership.application_approved_dt = NOW
+
+                membership.application_approved_denied_user = \
+                    request_user or membership.user
 
                 membership.set_join_dt()
                 membership.set_renew_dt()
