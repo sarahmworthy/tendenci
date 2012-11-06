@@ -350,6 +350,10 @@ class MembershipDefault(TendenciBaseModel):
     directory = models.ForeignKey(Directory, blank=True, null=True)
     # sig_user_group_ids = models.CharField(max_length=100, blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        self.guid = self.guid or uuid.uuid1().get_hex()
+        super(MembershipDefault, self).save(*args, **kwargs)
+
     @classmethod
     def QS_ACTIVE(cls):
         """
@@ -520,6 +524,39 @@ class MembershipDefault(TendenciBaseModel):
 
         return user, created
 
+    def can_renew(self):
+        """
+        Checks if ...
+        membership.is_forever() i.e. never ends
+        membership type allows renewals
+        membership renewal period was specified
+        membership is within renewal period
+
+        returns boolean
+        """
+
+        renewal_period = self.get_renewal_period_dt()
+
+        # if never expires; can never renew
+        if self.is_forever():
+            return False
+
+        # if membership type allows renewals
+        if not self.membership_type.allow_renewal:
+            return False
+
+        # renewal not allowed; or no renewal period
+        if not renewal_period:
+            return False
+
+        # can only renew from approved state
+        if self.get_status() != 'active':
+            return False
+
+        # assert that we're within the renewal period
+        start_dt, end_dt = renewal_period
+        return (datetime.now() >= start_dt and datetime.now() <= end_dt)
+
     def get_invoice(self):
         """
         Get invoice object.  The invoice object is not
@@ -541,10 +578,6 @@ class MembershipDefault(TendenciBaseModel):
             invoice = None
 
         return invoice
-
-    def save(self, *args, **kwargs):
-        self.guid = self.guid or uuid.uuid1().get_hex()
-        super(MembershipDefault, self).save(*args, **kwargs)
 
     def save_invoice(self, **kwargs):
         """
@@ -740,6 +773,68 @@ class MembershipDefault(TendenciBaseModel):
 
         if not self.member_number:
             self.member_number = self.create_member_number()
+
+    def auto_update_paid_object(self, request, payment):
+        """
+        Update membership status and dates. Created archives if
+        necessary.  Send out notices.  Log approval event.
+        """
+        from tendenci.apps.notifications.utils import send_welcome_email
+
+        if self.renewal:
+            # if auto-approve renews
+            if not self.membership_type.renewal_require_approval:
+                self.user, created = self.get_or_create_user()
+                if created:
+                    send_welcome_email(self.user)
+
+                # save invoice estimate
+                self.save_invoice(status_detail='tendered')
+
+                # auto approve -------------------------
+                self.application_approved = True
+                self.application_approved_user = self.user
+                self.application_approved_dt = datetime.now()
+                self.application_approved_denied_user = self.user
+
+                self.set_join_dt()
+                self.set_renew_dt()
+                self.set_expire_dt()
+
+                self.archive_old_memberships()
+
+        else:
+            # if auto-approve joins
+            if not self.membership_type.require_approval:
+                self.user, created = self.get_or_create_user()
+                if created:
+                    send_welcome_email(self.user)
+
+                # auto approve -------------------------
+                self.application_approved = True
+                self.application_approved_user = self.user
+                self.application_approved_dt = datetime.now()
+                self.application_approved_denied_user = self.user
+
+                self.set_join_dt()
+                self.set_renew_dt()
+                self.set_expire_dt()
+
+                self.archive_old_memberships()
+
+        if self.application_approved:
+
+            Notice.send_notice(
+                request=request,
+                notice_type='approve',
+                membership=self,
+                membership_type=self.membership_type,
+            )
+
+            EventLog.objects.log(
+                instance=self,
+                action='membership_approved'
+            )
 
 
 class Membership(TendenciBaseModel):
