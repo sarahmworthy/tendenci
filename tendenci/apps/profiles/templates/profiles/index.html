@@ -127,14 +127,13 @@
 
                         (grace period: 
                         {{ membership.membership_type.expiration_grace_period }} days)
-		        		
-		        		{% if membership.can_renew and membership.ma %}
-		        		<span class="inner-mitm"><a href="{{ membership.ma.get_absolute_url }}?username={{ user_this }}">Renew Now</a></span>
-		        		{% else %}
-    		        		{% if user.is_superuser and membership.ma and not membership.is_active %}
-    		        			<span class="inner-mitm"><a href="{{ membership.ma.get_absolute_url }}?username={{ user_this }}">Admin: Renew</a></span>
-    		        		{% endif %}
-		        		{% endif %}
+
+                        <span class="inner-mitm">{{ membership.get_status|capfirst}}</span>
+
+                        {% if membership.can_renew %}
+                        <a href="{% url admin:memberships_membershipdefault_change membership.pk %}">Renew</a>
+                        {% endif %}
+
 	        		</td>
 	        		<td>
 	        			{% if membership.get_entry.invoice %}

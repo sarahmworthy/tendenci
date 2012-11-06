@@ -364,6 +364,78 @@ class MembershipDefault(TendenciBaseModel):
         """
         return MembershipDefault.objects.filter(status_detail='pending')
 
+    def is_forever(self):
+        """
+        status=True, status_detail='active' and has
+        not expire_dt (within database is NULL).
+        """
+        return self.is_active() and not self.expire_dt
+
+    def get_expire_dt(self):
+        """
+        Returns None type object
+        or datetime object
+        """
+        from dateutil.relativedelta import relativedelta
+        grace_period = self.membership_type.expiration_grace_period
+
+        if not self.expire_dt:
+            return None
+
+        return self.expire_dt + relativedelta(days=grace_period)
+
+    def is_expired(self):
+        """
+        status=True, status_detail='active' and has expired,
+        includes the grace period.
+        """
+        if not self.is_active():
+            return False
+
+        # can't expire
+        if not self.get_expire_dt():
+            return False
+
+        return self.get_expire_dt() < datetime.now()
+
+    def is_active(self):
+        """
+        status = True, status_detail = 'active', and has not expired
+        considers grace period when evaluating expiration date-time
+        """
+        return self.status and self.status_detail.lower() == 'active'
+
+    def is_approved(self):
+        """
+        status=True, status_detail='active'
+        """
+        if self.is_active():
+
+            # membership does not expire
+            if self.is_forever():
+                return True
+
+            # membership has not expired
+            if not self.is_expired():
+                return True
+
+        return False
+
+    def get_status(self):
+        """
+        Returns status of membership
+        'expired', 'approved', 'pending', 'disapproved', archived'
+        """
+
+        if self.is_active():
+
+            if self.is_approved():
+                return 'active'
+            else:
+                return 'expired'
+
+        return self.status_detail.lower()
+
     def archive_old_memberships(self):
         """
         Archive old memberships that are active, pending, and expired
@@ -779,11 +851,13 @@ class Membership(TendenciBaseModel):
 
     def get_renewal_period_dt(self):
         """
-        calculate and return a tuple of renewal period dt (the renewal window):
-         (renewal_period_start_dt, renewal_period_end_dt)
+         Returns a none type object or 2-tuple with start_dt and end_dt
         """
-        if not self.expire_dt or not isinstance(self.expire_dt, datetime):
-            return (None, None)
+        if not self.membership_type.allow_renewal:
+            return None
+
+        if not isinstance(self.expire_dt, datetime):
+            return None
 
         start_dt = self.expire_dt - timedelta(days=self.membership_type.renewal_period_start)
         end_dt = self.expire_dt + timedelta(days=self.membership_type.renewal_period_end)
@@ -792,17 +866,35 @@ class Membership(TendenciBaseModel):
 
     def can_renew(self):
         """
-        Checks memberships that are never ending. No expire dt.
-        Checks if membership is within renewal period.
-        Returns boolean.
+        Checks if ...
+        membership.is_forever() i.e. never ends
+        membership type allows renewals
+        membership renewal period was specified
+        membership is within renewal period
+
+        returns boolean
         """
 
-        if self.expire_dt is None:  # neverending expirations
+        renewal_period = self.get_renewal_period_dt()
+
+        # if never expires; can never renew
+        if self.is_forever():
             return False
 
-        start_dt, end_dt = self.get_renewal_period_dt()
+        # if membership type allows renewals
+        if not self.membership_type.allow_renewal:
+            return False
+
+        # renewal not allowed; or no renewal period
+        if not renewal_period:
+            return False
+
+        # can only renew from approved state
+        if self.get_status() != 'active':
+            return False
 
         # assert that we're within the renewal period
+        start_dt, end_dt = renewal_period
         return (datetime.now() >= start_dt and datetime.now() <= end_dt)
 
     @classmethod
