@@ -485,7 +485,7 @@ def application_details_corp_pre(request, slug, cmb_id=None, template_name="memb
                                                 corporate_membership_id,
                                                 secret_hash]))
 
-            return redirect(reverse('membership.application_details', args=[app.slug, corporate_membership_id]))
+            return redirect(reverse('membership.application_details_default', args=[app.slug, corporate_membership_id]))
 
     c = {'app': app, "form": form}
     return render_to_response(template_name, c,

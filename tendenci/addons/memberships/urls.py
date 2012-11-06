@@ -49,26 +49,15 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r'^reports/members_over_time/$', 'report_members_over_time', name='reports-members-over-time'),
     url(r'^reports/members_stats/$', 'report_members_stats', name='reports-members-stats'),
 
-    # entries
-    # url(r"^entries/$", "application_entries", name="membership.application_entries"),
-    # url(r"^entries/(?P<id>\d+)/$", "application_entries", name="membership.application_entries"),
-    # url(r"^entries/print/(?P<id>\d+)/$", "application_entries_print", name="membership.application_entries_print"),
-    # url(r"^entries/edit/(?P<id>\d+)/$", "entry_edit", name="membership.entry_edit"),
-    # url(r"^entries/delete/(?P<id>\d+)/$", "entry_delete", name="membership.entry_delete"),
-    # url(r"^entries/search/$", "application_entries_search", name="membership.application_entries_search"),
-
     # notice
     url(r"^notices/(?P<id>\d+)/email_content/$", "notice_email_content", name="membership.notice_email_content"),
-
     url(r"^emailtoverify/conf/$", "email_to_verify_conf", name="membership.email__to_verify_conf"),
     url(r"^verifyemail/(?P<id>\d+)/(?P<guid>[\d\w-]+)/$", "verify_email", name="membership.verify_email"),
 
     # application
-    url(r"^confirmation/(?P<hash>[\w]+)/$", "application_confirmation", name="membership.application_confirmation"),
     url(r"^default-confirmation/(?P<hash>[\w]+)/$", "application_confirmation_default", name="membership.application_confirmation_default"),
     url(r"^(?P<slug>[\w\-]+)/template/$", "download_template", name="membership.download_template"),
-    url(r"^default-application/$", "application_detail_default", name="membership.application_detail_default"),
-    url(r"^(?P<slug>[\w\-]+)/(?P<cmb_id>\d+)?/?$", "application_details", name="membership.application_details"),
+    url(r"^default-application/(?P<cmb_id>\d+)?/?$", "application_detail_default", name="membership.application_detail_default"),
     url(r"^(?P<slug>[\w\-]+)/(?P<cmb_id>\d+)/(?P<imv_id>\d+)/(?P<imv_guid>[\d\w-]+)/$", "application_details", name="membership.application_details_via_corp_domain"),
     url(r"^(?P<slug>[\w\-]+)/(?P<cmb_id>\d+)/(?P<secret_hash>[\d\w]+)$", "application_details", name="membership.application_details_via_corp_secret_code"),
     url(r"^(?P<slug>[\w\-]+)/corp-pre/(?P<cmb_id>\d+)?/?$", "application_details_corp_pre", name="membership.application_details_corp_pre"),
