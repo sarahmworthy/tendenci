@@ -1345,7 +1345,6 @@ class MembershipDefaultForm(TendenciBaseForm):
     display_name = forms.CharField(initial=u'', required=False)
     company = forms.CharField(initial=u'', required=False)
     position_title = forms.CharField(initial=u'', required=False)
-    # functional_title = forms.CharField(initial=u'', required=False)
     department = forms.CharField(initial=u'', required=False)
     address = forms.CharField(initial=u'', required=False)
     address2 = forms.CharField(initial=u'', required=False)
