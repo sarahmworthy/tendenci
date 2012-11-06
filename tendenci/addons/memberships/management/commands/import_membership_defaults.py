@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from tendenci.addons.memberships.models import MembershipImport
         from tendenci.addons.memberships.utils import memb_import_parse_csv
-        from tendenci.addons.memberships.utils import process_default_membership
+        from tendenci.addons.memberships.utils import ImportMembDefault
 
         mimport = get_object_or_404(MembershipImport,
                                         pk=args[0])
@@ -33,13 +33,11 @@ class Command(BaseCommand):
                      'invalid': 0
                      }
 
+        imd = ImportMembDefault(request_user, mimport, dry_run=False,
+                                summary_d=summary_d)
+
         for memb_data in data_list:
-            process_default_membership(
-                                      request_user,
-                                      memb_data,
-                                      mimport,
-                                      dry_run=False,
-                                      summary_d=summary_d)
+            imd.process_default_membership(memb_data)
             mimport.num_processed += 1
             mimport.save()
 

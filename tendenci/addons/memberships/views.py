@@ -41,7 +41,7 @@ from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, M
     AppEntryForm, MembershipDefaultUploadForm)
 from tendenci.addons.memberships.utils import (is_import_valid, prepare_chart_data,
     get_days, get_over_time_stats, get_status_filter,
-    get_membership_stats, NoMembershipTypes, process_default_membership)
+    get_membership_stats, NoMembershipTypes, ImportMembDefault)
 from tendenci.addons.memberships.importer.forms import ImportMapForm, UploadForm
 from tendenci.addons.memberships.importer.utils import parse_mems_from_csv
 from tendenci.addons.memberships.utils import memb_import_parse_csv
@@ -1002,12 +1002,10 @@ def membership_default_import_preview(request, mimport_id,
     data_list_slice = data_list[start_index:end_index]
 
     users_list = []
+    imd = ImportMembDefault(request.user, mimport, dry_run=True)
     # to be efficient, we only process memberships on the current page
     for i, memb_data in enumerate(data_list_slice):
-        user_display = process_default_membership(request.user,
-                                                  memb_data,
-                                                  mimport,
-                                                  dry_run=True)
+        user_display = imd.process_default_membership(memb_data)
         user_display['row_num'] = start_index + i + 1
         users_list.append(user_display)
 

@@ -1,7 +1,8 @@
 import os
 import csv
+from decimal import Decimal
 from datetime import datetime, date, timedelta
-import dateutil.parser as dparser
+#import dateutil.parser as dparser
 
 from django.http import Http404, HttpResponseServerError
 from django.conf import settings
@@ -11,6 +12,7 @@ from django.template import loader
 from django.template.defaultfilters import slugify
 from django.db.models import Q
 from django.core.files.storage import default_storage
+from django.core import exceptions
 
 from tendenci.core.perms.utils import has_perm
 from tendenci.addons.memberships.models import (App,
@@ -546,6 +548,9 @@ def normalize_field_names(fieldnames):
 
 
 def memb_import_parse_csv(mimport):
+    """
+    Parse csv data into a dictionary.
+    """
     normalize_newline(mimport.upload_file.name)
     csv_reader = csv.reader(
         default_storage.open(mimport.upload_file.name, 'rb'))
@@ -593,6 +598,9 @@ def get_user_by_email(email):
     """
     Get user by email address.
     """
+    if not email:
+        return None
+
     [user] = User.objects.filter(email=email).order_by(
                     '-is_active', '-is_superuser', '-is_staff'
                         )[:1] or [None]
@@ -603,8 +611,15 @@ def get_user_by_members_number(member_number):
     """
     Get user by member number.
     """
+    if not member_number:
+        return None
+
     [profile] = Profile.objects.filter(
-                member_number=member_number)[:1] or [None]
+                member_number=member_number).order_by(
+                    '-user__is_active',
+                    '-user__is_superuser',
+                    '-user__is_staff'
+                        )[:1] or [None]
     if profile:
         return profile.user
     return None
@@ -614,337 +629,394 @@ def get_user_by_fn_ln_phone(first_name, last_name, phone):
     """
     Get user by first name, last name and phone.
     """
+    if not first_name or last_name or phone:
+        return None
+
     [profile] = Profile.objects.filter(
                 user__first_name=first_name,
                 user__last_name=last_name,
-                phone=phone)[:1] or [None]
+                phone=phone).order_by(
+                    '-user__is_active',
+                    '-user__is_superuser',
+                    '-user__is_staff'
+                        )[:1] or [None]
     if profile:
         return profile.user
     return None
 
 
-def process_default_membership(request_user, memb_data, mimport,
+class ImportMembDefault(object):
+    """
+    Check and process (insert/update) a membership.
+    """
+    def __init__(self, request_user, mimport,
                                dry_run=True, **kwargs):
-    """
-    Check if it's insert or update. If dry_run is False,
-    do the import to the membership_default.
+        """
+        :param mimport: a instance of MembershipImport
+        :param dry_run: if True, do everything except updating the database.
+        """
+        self.summary_d = kwargs.get('summary_d')
+        self.key = mimport.key
+        self.request_user = request_user
+        self.mimport = mimport
+        self.dry_run = dry_run
 
-    :param memb_data: a dictionary that includes the info of a membership
-    :param mimport: a instance of MembershipImport
-    :param dry_run: if True, do everything except updating the database.
-    """
-    #fieldnames = memb_data.keys()
-    user = None
-    memb = None
-    user_display = {}
-    user_display['error'] = ''
-    user_display['user'] = None
-    summary_d = kwargs.get('summary_d')
-    key = mimport.key
+    def process_default_membership(self, memb_data, **kwargs):
+        """
+        Check if it's insert or update. If dry_run is False,
+        do the import to the membership_default.
 
-    missing_fields_msg = check_missing_fields(memb_data, key)
+        :param memb_data: a dictionary that includes the info of a membership
+        """
+        self.memb_data = memb_data
+        self.field_names = memb_data.keys()
+        user = None
+        memb = None
+        user_display = {}
+        user_display['error'] = ''
+        user_display['user'] = None
 
-    # don't process if we have missing value of required fields
-    if missing_fields_msg:
-        user_display['error'] = missing_fields_msg
-        user_display['action'] = 'skip'
-        if not dry_run:
-            summary_d['invalid'] += 1
-    else:
-        if key == 'member_number/email/fn_ln_phone':
-            user = get_user_by_members_number(memb_data['member_number'])
-            if not user:
-                user = get_user_by_email(memb_data['email'])
+        missing_fields_msg = check_missing_fields(self.memb_data, self.key)
+
+        # don't process if we have missing value of required fields
+        if missing_fields_msg:
+            user_display['error'] = missing_fields_msg
+            user_display['action'] = 'skip'
+            if not self.dry_run:
+                self.summary_d['invalid'] += 1
+        else:
+            if self.key == 'member_number/email/fn_ln_phone':
+                user = get_user_by_members_number(
+                                    self.memb_data['member_number'])
                 if not user:
-                    user = get_user_by_fn_ln_phone(memb_data['first_name'],
-                                                   memb_data['last_name'],
-                                                   memb_data['phone']
-                                                   )
-        elif key == 'email/member_number/fn_ln_phone':
-            user = get_user_by_email(memb_data['email'])
-            if not user:
-                user = get_user_by_members_number(memb_data['member_number'])
+                    user = get_user_by_email(self.memb_data['email'])
+                    if not user:
+                        user = get_user_by_fn_ln_phone(
+                                           self.memb_data['first_name'],
+                                           self.memb_data['last_name'],
+                                           self.memb_data['phone']
+                                           )
+            elif self.key == 'email/member_number/fn_ln_phone':
+                user = get_user_by_email(self.memb_data['email'])
                 if not user:
-                    user = get_user_by_fn_ln_phone(memb_data['first_name'],
-                                                   memb_data['last_name'],
-                                                   memb_data['phone'])
-        elif key == 'member_number/email':
-            user = get_user_by_members_number(memb_data['member_number'])
-            if not user:
-                user = get_user_by_email(memb_data['email'])
-        elif key == 'email/member_number':
-            user = get_user_by_email(memb_data['email'])
-            if not user:
-                user = get_user_by_members_number(memb_data['member_number'])
-        elif key == 'member_number':
-            user = get_user_by_members_number(memb_data['member_number'])
-        else:   # email
-            user = get_user_by_email(memb_data['email'])
+                    user = get_user_by_members_number(
+                                self.memb_data['member_number'])
+                    if not user:
+                        user = get_user_by_fn_ln_phone(
+                                           self.memb_data['first_name'],
+                                           self.memb_data['last_name'],
+                                           self.memb_data['phone'])
+            elif self.key == 'member_number/email':
+                user = get_user_by_members_number(
+                                self.memb_data['member_number'])
+                if not user:
+                    user = get_user_by_email(self.memb_data['email'])
+            elif self.key == 'email/member_number':
+                user = get_user_by_email(self.memb_data['email'])
+                if not user:
+                    user = get_user_by_members_number(
+                                self.memb_data['member_number'])
+            elif self.key == 'member_number':
+                user = get_user_by_members_number(
+                                self.memb_data['member_number'])
+            else:   # email
+                user = get_user_by_email(self.memb_data['email'])
 
-        if user:
-            user_display['user_action'] = 'update'
-            user_display['user'] = user
-            [memb] = MembershipDefault.objects.filter(user=user).exclude(
-                      status_detail='archive'
-                            )[:1] or [None]
-            if memb:
-                user_display['memb_action'] = 'update'
-                user_display['action'] = 'update'
+            if user:
+                user_display['user_action'] = 'update'
+                user_display['user'] = user
+                [memb] = MembershipDefault.objects.filter(user=user).exclude(
+                          status_detail='archive'
+                                )[:1] or [None]
+                if memb:
+                    user_display['memb_action'] = 'update'
+                    user_display['action'] = 'update'
+                else:
+                    user_display['memb_action'] = 'insert'
+                    user_display['action'] = 'mixed'
             else:
+                user_display['user_action'] = 'insert'
                 user_display['memb_action'] = 'insert'
-                user_display['action'] = 'mixed'
+                user_display['action'] = 'insert'
+
+            if not self.dry_run:
+                if all([
+                        user_display['user_action'] == 'insert',
+                        user_display['memb_action'] == 'insert'
+                        ]):
+                    self.summary_d['insert'] += 1
+                elif all([
+                        user_display['user_action'] == 'update',
+                        user_display['memb_action'] == 'update'
+                        ]):
+                    self.summary_d['update'] += 1
+                else:
+                    self.summary_d['update_insert'] += 1
+
+                # now do the update or insert
+                self.do_import_membership_default(user, memb, user_display)
+                return
+
+        user_display.update({
+                    'first_name': self.memb_data.get('first_name', ''),
+                    'last_name': self.memb_data.get('last_name', ''),
+                    'email': self.memb_data.get('email', ''),
+                    'username': self.memb_data.get('username', ''),
+                    'member_number': self.memb_data.get('member_number', ''),
+                    'phone': self.memb_data.get('phone', ''),
+                    'company': self.memb_data.get('company', ''),
+                             })
+        return user_display
+
+    def do_import_membership_default(self, user, memb, action_info):
+        """
+        Database import here - insert or update
+        """
+        # handle user
+        if not user:
+            user = User()
+
+        # exclude user
+        if 'user' in self.field_names:
+            self.field_names.remove('user')
+
+        self.assign_import_values_from_dict(user, action_info['user_action'])
+
+        # make sure username is unique.
+        if action_info['user_action'] == 'insert':
+            user.username = get_unique_username(user)
+
+        if 'password' in self.field_names and \
+                self.mimport.override and user.password:
+            user.set_password(user.password)
+
+        if not user.password:
+            user.set_password(User.objects.make_random_password(length=8))
+
+        user.is_active = True
+
+        user.save()
+
+        # process profile
+        try:  # get or create
+            profile = user.get_profile()
+        except Profile.DoesNotExist:
+            profile = Profile.objects.create(user=user,
+               creator=self.request_user,
+               creator_username=self.request_user.username,
+               owner=self.request_user,
+               owner_username=self.request_user.username,
+            )
+        self.assign_import_values_from_dict(profile,
+                                            action_info['user_action'])
+
+        profile.save()
+
+        # membership
+        if not memb:
+            memb = MembershipDefault(
+                    user=user,
+                    creator=self.request_user,
+                    creator_username=self.request_user.username,
+                    owner=self.request_user,
+                    owner_username=self.request_user.username,
+                                     )
+
+        self.assign_import_values_from_dict(memb, action_info['memb_action'])
+        if memb.status == None:
+            memb.status = True
+        if not memb.status_detail:
+            memb.status_detail = 'active'
         else:
-            user_display['user_action'] = 'insert'
-            user_display['memb_action'] = 'insert'
-            user_display['action'] = 'insert'
+            memb.status_detail = memb.status_detail.lower()
 
-        if not dry_run:
-            if all([
-                    user_display['user_action'] == 'insert',
-                    user_display['memb_action'] == 'insert'
-                    ]):
-                summary_d['insert'] += 1
-            elif all([
-                    user_display['user_action'] == 'update',
-                    user_display['memb_action'] == 'update'
-                    ]):
-                summary_d['update'] += 1
-            else:
-                summary_d['update_insert'] += 1
+        # membership type
+        if not hasattr(memb, "membership_type") or not memb.membership_type:
+            membership_type = None
+            if 'membership_type' in self.field_names:
+                membership_type = get_membership_type_by_value(
+                            self.memb_data['membership_type'])
+            if not membership_type:
+                # last resort - pick the first available membership type
+                membership_type = MembershipType.objects.filter(
+                                                status=True,
+                                                status_detail='active')[0]
+            memb.membership_type = membership_type
 
-            # now do the update or insert
-            do_import_membership_default(request_user, mimport,
-                                         user, memb, memb_data,
-                                         user_display)
-            return
+        memb.save()
 
-    user_display.update({
-                        'first_name': memb_data.get('first_name', ''),
-                        'last_name': memb_data.get('last_name', ''),
-                        'email': memb_data.get('email', ''),
-                        'username': memb_data.get('username', ''),
-                        'member_number': memb_data.get('member_number', ''),
-                        'phone': memb_data.get('phone', ''),
-                        'company': memb_data.get('company', ''),
-                         })
-    return user_display
+        memb.is_active = self.is_active(memb)
 
-
-def do_import_membership_default(request_user, mimport,
-                                 user, memb, memb_data,
-                                 action_info):
-    """
-    Database import here - insert or update
-    """
-    # handle user
-    if not user:
-        user = User()
-
-    field_names = memb_data.keys()
-    # exclude user
-    if 'user' in field_names:
-        field_names.remove('user')
-
-    assign_import_values_from_dict(user, mimport, memb_data,
-                            field_names, action_info['user_action'])
-
-    # make sure username is unique.
-    if action_info['user_action'] == 'insert':
-        user.username = get_unique_username(user)
-
-    if 'password' in field_names and mimport.override and user.password:
-        user.set_password(user.password)
-
-    if not user.password:
-        user.set_password(User.objects.make_random_password(length=8))
-
-    user.is_active = True
-
-    user.save()
-
-    # process profile
-    try:  # get or create
-        profile = user.get_profile()
-    except Profile.DoesNotExist:
-        profile = Profile.objects.create(user=user,
-           creator=request_user,
-           creator_username=request_user.username,
-           owner=request_user,
-           owner_username=request_user.username,
-        )
-    assign_import_values_from_dict(profile, mimport, memb_data,
-                        field_names, action_info['user_action'])
-
-    profile.save()
-
-    # membership
-    if not memb:
-        memb = MembershipDefault(
-                user=user,
-                creator=request_user,
-                creator_username=request_user.username,
-                owner=request_user,
-                owner_username=request_user.username,
-                                 )
-
-    assign_import_values_from_dict(memb, mimport, memb_data,
-                        field_names, action_info['memb_action'])
-    if memb.status == None:
-        memb.status = True
-    if not memb.status_detail:
-        memb.status_detail = 'active'
-
-    # membership type
-    if not hasattr(memb, "membership_type"):
-        membership_type = None
-        if 'membership_type' in field_names:
-            membership_type = get_membership_type_by_value(
-                        memb_data['membership_type'])
-        if not membership_type:
-            # last resort - assign a default membership type
-            membership_type = MembershipType.objects.filter(
-                                            status=True,
-                                            status_detail='active')[0]
-        memb.membership_type = membership_type
-
-    # prevent the not-null constraint violations
-    # join_dt
-    if not hasattr(memb, 'join_dt') or not memb.join_dt:
-        memb.join_dt = datetime.now()
-    # exire_dt
-    if not hasattr(memb, 'expire_dt') or not memb.expire_dt:
-        memb.expire_dt = datetime.now() + timedelta(days=365)
-    # renew_dt
-    if not hasattr(memb, 'renew_dt') or not memb.renew_dt:
-        memb.renew_dt = datetime.now()
-    # application_abandoned_dt
-    if not hasattr(memb, 'application_abandoned_dt') or \
-        not memb.application_abandoned_dt:
-        memb.application_abandoned_dt = datetime.now()
-    # application_abandoned_user_id
-    if not hasattr(memb, 'application_abandoned_user') or \
-        not memb.application_abandoned_user:
-        memb.application_abandoned_user = request_user
-    # application_complete_dt
-    if not hasattr(memb, 'application_complete_dt') or \
-        not memb.application_complete_dt:
-        memb.application_complete_dt = datetime.now()
-    # application_complete_user_id
-    if not hasattr(memb, 'application_complete_user') or \
-        not memb.application_complete_user:
-        memb.application_complete_user = request_user
-    # application_approved_dt
-    if not hasattr(memb, 'application_approved_dt') or \
-        not memb.application_approved_dt:
-        memb.application_approved_dt = datetime.now()
-    # application_approved_user_id
-    if not hasattr(memb, 'application_approved_user') or \
-        not memb.application_approved_user:
-        memb.application_approved_user = request_user
-    # action_taken_dt
-    if not hasattr(memb, 'action_taken_dt') or \
-        not memb.action_taken_dt:
-        memb.action_taken_dt = datetime.now()
-    # action_taken_user_id
-    if not hasattr(memb, 'action_taken_user') or \
-        not memb.action_taken_user:
-        memb.action_taken_user = request_user
-    # bod_dt
-    if not hasattr(memb, 'bod_dt') or \
-        not memb.bod_dt:
-        memb.bod_dt = datetime.now()
-    # personnel_notified_dt
-    if not hasattr(memb, 'personnel_notified_dt') or \
-        not memb.personnel_notified_dt:
-        memb.personnel_notified_dt = datetime.now()
-    # payment_received_dt
-    if not hasattr(memb, 'payment_received_dt') or \
-        not memb.payment_received_dt:
-        memb.payment_received_dt = datetime.now()
-    # payment_method_id
-    if not hasattr(memb, 'payment_method') or \
-        not memb.payment_method:
-        memb.payment_method = PaymentMethod.objects.all()[0]
-    # override_price
-    if memb.override_price == None:
-        memb.override_price = 0
-    # application_approved_denied_dt
-    if not hasattr(memb, 'application_approved_denied_dt') or \
-        not memb.application_approved_denied_dt:
-        memb.application_approved_denied_dt = datetime.now()
-    # application_approved_denied_user_id
-    if not hasattr(memb, 'application_approved_denied_user') or \
-        not memb.application_approved_denied_user:
-        memb.application_approved_denied_user = request_user
-    # organization_entity_id
-    if not hasattr(memb, 'organization_entity') or \
-        not memb.organization_entity:
-        memb.organization_entity = Entity.objects.all()[0]
-    # corporate_entity_id
-    if not hasattr(memb, 'corporate_entity') or \
-        not memb.corporate_entity:
-        memb.corporate_entity = Entity.objects.all()[0]
-    # corporate_membership_id
-    if not hasattr(memb, 'corporate_membership_id') or \
-        not memb.corporate_membership_id:
-        memb.corporate_membership_id = 0
-
-    memb.save()
-
-    # member_number
-    # TODO: create a function to assign a member number
-    if not memb.member_number:
-        if memb.status and memb.status_detail == 'active':
-            memb.member_number = 5100 + memb.pk
-    if memb.member_number:
-        if not profile.member_number:
-            profile.member_number = memb.member_number
-            profile.save()
-        else:
-            if profile.member_number != memb.member_number:
+        # member_number
+        # TODO: create a function to assign a member number
+        if not memb.member_number:
+            if memb.is_active:
+                memb.member_number = 5100 + memb.pk
+        if memb.member_number:
+            if not profile.member_number:
                 profile.member_number = memb.member_number
                 profile.save()
-    else:
-        if profile.member_number:
-            profile.member_number = ''
-            profile.save()
-
-    # group associated to membership type
-    params = {'creator_id': request_user.pk,
-              'creator_username': request_user.username,
-              'owner_id': request_user.pk,
-              'owner_username': request_user.username}
-    memb.membership_type.group.add_user(memb.user, **params)
-
-
-def assign_import_values_from_dict(instance, mimport, memb_data,
-                            field_names, action):
-    for field_name in field_names:
-        if hasattr(instance, field_name):
-            # parse the datetime
-            if field_name in ['create_dt', 'update_dt',
-                              'dob_dt', 'dob_dt',
-                              'join_dt', 'expire_dt',
-                              'application_abandoned_dt',
-                              'application_complete_dt',
-                              'application_approved_dt', 'bod_dt',
-                              'personnel_notified_dt', 'payment_received_dt',
-                              'application_approved_denied_dt', 'renew_dt',
-                              'action_taken_dt',
-                              ]:
-                value = dparser.parse(memb_data[field_name])
             else:
-                # TODO: take care of foreign keys
-                value = memb_data[field_name]
-                if field_name == 'membership_type':
-                    value = get_membership_type_by_value(value)
+                if profile.member_number != memb.member_number:
+                    profile.member_number = memb.member_number
+                    profile.save()
+        else:
+            if profile.member_number:
+                profile.member_number = ''
+                profile.save()
 
-            if action == 'insert':
-                setattr(instance, field_name, value)
-            else:
-                if mimport.override or (getattr(instance, field_name) == '' \
-                                        or getattr(instance, field_name) == None):
+        # add to group only for the active memberships
+        if memb.is_active:
+            # group associated to membership type
+            params = {'creator_id': self.request_user.pk,
+                      'creator_username': self.request_user.username,
+                      'owner_id': self.request_user.pk,
+                      'owner_username': self.request_user.username}
+            memb.membership_type.group.add_user(memb.user, **params)
+
+    def is_active(self, memb):
+        return all([memb.status,
+                    memb.status_detail == 'active',
+                    not memb.expire_dt or memb.expire_dt > datetime.now()
+                    ])
+
+    def assign_import_values_from_dict(self, instance, action):
+        """
+        Assign the import value from a dictionary object
+        - self.memb_data.
+        """
+        if instance.__class__ == User:
+            assign_to_fields = dict([(field.name, field) \
+                        for field in User._meta.fields \
+                     if field.get_internal_type() != 'AutoField'])
+        elif instance.__class__ == Profile:
+            assign_to_fields = dict([(field.name, field) \
+                        for field in Profile._meta.fields \
+                     if field.get_internal_type() != 'AutoField'])
+        else:
+            assign_to_fields = dict([(field.name, field) \
+                        for field in MembershipDefault._meta.fields \
+                     if field.get_internal_type() != 'AutoField'])
+        assign_to_fields_names = assign_to_fields.keys()
+
+        for field_name in self.field_names:
+            if field_name in assign_to_fields_names:
+                if any([
+                        action == 'insert',
+                        self.mimport.override,
+                        not hasattr(instance, field_name) or \
+                        getattr(instance, field_name) == '' or \
+                        getattr(instance, field_name) == None
+                        ]):
+                    value = self.memb_data[field_name]
+                    value = self.clean_data(value,
+                                            assign_to_fields[field_name])
                     setattr(instance, field_name, value)
+
+        # if insert, set defaults for the fields not in csv.
+        for field_name in assign_to_fields_names:
+            if field_name not in self.field_names and action == 'insert':
+                value = self.get_default_value(assign_to_fields[field_name])
+                if value:
+                    setattr(instance, field_name, value)
+
+    def get_default_value(self, field):
+        # if allows null, return None
+        if field.null:
+            return None
+
+        field_type = field.get_internal_type()
+
+        if field_type == 'BooleanField':
+            return False
+
+        if field_type == 'DateField':
+            return date
+
+        if field_type == 'DateTimeField':
+            return datetime
+
+        if field_type == 'DecimalField':
+            return Decimal(0)
+
+        if field_type == 'IntegerField':
+            return 0
+
+        if field_type == 'FloatField':
+            return 0
+
+        if field_type == 'ForeignKey':
+            [value] = field.related.parent_model.objects.all(
+                                        )[:1] or [None]
+            return value
+
+        return ''
+
+    def clean_data(self, value, field):
+        """
+        Clean the data based on the field type.
+        """
+        field_type = field.get_internal_type()
+        if field_type in ['CharField', 'EmailField',
+                          'URLField', 'SlugField']:
+            if not value:
+                value = ''
+            if len(value) > field.max_length:
+                # truncate the value to ensure its length <= max_length
+                value = value[:field.max_length]
+                value = field.to_python(value)
+
+        elif field_type == 'BooleanField':
+            try:
+                value = field.to_python(value)
+            except exceptions.ValidationError:
+                value = False
+        elif field_type == 'DateField':
+            if value:
+                try:
+                    value = field.to_python(value)
+                except exceptions.ValidationError:
+                    pass
+
+            if not value:
+                if not field.null:
+                    value = date
+
+        elif field_type == 'DateTimeField':
+            if value:
+                try:
+                    value = field.to_python(value)
+                except exceptions.ValidationError:
+                    pass
+
+            if not value:
+                if not field.null:
+                    value = datetime
+        elif field_type == 'DecimalField':
+            try:
+                value = field.to_python(value)
+            except exceptions.ValidationError:
+                value = Decimal(0)
+        elif field_type == 'IntegerField':
+            try:
+                value = int(value)
+            except:
+                value = 0
+        elif field_type == 'FloatField':
+            try:
+                value = float(value)
+            except:
+                value = 0
+        elif field_type == 'ForeignKey':
+            # assume id for foreign key
+            [value] = field.related.parent_model.objects.filter(
+                                        pk=value)[:1] or [None]
+            if not value and not field.null:
+                # if the field doesn't allow null, grab the first one.
+                [value] = field.related.parent_model.objects.all(
+                                                    )[:1] or [None]
+
+        return value
 
 
 def get_membership_type_by_value(value):
