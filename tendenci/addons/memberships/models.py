@@ -836,6 +836,32 @@ class MembershipDefault(TendenciBaseModel):
                 action='membership_approved'
             )
 
+    def make_acct_entries(self, user, inv, amount, **kwargs):
+        """
+        Make the accounting entries for the event sale
+        """
+        from tendenci.apps.accountings.models import Acct, AcctEntry, AcctTran
+        from tendenci.apps.accountings.utils import make_acct_entries_initial, make_acct_entries_closing
+
+        ae = AcctEntry.objects.create_acct_entry(user, 'invoice', inv.id)
+        if not inv.is_tendered:
+            make_acct_entries_initial(user, ae, amount)
+        else:
+            # payment has now been received
+            make_acct_entries_closing(user, ae, amount)
+
+            # CREDIT event SALES
+            acct_number = self.get_acct_number()
+            acct = Acct.objects.get(account_number=acct_number)
+            AcctTran.objects.create_acct_tran(user, ae, acct, amount * (-1))
+
+    # to lookup for the number, go to /accountings/account_numbers/
+    def get_acct_number(self, discount=False):
+        if discount:
+            return 462000
+        else:
+            return 402000
+
 
 class Membership(TendenciBaseModel):
     """
