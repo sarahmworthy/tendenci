@@ -13,7 +13,7 @@ from django.http import HttpResponseRedirect
 from tendenci.addons.memberships.forms import MembershipTypeForm
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.perms.utils import update_perms_and_save
-from tendenci.addons.memberships.models import  Membership, MembershipDefault, MembershipType, Notice, App, AppField
+from tendenci.addons.memberships.models import Membership, MembershipDefault, MembershipType, Notice, App, AppField
 from tendenci.addons.memberships.forms import MembershipDefaultForm, AppForm, NoticeForm, AppFieldForm, AppEntryForm
 from tendenci.addons.memberships.utils import get_default_membership_fields, edit_app_update_corp_fields
 from tendenci.addons.memberships.middleware import ExceededMaxTypes
@@ -463,7 +463,7 @@ class AppAdmin(admin.ModelAdmin):
                 field.content_type = ContentType.objects.get_for_model(Membership)
 
             if not field.field_name in reserved_names:
-                field.field_name = slugify(field.label).replace('-','_')
+                field.field_name = slugify(field.label).replace('-', '_')
 
                 # check field_name after slugify
                 if field.field_name in reserved_names:
@@ -473,6 +473,7 @@ class AppAdmin(admin.ModelAdmin):
             field.save()
 
         return app
+
 
 class AppEntryAdmin(admin.ModelAdmin):
     form = AppEntryForm
@@ -506,4 +507,3 @@ class AppEntryAdmin(admin.ModelAdmin):
 admin.site.register(MembershipDefault, MembershipDefaultAdmin)
 admin.site.register(MembershipType, MembershipTypeAdmin)
 admin.site.register(Notice, NoticeAdmin)
-admin.site.register(App, AppAdmin)
