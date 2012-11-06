@@ -9,9 +9,6 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r"^(?P<id>\d+)/delete/$", "membership_delete", name="membership.delete"),
     url(r"^(?P<id>\d+)/edit/$", "membership_edit", name="membership.edit"),
 
-    # notices
-    (r'^notices/', include('tendenci.addons.memberships.notices.urls')),
-
     # import
     url(r"^import/$", "membership_import_upload", name="membership_import"),
     url(r"^import/upload-file$", "membership_import_upload", name="membership_import_upload_file"),
@@ -47,6 +44,7 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r'^reports/members_stats/$', 'report_members_stats', name='reports-members-stats'),
 
     # notice
+    (r'^notices/', include('tendenci.addons.memberships.notices.urls')),
     url(r"^notices/(?P<id>\d+)/email_content/$", "notice_email_content", name="membership.notice_email_content"),
     url(r"^emailtoverify/conf/$", "email_to_verify_conf", name="membership.email__to_verify_conf"),
     url(r"^verifyemail/(?P<id>\d+)/(?P<guid>[\d\w-]+)/$", "verify_email", name="membership.verify_email"),
