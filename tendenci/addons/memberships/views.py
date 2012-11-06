@@ -3,6 +3,7 @@ import hashlib
 from hashlib import md5
 from datetime import datetime, timedelta
 import subprocess
+from sets import Set
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -18,6 +19,8 @@ from django.utils.encoding import smart_str
 from django.utils import simplejson
 from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
+from django.db.models import ForeignKey, OneToOneField
+
 
 from djcelery.models import TaskMeta
 from geraldo.generators import PDFGenerator
@@ -34,6 +37,7 @@ from reports import ReportNewMems
 from tendenci.core.files.models import File
 from tendenci.core.exports.utils import render_csv, run_export_task
 
+from tendenci.apps.profiles.models import Profile
 from tendenci.addons.memberships.models import (App, AppEntry, Membership,
     MembershipType, Notice, MembershipImport, MembershipDefault)
 from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, MembershipDefaultForm,
@@ -966,9 +970,25 @@ def membership_default_import_upload(request,
     memb_type_exists = MembershipType.objects.all(
                                     ).exists()
 
+    # list of foreignkey fields
+    user_fks = [field.name for field in User._meta.fields \
+                if isinstance(field, (ForeignKey, OneToOneField))]
+    profile_fks = [field.name for field in Profile._meta.fields \
+                   if isinstance(field, (ForeignKey, OneToOneField))]
+    memb_fks = [field.name for field in MembershipDefault._meta.fields \
+                if isinstance(field, (ForeignKey, OneToOneField))]
+
+    fks = Set(user_fks + profile_fks + memb_fks)
+    fks = [field for field in fks]
+    if 'user' in fks:
+        fks.remove('user')
+    fks.sort()
+    foreign_keys = ', '.join(fks)
+
     return render_to_response(template_name, {
         'form': form,
-        'memb_type_exists': memb_type_exists
+        'memb_type_exists': memb_type_exists,
+        'foreign_keys': foreign_keys
         }, context_instance=RequestContext(request))
 
 

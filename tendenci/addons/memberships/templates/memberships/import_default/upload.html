@@ -35,6 +35,16 @@
             width: 70%;
             margin: 1em 0;
         }
+        #fk-list{
+            margin: 3px 2em;
+            line-height: 1.1em;
+            color: #39B54A;
+            font-size: 0.9;
+            font-family:"Courier New", Courier, monospace;
+        }
+        #fk-list-wrap{
+            margin-top: 1em;
+        }
     </style>
 
 {% endblock %}
@@ -74,6 +84,13 @@
                The field names not included in the <strong>Template</strong> will be ignored.
            </li>
         </ul>
+        <div id="fk-list-wrap">
+            <h3>List of ForeignKey Fields:</h3>
+            <div id="fk-list">
+                {{ foreign_keys}}
+            </div>
+        </div>
+        
     </div>
 
 
