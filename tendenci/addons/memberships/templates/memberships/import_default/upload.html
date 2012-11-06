@@ -15,6 +15,26 @@
         .error{
             color: red;
         }
+        #import-instruction{
+            margin: 1em 0;
+            padding: 1em;
+            width: 70%;
+            background-color: #F7F7F9;
+        }
+        #import-instruction li{
+            padding: 3px 0;
+            list-style: circle;
+        }
+        .alert{
+            background-color: #fcf8e3;
+            border: 1px solid #FBEED5;
+            border-radius: 4px 4px 4px 4px;
+            color: #c09853;
+            padding: 1em;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+            width: 70%;
+            margin: 1em 0;
+        }
     </style>
 
 {% endblock %}
@@ -24,10 +44,37 @@
 <div id="import-wrap">
     
     <h1>{% trans "Import Membership" %}</h1>
+    
+    {% if not memb_type_exists %}
+    <div class="alert">
+        Please set up membership types before proceeding.
+        
+    </div>
+    {% endif %}
 
-    <p style="margin-bottom:0;">{% trans "<strong>Download</strong> and <strong>fill in</strong> your spreadsheet. <strong>Upload</strong> your updated spreadsheet, <strong>preview</strong>, and then <strong>submit</strong>." %}</p>
+    
+    <div id="import-instruction">
+        <p style="margin-bottom:0;">{% trans "<strong>Download</strong> and <strong>fill in</strong> your spreadsheet. <strong>Upload</strong> your updated spreadsheet, <strong>preview</strong>, and then <strong>submit</strong>." %}</p>
 
-    <p style="margin-top:0;">Please review your membership <a href="{% url settings.index 'module' 'memberships' %}">privacy settings</a> before importing.</p>
+        <p style="margin-top:0;">Please review your membership <a href="{% url settings.index 'module' 'memberships' %}">privacy settings</a> before importing.</p>
+
+
+        <h3>How to the prepare the spreadsheet (.css file)?</h3>
+        <ul>
+           <li>
+               The required fields include: <strong>membership_type</strong> + <strong>keys</strong> selected to identify the existing entries.
+           </li>
+           <li>
+               The data type of ForeignKey fields (ex: membership_type) is <strong>integer</strong>. So, please fill the ForeignKey fields with IDs. 
+           </li>
+            <li>
+               Use the field names in the <strong>Template</strong>. The order of the field names doesn't matter. 
+           </li>
+           <li>
+               The field names not included in the <strong>Template</strong> will be ignored.
+           </li>
+        </ul>
+    </div>
 
 
     <form method='post' action='{% url memberships.default_import %}' enctype="multipart/form-data">

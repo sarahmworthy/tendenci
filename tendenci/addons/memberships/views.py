@@ -962,8 +962,13 @@ def membership_default_import_upload(request,
             return redirect(reverse('memberships.default_import_preview',
                                      args=[memb_import.id]))
 
+    # make sure the site has membership types set up
+    memb_type_exists = MembershipType.objects.all(
+                                    ).exists()
+
     return render_to_response(template_name, {
         'form': form,
+        'memb_type_exists': memb_type_exists
         }, context_instance=RequestContext(request))
 
 
