@@ -1,4 +1,5 @@
 from datetime import datetime
+import traceback
 
 from django.core.management.base import BaseCommand
 from django.shortcuts import get_object_or_404
@@ -26,29 +27,30 @@ class Command(BaseCommand):
         request_user = User.objects.get(pk=args[1])
 
         fieldnames, data_list = memb_import_parse_csv(mimport)
-        summary_d = {
-                     'insert': 0,
-                     'update': 0,
-                     'update_insert': 0,
-                     'invalid': 0
-                     }
 
-        imd = ImportMembDefault(request_user, mimport, dry_run=False,
-                                summary_d=summary_d)
+        imd = ImportMembDefault(request_user, mimport, dry_run=False)
 
         for memb_data in data_list:
-            imd.process_default_membership(memb_data)
+            # catch any error
+            try:
+                imd.process_default_membership(memb_data)
+            except:
+                mimport.status = 'error'
+                # TODO: add a fied to log the error
+                mimport.save()
+                raise  Exception(traceback.format_exc())
+
             mimport.num_processed += 1
+            # save the status
+            summary = 'insert:%d,update:%d,update_insert:%d,invalid:%d' % (
+                                        imd.summary_d['insert'],
+                                        imd.summary_d['update'],
+                                        imd.summary_d['update_insert'],
+                                        imd.summary_d['invalid']
+                                        )
+            mimport.summary = summary
             mimport.save()
 
-        # we are done. save the status
-        summary = 'insert:%d,update:%d,update_insert:%d,invalid:%d' % (
-                                    summary_d['insert'],
-                                    summary_d['update'],
-                                    summary_d['update_insert'],
-                                    summary_d['invalid']
-                                    )
-        mimport.summary = summary
         mimport.status = 'completed'
         mimport.complete_dt = datetime.now()
         mimport.save()

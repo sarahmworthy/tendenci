@@ -2,7 +2,7 @@ import os
 import csv
 from decimal import Decimal
 from datetime import datetime, date, timedelta
-#import dateutil.parser as dparser
+import dateutil.parser as dparser
 
 from django.http import Http404, HttpResponseServerError
 from django.conf import settings
@@ -655,11 +655,19 @@ class ImportMembDefault(object):
         :param mimport: a instance of MembershipImport
         :param dry_run: if True, do everything except updating the database.
         """
-        self.summary_d = kwargs.get('summary_d')
         self.key = mimport.key
         self.request_user = request_user
         self.mimport = mimport
         self.dry_run = dry_run
+        self.summary_d = self.init_summary()
+
+    def init_summary(self):
+        return {
+                 'insert': 0,
+                 'update': 0,
+                 'update_insert': 0,
+                 'invalid': 0
+                 }
 
     def process_default_membership(self, memb_data, **kwargs):
         """
@@ -973,6 +981,7 @@ class ImportMembDefault(object):
                 value = False
         elif field_type == 'DateField':
             if value:
+                value = dparser.parse(value)
                 try:
                     value = field.to_python(value)
                 except exceptions.ValidationError:
@@ -984,6 +993,7 @@ class ImportMembDefault(object):
 
         elif field_type == 'DateTimeField':
             if value:
+                value = dparser.parse(value)
                 try:
                     value = field.to_python(value)
                 except exceptions.ValidationError:

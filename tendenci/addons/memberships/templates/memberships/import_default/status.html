@@ -10,6 +10,11 @@
 {% block extra_head %}
 {{ block.super }}
     <link rel="stylesheet" href="{{ STATIC_URL }}css/membership-default-import.css">
+    <style>
+        #error-msg{
+            display: none;
+        }
+    </style>
 {% endblock %}
 
 {% block body %}
@@ -62,6 +67,10 @@
              <div>&nbsp;</div>
              <div><a href="{% url memberships.default_import %}">Import more memberships</a></div>
         </div>
+        
+        <div id="error-msg">
+            Oops, an error occurred. Please review your data and try again later.
+        </div>
     </div>  
     
 </div>
@@ -72,6 +81,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
   
 <script type="text/javascript">
+
   $(document).ready(function() {
      // http://jqueryui.com/progressbar/#animated
      $this_bar = $("#progressbar");
@@ -91,20 +101,26 @@
                $this_bar.progressbar("option", "value", value);
                $('#num-processed').html(obj.num_processed);
                
-               if (obj.status == 'completed'){
+               if (obj.status == 'completed' || obj.status == 'error'){
                    clearInterval(status_check_intval);
                    
-                   $('#summary').css({'display': 'block'});
-                   $('#num-insert').html(obj.num_insert);
-                   $('#num-update').html(obj.num_update);
-                   $('#num-update-insert').html(obj.num_update_insert);
-                   $('#num-invalid').html(obj.num_invalid);
-                   $('.status-invalid').css({'color': 'red'});
+                   if (obj.status == 'completed'){
+                       $('#summary').css({'display': 'block'});
+                       $('#num-insert').html(obj.num_insert);
+                       $('#num-update').html(obj.num_update);
+                       $('#num-update-insert').html(obj.num_update_insert);
+                       $('#num-invalid').html(obj.num_invalid);
+                       $('.status-invalid').css({'color': 'red'});
+                       
+                       setTimeout(function(){
+                                $('#progressbar').progressbar( "destroy" );
+                                $('#complete-rate').remove();
+                            }, 2000);
+                   }else{
+                       $('#error-msg').css({'display': 'block'});
+                       $('#error-msg').css({'color': 'red'});
+                   }
                    
-                   setTimeout(function(){
-                            $('#progressbar').progressbar( "destroy" );
-                            $('#complete-rate').remove();
-                        }, 2000);
                }
            },
            error: function(data){
