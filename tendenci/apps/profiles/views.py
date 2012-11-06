@@ -70,7 +70,7 @@ def index(request, username='', template_name="profiles/index.html"):
     content_counts = {'total': 0, 'invoice': 0}
     from tendenci.apps.invoices.models import Invoice
     inv_count = Invoice.objects.filter(Q(creator=user_this) | Q(owner=user_this), Q(bill_to_email=user_this.email)).count()
-    if request.user.profile.is_superuser:    
+    if request.user.profile.is_superuser:
         inv_count = Invoice.objects.filter(Q(creator=user_this) | Q(owner=user_this) | Q(bill_to_email=user_this.email)).count()
     content_counts['invoice'] = inv_count
     content_counts['total'] += inv_count
@@ -91,10 +91,8 @@ def index(request, username='', template_name="profiles/index.html"):
     # group list
     group_memberships = user_this.group_member.all()
 
-    memberships = user_this.memberships.filter(
-                                    status=True,
-                                    status_detail__in=['active', 'expired']
-                                    )
+    memberships = user_this.membershipdefault_set.filter(
+        status=True, status_detail__in=['active', 'expired'])
 
     log_defaults = {
         'event_id': 125000,

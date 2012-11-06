@@ -428,7 +428,7 @@ class MembershipDefault(TendenciBaseModel):
                 user = User.objects.get(email=em)
             except User.MultipleObjectsReturned:
                 created = True
-                user = User.objects.filter(email=em)[0]
+                user = User.objects.filter(email=em).order_by('-pk')[0]
             except User.DoesNotExist:
                 user = None
 

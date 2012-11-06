@@ -103,12 +103,13 @@
         </p>
 	</div>
     {% endif %} 
-    
+
+    {% if request.user.profile.is_superuser %}
     <div class="membership info">
 
 		<h2>Memberships 
 		{% if request.user == user_this or admin %}
-		<a title="Join membership" href="{% url profile.add_membership user_this.username %}" class="glyph plus">+</a>
+		<a title="Join membership" href="{% url membership.application_detail_default %}" class="glyph plus">+</a>
 		{% endif %}
 		</h2>
 
@@ -117,24 +118,22 @@
         {% for membership in memberships %}
         		<tr>
         			<td>
-        				<a href="{% url membership.details membership.pk %}">
-        				{{ membership.member_number }} {{ membership.membership_type }}
+        				<a href="{% url admin:memberships_membershipdefault_change membership.pk %}">{{ membership.member_number }} {{ membership.membership_type }}
         				</a>
         			</td>
         			<td>
-		        		{{ membership.subscribe_dt|date:"M j, Y" }} - {% firstof membership.expire_dt|date:"M j, Y" "Forever" %}
-	        		
-		        		{% if not membership.is_active %}
-		        		
-		        		<span class="status-expired inner-mitm">Expired</span>
-		        		{% endif %}
+
+                        {{ membership.join_dt|date:"M j, Y" }} - {% firstof membership.expire_dt|date:"M j, Y" "Forever" %}
+
+                        (grace period: 
+                        {{ membership.membership_type.expiration_grace_period }} days)
 		        		
 		        		{% if membership.can_renew and membership.ma %}
 		        		<span class="inner-mitm"><a href="{{ membership.ma.get_absolute_url }}?username={{ user_this }}">Renew Now</a></span>
 		        		{% else %}
-		        		{% if user.is_superuser and membership.ma and not membership.is_active %}
-		        			<span class="inner-mitm"><a href="{{ membership.ma.get_absolute_url }}?username={{ user_this }}">Admin: Renew</a></span>
-		        		{% endif %}
+    		        		{% if user.is_superuser and membership.ma and not membership.is_active %}
+    		        			<span class="inner-mitm"><a href="{{ membership.ma.get_absolute_url }}?username={{ user_this }}">Admin: Renew</a></span>
+    		        		{% endif %}
 		        		{% endif %}
 	        		</td>
 	        		<td>
@@ -154,6 +153,7 @@
     	{% endif %}
 
     </div>
+    {% endif %}
 
     <div class="group info">
 
