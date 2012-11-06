@@ -13,6 +13,10 @@ from django.contrib import messages
 from django.shortcuts import render_to_response, redirect, get_object_or_404
 from django.template import RequestContext
 from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.db.models.fields import AutoField
+from django.utils.encoding import smart_str
+from django.utils import simplejson
+from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
 
 from djcelery.models import TaskMeta
@@ -31,7 +35,7 @@ from tendenci.core.files.models import File
 from tendenci.core.exports.utils import render_csv, run_export_task
 
 from tendenci.addons.memberships.models import (App, AppEntry, Membership,
-    MembershipType, Notice, AppField, MembershipImport, MembershipDefault)
+    MembershipType, Notice, MembershipImport, MembershipDefault)
 from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, MembershipDefaultForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
     AppEntryForm, MembershipDefaultUploadForm)

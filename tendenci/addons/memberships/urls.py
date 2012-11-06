@@ -43,6 +43,14 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r'^reports/members_over_time/$', 'report_members_over_time', name='reports-members-over-time'),
     url(r'^reports/members_stats/$', 'report_members_stats', name='reports-members-stats'),
 
+    # entries
+    url(r"^entries/$", "application_entries", name="membership.application_entries"),
+    url(r"^entries/(?P<id>\d+)/$", "application_entries", name="membership.application_entries"),
+    url(r"^entries/print/(?P<id>\d+)/$", "application_entries_print", name="membership.application_entries_print"),
+    url(r"^entries/edit/(?P<id>\d+)/$", "entry_edit", name="membership.entry_edit"),
+    url(r"^entries/delete/(?P<id>\d+)/$", "entry_delete", name="membership.entry_delete"),
+    url(r"^entries/search/$", "application_entries_search", name="membership.application_entries_search"),
+
     # notice
     (r'^notices/', include('tendenci.addons.memberships.notices.urls')),
     url(r"^notices/(?P<id>\d+)/email_content/$", "notice_email_content", name="membership.notice_email_content"),
@@ -50,6 +58,7 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r"^verifyemail/(?P<id>\d+)/(?P<guid>[\d\w-]+)/$", "verify_email", name="membership.verify_email"),
 
     # application
+    url(r"^confirmation/(?P<hash>[\w]+)/$", "application_confirmation", name="membership.application_confirmation"),
     url(r"^default-confirmation/(?P<hash>[\w]+)/$", "application_confirmation_default", name="membership.application_confirmation_default"),
     url(r"^(?P<slug>[\w\-]+)/template/$", "download_template", name="membership.download_template"),
     url(r"^default-application/(?P<cmb_id>\d+)?/?$", "application_detail_default", name="membership.application_detail_default"),
