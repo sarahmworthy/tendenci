@@ -294,8 +294,6 @@ class MembershipDefault(TendenciBaseModel):
     directory_type = models.CharField(max_length=50, blank=True)
 
     # workflow fields ------------------------------------------
-    generate_member_number = models.BooleanField()
-
     application_abandoned = models.BooleanField(default=False)
     application_abandoned_dt = models.DateTimeField(null=True, default=None)
     application_abandoned_user = models.ForeignKey(User,

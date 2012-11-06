@@ -1413,7 +1413,6 @@ class MembershipDefaultForm(TendenciBaseForm):
             'admin_notes',
             'newsletter_type',
             'directory_type',
-            'generate_member_number',
             'application_approved',
             'payment_method',
             'chapter',

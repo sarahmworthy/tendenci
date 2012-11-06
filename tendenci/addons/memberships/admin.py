@@ -76,7 +76,6 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
             'admin_notes',
             'newsletter_type',
             'directory_type',
-            'generate_member_number',
             'chapter',
             'areas_of_expertise',
             'corporate_membership_id',
