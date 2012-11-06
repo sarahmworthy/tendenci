@@ -136,7 +136,7 @@ setup(
         "Reportlab==2.5",
     ],
     install_requires=[
-        "Django==1.4.1",
+        "Django==1.4.2",
         "Reportlab==2.5",
         "PIL==1.1.7",
         "South==0.7.3",
@@ -165,8 +165,8 @@ setup(
         "python_openid>=2.2",
         "ordereddict==1.1",
         "createsend>=2.3.0",
-        "celery==3.0.1",
-        "django-celery==3.0.1",
+        "celery==2.4.6",
+        "django-celery==2.3.0",
         "django-kombu>=0.9.4",
         "mimeparse>=0.1.3",
         "python-dateutil>=1.5",
@@ -180,6 +180,6 @@ setup(
 #         "Geraldo==0.4.14",
         "django-tastypie",
         "johnny-cache==1.4",
-        "django-debug-toolbar"
+        "docutils==0.9.1",
     ],
 )

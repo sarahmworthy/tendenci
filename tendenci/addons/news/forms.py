@@ -9,6 +9,7 @@ from tendenci.addons.news.models import News
 from tendenci.core.perms.forms import TendenciBaseForm
 from tinymce.widgets import TinyMCE
 from tendenci.core.base.fields import SplitDateTimeField
+from tendenci.apps.user_groups.models import Group
 
 ALLOWED_LOGO_EXT = (
     '.jpg',
@@ -30,6 +31,9 @@ class NewsForm(TendenciBaseForm):
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
 
     photo_upload = forms.FileField(label=_('Thumbnail Image'), required=False, help_text=_('The thumbnail image can be used on your homepage or sidebar if it is setup in your theme. It will not display on the news page.'))
+    remove_photo = forms.BooleanField(label=_('Remove the current photo'), required=False)
+
+    group = forms.ModelChoiceField(queryset=Group.objects.filter(status=True, status_detail="active"), required=True, empty_label=None)
 
     class Meta:
         model = News
@@ -39,6 +43,7 @@ class NewsForm(TendenciBaseForm):
         'slug',
         'summary',
         'body',
+        'group',
         'photo_upload',
         'source',
         'website',
@@ -64,6 +69,7 @@ class NewsForm(TendenciBaseForm):
                                  'slug',
                                  'summary',
                                  'body',
+                                 'group',
                                  'tags',
                                  'photo_upload',
                                  'source', 
@@ -112,7 +118,13 @@ class NewsForm(TendenciBaseForm):
                 raise forms.ValidationError('The photo is an invalid image. Try uploading another photo.')
 
         return photo_upload
-    
+
+    def save(self, *args, **kwargs):
+        news = super(NewsForm, self).save(*args, **kwargs)
+        if self.cleaned_data.get('remove_photo'):
+            news.thumbnail = None
+        return news
+
     def __init__(self, *args, **kwargs): 
         super(NewsForm, self).__init__(*args, **kwargs)
         if self.instance.pk:
@@ -126,4 +138,9 @@ class NewsForm(TendenciBaseForm):
                 self.fields.pop('status')
             if 'status_detail' in self.fields:
                 self.fields.pop('status_detail')
-        
+
+        # only show the remove photo checkbox if there is already a thumbnail
+        if self.instance.thumbnail:
+            self.fields['photo_upload'].help_text = '<input name="remove_photo" id="id_remove_photo" type="checkbox"/> Remove current image: <a target="_blank" href="/files/%s/">%s</a>' % (self.instance.thumbnail.pk, basename(self.instance.thumbnail.file.name))
+        else:
+            self.fields.pop('remove_photo')

@@ -5,6 +5,7 @@ from django.views.generic.simple import direct_to_template, redirect_to
 from django.contrib import admin
 
 from tendenci.core.registry import autodiscover as reg_autodiscover
+from tendenci.core.newsletters.views import NewsletterGeneratorView
 
 # load the apps that are in Django Admin
 admin.autodiscover()
@@ -92,6 +93,7 @@ urlpatterns += patterns('',
 
     # legacy redirects
     url(r'^login/$', redirect_to, {'url': '/accounts/login/'}),
+    (r'^newsletter_generator/', NewsletterGeneratorView.as_view()),
 
     url(r'^', include('tendenci.apps.contacts.urls')),
     url(r'^', include('tendenci.addons.articles.urls')),
@@ -108,7 +110,7 @@ handler500 = 'tendenci.core.base.views.custom_error'
 if hasattr(settings, 'USE_S3_STORAGE') and settings.USE_S3_STORAGE:
     urlpatterns += patterns('',
     # serve .less files - this is to resolve the cross domain issue for less js
-    url(r'^(?P<path>.*).less$', 
+    url(r'^(?P<path>.*)\.less$', 
         'tendenci.core.files.views.display_less',  name='less_file'),
     url(r'^static/(?P<path>.*)$',
             'tendenci.core.files.views.redirect_to_s3',
