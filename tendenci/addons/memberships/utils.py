@@ -1019,8 +1019,14 @@ class ImportMembDefault(object):
                 value = 0
         elif field_type == 'ForeignKey':
             # assume id for foreign key
-            [value] = field.related.parent_model.objects.filter(
-                                        pk=value)[:1] or [None]
+            try:
+                value = int(value)
+            except:
+                value = None
+
+            if value:
+                [value] = field.related.parent_model.objects.filter(
+                                            pk=value)[:1] or [None]
             if not value and not field.null:
                 # if the field doesn't allow null, grab the first one.
                 [value] = field.related.parent_model.objects.all(
