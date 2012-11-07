@@ -80,7 +80,11 @@
         <h3>How to the prepare the spreadsheet (.csv file)?</h3>
         <ul>
            <li>
-               The required fields include: <strong>membership_type</strong> + <strong>keys</strong> selected to identify the existing entries.
+               The required fields include: <strong>keys</strong> selected to identify the existing entries.
+           </li>
+           <li>
+               If the <strong>membership_type</strong> is not present in the spreadsheet, the first membership type
+               in the system will be used.
            </li>
            <li>
                The data type of ForeignKey fields (ex: membership_type) is <strong>integer</strong>. So, please fill the ForeignKey fields with IDs. 
