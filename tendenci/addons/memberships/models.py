@@ -324,7 +324,7 @@ class MembershipDefault(TendenciBaseModel):
     bod_dt = models.DateTimeField(null=True)
     personnel_notified_dt = models.DateTimeField(null=True)
     payment_received_dt = models.DateTimeField(null=True)
-    payment_method = models.ForeignKey(PaymentMethod)
+    payment_method = models.ForeignKey(PaymentMethod, null=True)
     override = models.BooleanField(default=False)
     override_price = models.FloatField(null=True)
     exported = models.BooleanField()
