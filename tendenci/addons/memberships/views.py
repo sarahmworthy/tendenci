@@ -1066,6 +1066,9 @@ def membership_default_import_process(request, mimport_id):
                           str(mimport.pk),
                           str(request.user.pk)])
 
+        # log an event
+        EventLog.objects.log()
+
     # redirect to status page
     return redirect(reverse('memberships.default_import_status',
                                      args=[mimport.id]))
