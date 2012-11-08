@@ -667,7 +667,7 @@ class ImportMembDefault(object):
         self.profile_fields = dict([(field.name, field) \
                             for field in Profile._meta.fields \
                             if field.get_internal_type() != 'AutoField' and \
-                            field.name !='guid'])
+                            field.name not in ['user', 'guid']])
         self.membership_fields = dict([(field.name, field) \
                             for field in MembershipDefault._meta.fields \
                             if field.get_internal_type() != 'AutoField' and \
