@@ -11,6 +11,7 @@ from django.template import Library, Node, Variable, TemplateSyntaxError
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
+from django.conf import settings
 
 from tendenci.core.base.template_tags import parse_tag_kwargs
 from tendenci.core.base.utils import url_exists
@@ -548,7 +549,7 @@ class ImageURL(Node):
             url = reverse('file', args=args)
             return url
         # return empty unicode string
-        return unicode('')
+        return "%sjs/holder.js/%s" % (settings.STATIC_URL, self.size)
 
 
 @register.tag
