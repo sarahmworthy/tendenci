@@ -45,7 +45,7 @@ tr.row-update{
     background-color: #fff;
 }
 tr.row-insert{
-    background-color: #ffffcc;
+    /*background-color: #ffffcc;*/
 }
 tr.row-skip{
     background-color: #ffebe6;

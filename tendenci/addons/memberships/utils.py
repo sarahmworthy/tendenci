@@ -666,11 +666,12 @@ class ImportMembDefault(object):
                             if field.get_internal_type() != 'AutoField'])
         self.profile_fields = dict([(field.name, field) \
                             for field in Profile._meta.fields \
-                            if field.get_internal_type() != 'AutoField'])
+                            if field.get_internal_type() != 'AutoField' and \
+                            field.name !='guid'])
         self.membership_fields = dict([(field.name, field) \
                             for field in MembershipDefault._meta.fields \
                             if field.get_internal_type() != 'AutoField' and \
-                            field.name != 'user'])
+                            field.name not in ['user', 'guid']])
         self.private_settings = self.set_default_private_settings()
 
     def init_summary(self):
@@ -852,7 +853,7 @@ class ImportMembDefault(object):
             )
         self.assign_import_values_from_dict(profile,
                                             action_info['user_action'])
-
+        profile.user = user
         profile.save()
 
         # membership
@@ -973,8 +974,8 @@ class ImportMembDefault(object):
                         setattr(instance, field_name, value)
 
     def get_default_value(self, field):
-        # if allows null, return None
-        if field.null:
+        # if allows null or has default, return None
+        if field.null or field.has_default():
             return None
 
         field_type = field.get_internal_type()

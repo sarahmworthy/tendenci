@@ -66,21 +66,21 @@
     
     {% if not memb_type_exists %}
     <div class="alert">
-        Please set up membership types before proceeding.  
+        Please <a href="{% url admin:memberships_membershiptype_add %}">set up membership types</a> before proceeding.  
     </div>
     {% endif %}
 
     
     <div id="import-instruction">
-        <p style="margin-bottom:0;">{% trans "<strong>Download</strong> and <strong>fill in</strong> your spreadsheet. <strong>Upload</strong> your updated spreadsheet, <strong>preview</strong>, and then <strong>submit</strong>." %}</p>
+        <p style="margin-bottom:0;">{% trans "<strong>Download</strong> and <strong>fill in</strong> your spreadsheet. <strong>Upload</strong> your updated spreadsheet, <strong>preview</strong> then <strong>submit</strong>." %}</p>
 
         <p style="margin-top:0;">Please review your membership <a href="{% url settings.index 'module' 'memberships' %}">privacy settings</a> before importing.</p>
 
 
-        <h3>How to the prepare the spreadsheet (.csv file)?</h3>
+        <h3>How to prepare the spreadsheet (.csv file)?</h3>
         <ul>
            <li>
-               The required fields include: <strong>keys</strong> selected to identify the existing entries.
+               The required fields are the field(s) in the selected key (see the second field below).
            </li>
            <li>
                If the <strong>membership_type</strong> is not present in the spreadsheet, the first membership type
