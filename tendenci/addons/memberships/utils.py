@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core import exceptions
 
+from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.utils import has_perm
 from tendenci.addons.memberships.models import (App,
                                                 AppField,
@@ -607,7 +608,7 @@ def get_user_by_email(email):
     return user
 
 
-def get_user_by_members_number(member_number):
+def get_user_by_member_number(member_number):
     """
     Get user by member number.
     """
@@ -660,6 +661,17 @@ class ImportMembDefault(object):
         self.mimport = mimport
         self.dry_run = dry_run
         self.summary_d = self.init_summary()
+        self.user_fields = dict([(field.name, field) \
+                            for field in User._meta.fields \
+                            if field.get_internal_type() != 'AutoField'])
+        self.profile_fields = dict([(field.name, field) \
+                            for field in Profile._meta.fields \
+                            if field.get_internal_type() != 'AutoField'])
+        self.membership_fields = dict([(field.name, field) \
+                            for field in MembershipDefault._meta.fields \
+                            if field.get_internal_type() != 'AutoField' and \
+                            field.name != 'user'])
+        self.private_settings = self.set_default_private_settings()
 
     def init_summary(self):
         return {
@@ -668,6 +680,25 @@ class ImportMembDefault(object):
                  'update_insert': 0,
                  'invalid': 0
                  }
+
+    def set_default_private_settings(self):
+        # public, private, all-members, member-type
+        memberprotection = get_setting('module',
+                                       'memberships',
+                                       'memberprotection')
+        d = {'allow_anonymous_view': False,
+             'allow_user_view': False,
+             'allow_member_view': False,
+             'allow_user_edit': False,
+             'allow_member_edit': False}
+
+        if memberprotection == 'public':
+            d['allow_anonymous_view'] = True
+        if memberprotection == 'all-members':
+            d['allow_user_view'] = True
+        if memberprotection == 'member-type':
+            d['allow_member_view'] = True
+        return d
 
     def process_default_membership(self, memb_data, **kwargs):
         """
@@ -694,7 +725,7 @@ class ImportMembDefault(object):
                 self.summary_d['invalid'] += 1
         else:
             if self.key == 'member_number/email/fn_ln_phone':
-                user = get_user_by_members_number(
+                user = get_user_by_member_number(
                                     self.memb_data['member_number'])
                 if not user:
                     user = get_user_by_email(self.memb_data['email'])
@@ -707,7 +738,7 @@ class ImportMembDefault(object):
             elif self.key == 'email/member_number/fn_ln_phone':
                 user = get_user_by_email(self.memb_data['email'])
                 if not user:
-                    user = get_user_by_members_number(
+                    user = get_user_by_member_number(
                                 self.memb_data['member_number'])
                     if not user:
                         user = get_user_by_fn_ln_phone(
@@ -715,17 +746,17 @@ class ImportMembDefault(object):
                                            self.memb_data['last_name'],
                                            self.memb_data['phone'])
             elif self.key == 'member_number/email':
-                user = get_user_by_members_number(
+                user = get_user_by_member_number(
                                 self.memb_data['member_number'])
                 if not user:
                     user = get_user_by_email(self.memb_data['email'])
             elif self.key == 'email/member_number':
                 user = get_user_by_email(self.memb_data['email'])
                 if not user:
-                    user = get_user_by_members_number(
+                    user = get_user_by_member_number(
                                 self.memb_data['member_number'])
             elif self.key == 'member_number':
-                user = get_user_by_members_number(
+                user = get_user_by_member_number(
                                 self.memb_data['member_number'])
             else:   # email
                 user = get_user_by_email(self.memb_data['email'])
@@ -733,9 +764,10 @@ class ImportMembDefault(object):
             if user:
                 user_display['user_action'] = 'update'
                 user_display['user'] = user
+                # pick the most recent one
                 [memb] = MembershipDefault.objects.filter(user=user).exclude(
                           status_detail='archive'
-                                )[:1] or [None]
+                                ).order_by('-id')[:1] or [None]
                 if memb:
                     user_display['memb_action'] = 'update'
                     user_display['action'] = 'update'
@@ -801,7 +833,9 @@ class ImportMembDefault(object):
         if not user.password:
             user.set_password(User.objects.make_random_password(length=8))
 
-        user.is_active = True
+        # set to active if is_active not present in the spreadsheet.
+        if 'is_active' not in self.field_names:
+            user.is_active = True
 
         user.save()
 
@@ -814,6 +848,7 @@ class ImportMembDefault(object):
                creator_username=self.request_user.username,
                owner=self.request_user,
                owner_username=self.request_user.username,
+               **self.private_settings
             )
         self.assign_import_values_from_dict(profile,
                                             action_info['user_action'])
@@ -831,6 +866,7 @@ class ImportMembDefault(object):
                                      )
 
         self.assign_import_values_from_dict(memb, action_info['memb_action'])
+
         if memb.status == None:
             memb.status = True
         if not memb.status_detail:
@@ -850,6 +886,18 @@ class ImportMembDefault(object):
                                                 status=True,
                                                 status_detail='active')[0]
             memb.membership_type = membership_type
+
+        # no join_dt - set one
+        if not hasattr(memb, 'join_dt') or not memb.join_dt:
+            if memb.status and memb.status_detail == 'active':
+                memb.join_dt = datetime.now()
+
+        # no expire_dt - get it via membership_type
+        if not hasattr(memb, 'expire_dt') or not memb.expire_dt:
+            if memb.membership_type:
+                expire_dt = memb.membership_type.get_expiration_dt(
+                                            join_dt=memb.join_dt)
+                setattr(memb, 'expire_dt', expire_dt)
 
         memb.save()
 
@@ -894,17 +942,11 @@ class ImportMembDefault(object):
         - self.memb_data.
         """
         if instance.__class__ == User:
-            assign_to_fields = dict([(field.name, field) \
-                        for field in User._meta.fields \
-                     if field.get_internal_type() != 'AutoField'])
+            assign_to_fields = self.user_fields
         elif instance.__class__ == Profile:
-            assign_to_fields = dict([(field.name, field) \
-                        for field in Profile._meta.fields \
-                     if field.get_internal_type() != 'AutoField'])
+            assign_to_fields = self.profile_fields
         else:
-            assign_to_fields = dict([(field.name, field) \
-                        for field in MembershipDefault._meta.fields \
-                     if field.get_internal_type() != 'AutoField'])
+            assign_to_fields = self.membership_fields
         assign_to_fields_names = assign_to_fields.keys()
 
         for field_name in self.field_names:
@@ -924,9 +966,11 @@ class ImportMembDefault(object):
         # if insert, set defaults for the fields not in csv.
         for field_name in assign_to_fields_names:
             if field_name not in self.field_names and action == 'insert':
-                value = self.get_default_value(assign_to_fields[field_name])
-                if value:
-                    setattr(instance, field_name, value)
+                if field_name not in self.private_settings.keys():
+                    value = self.get_default_value(
+                                    assign_to_fields[field_name])
+                    if value != None:
+                        setattr(instance, field_name, value)
 
     def get_default_value(self, field):
         # if allows null, return None
