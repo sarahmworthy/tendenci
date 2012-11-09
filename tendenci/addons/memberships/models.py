@@ -299,7 +299,7 @@ class MembershipDefault(TendenciBaseModel):
     application_abandoned_user = models.ForeignKey(User,
         related_name='application_abandond_set', null=True)
 
-    application_complete = models.BooleanField(default=False)
+    application_complete = models.BooleanField(default=True)
     application_complete_dt = models.DateTimeField(null=True, default=None)
     application_complete_user = models.ForeignKey(User,
         related_name='application_complete_set', null=True)
@@ -348,7 +348,6 @@ class MembershipDefault(TendenciBaseModel):
     company_size = models.CharField(max_length=50, blank=True, default=u'')
     promotion_code = models.CharField(max_length=50, blank=True, default=u'')
     directory = models.ForeignKey(Directory, blank=True, null=True)
-    # sig_user_group_ids = models.CharField(max_length=100, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.guid = self.guid or uuid.uuid1().get_hex()
@@ -727,6 +726,9 @@ class MembershipDefault(TendenciBaseModel):
 
     def set_renew_dt(self):
         """
+        Dependent on self.application_approved and
+        self.application_approved_dt
+
         If qualified memberships exists for this
         Membership.user set
         Membership.renew_dt = Membership.application_approved_dt
