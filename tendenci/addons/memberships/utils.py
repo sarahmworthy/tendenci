@@ -887,16 +887,9 @@ class ImportMembDefault(object):
 
         # membership type
         if not hasattr(memb, "membership_type") or not memb.membership_type:
-            membership_type = None
-            if 'membership_type' in self.field_names:
-                membership_type = get_membership_type_by_value(
-                            self.memb_data['membership_type'])
-            if not membership_type:
-                # last resort - pick the first available membership type
-                membership_type = MembershipType.objects.filter(
-                                                status=True,
-                                                status_detail='active')[0]
-            memb.membership_type = membership_type
+            # last resort - pick the first available membership type
+            memb.membership_type = MembershipType.objects.all(
+                                            ).order_by('id')[0]
 
         # no join_dt - set one
         if not hasattr(memb, 'join_dt') or not memb.join_dt:
@@ -1083,6 +1076,7 @@ class ImportMembDefault(object):
             except:
                 value = 0
         elif field_type == 'ForeignKey':
+            orignal_value = value
             # assume id for foreign key
             try:
                 value = int(value)
@@ -1092,10 +1086,16 @@ class ImportMembDefault(object):
             if value:
                 [value] = field.related.parent_model.objects.filter(
                                             pk=value)[:1] or [None]
+
+            # membership_type - look up by name in case
+            # they entered name instead of id
+            if not value and field.name == 'membership_type':
+                value = get_membership_type_by_name(orignal_value)
+
             if not value and not field.null:
                 # if the field doesn't allow null, grab the first one.
                 [value] = field.related.parent_model.objects.all(
-                                                    )[:1] or [None]
+                                        ).order_by('id')[:1] or [None]
 
         return value
 
@@ -1110,16 +1110,12 @@ def get_membership_type_by_value(value):
 
 
 def get_membership_type_by_id(pk):
-    try:
-        memb_type = MembershipType.objects.get(pk=pk)
-    except MembershipType.DoesNotExist:
-        memb_type = None
+    [memb_type] = MembershipType.objects.filter(pk=pk)[:1] or [None]
+
     return memb_type
 
 
 def get_membership_type_by_name(name):
-    try:
-        memb_type = MembershipType.objects.get(name=name)
-    except MembershipType.DoesNotExist:
-        memb_type = None
+    [memb_type] = MembershipType.objects.filter(name=name)[:1] or [None]
+
     return memb_type
