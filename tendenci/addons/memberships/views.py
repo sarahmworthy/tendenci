@@ -950,11 +950,16 @@ def membership_import_status(request, task_id, template_name='memberships/import
         }, context_instance=RequestContext(request))
 
 
+@login_required
+@password_required
 def membership_default_import_upload(request,
             template_name='memberships/import_default/upload.html'):
     """
     Import memberships to the MembershipDefault
     """
+    if not request.user.profile.is_superuser:
+        raise Http403
+
     form = MembershipDefaultUploadForm(request.POST or None,
                                        request.FILES or None)
     if request.method == 'POST':
