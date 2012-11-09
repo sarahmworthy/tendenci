@@ -3,6 +3,7 @@ import csv
 from decimal import Decimal
 from datetime import datetime, date, timedelta
 import dateutil.parser as dparser
+import pytz
 
 from django.http import Http404, HttpResponseServerError
 from django.conf import settings
@@ -673,6 +674,15 @@ class ImportMembDefault(object):
                             if field.get_internal_type() != 'AutoField' and \
                             field.name not in ['user', 'guid']])
         self.private_settings = self.set_default_private_settings()
+        self.t4_timezone_map = {'AST': 'Canada/Atlantic',
+                             'EST': 'US/Eastern',
+                             'CST': 'US/Central',
+                             'MST': 'US/Mountain',
+                             'AKST': 'US/Alaska',
+                             'PST': 'US/Pacific',
+                             'GMT': 'UTC'
+                             }
+        self.t4_timezone_map_keys = self.t4_timezone_map.keys()
 
     def init_summary(self):
         return {
@@ -1017,7 +1027,17 @@ class ImportMembDefault(object):
             if len(value) > field.max_length:
                 # truncate the value to ensure its length <= max_length
                 value = value[:field.max_length]
+            if field.name == 'time_zone':
+                if value not in pytz.all_timezones:
+                    if value in self.t4_timezone_map_keys:
+                        value = self.t4_timezone_map[value]
+            try:
                 value = field.to_python(value)
+            except exceptions.ValidationError:
+                if field.has_default():
+                    value = field.get_default()
+                else:
+                    value = ''
 
         elif field_type == 'BooleanField':
             try:
