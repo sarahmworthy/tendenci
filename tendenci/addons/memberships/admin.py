@@ -37,6 +37,33 @@ class MembershipAdmin(admin.ModelAdmin):
         self.list_display_links = (None, )
 
 
+def approve_selected(modeladmin, request, queryset):
+    """
+    Approves selected memberships.  Excludes already
+    approved memberships.
+    """
+
+    # exclude already approved memberships
+    memberships = queryset.exclude(
+        status=True,
+        status_detail='active',
+        application_approved_dt__isnull=False,
+    )
+
+    # approve membership
+    # set all date attributes
+    for membership in memberships:
+        membership.status = True,
+        membership.status_detail = 'active'
+        membership.application_approved_dt = datetime.now()
+        membership.set_join_dt()
+        membership.set_renew_dt()
+        membership.set_expire_dt()
+        membership.save()
+
+approve_selected.short_description = u'Approve selected'
+
+
 class MembershipDefaultAdmin(admin.ModelAdmin):
     """
     MembershipDefault model
@@ -153,6 +180,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         'membership_type',
         'status_detail'
     ]
+
+    actions = [approve_selected]
 
     def save_form(self, request, form, change):
         """
