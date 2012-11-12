@@ -217,7 +217,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     def queryset(self, request):
         qs = super(MembershipDefaultAdmin, self).queryset(request)
-        return qs.order_by('-create_dt')
+        return qs.order_by('-application_approved_dt')
 
 
 class MembershipTypeAdmin(admin.ModelAdmin):
