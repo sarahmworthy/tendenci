@@ -192,6 +192,27 @@ class Profile(Person):
 
         return False
 
+    def can_renew2(self):
+        """
+        Looks at all memberships the user is actively associated
+        with and returns whether the user is within a renewal period (boolean).
+        """
+
+        if not hasattr(self.user, 'memberships'):
+            return False
+
+        # look at active memberships
+
+        active_memberships = self.user.membershipdefault_set.filter(
+            status=True, status_detail='active'
+        )
+
+        for membership in active_memberships:
+            if membership.can_renew():
+                return True
+
+        return False
+
     def get_groups(self):
         memberships = self.user.group_member.all()
         return [membership.group for membership in memberships]
