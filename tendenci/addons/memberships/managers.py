@@ -344,3 +344,13 @@ class MembershipManager(Manager):
                 silenced_memberships.append(membership)
 
         return silenced_memberships
+
+
+class MembershipDefaultManager(Manager):
+    def first(self, **kwargs):
+        """
+        Returns first instance that matches filters.
+        If no instance is found then a none type object is returned.
+        """
+        [instance] = self.filter(**kwargs).order_by('pk')[:1] or [None]
+        return instance
