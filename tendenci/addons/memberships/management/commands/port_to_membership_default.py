@@ -1,7 +1,5 @@
 from django.core.management.base import BaseCommand
 from django.contrib.contenttypes.models import ContentType
-from tendenci.apps.invoices.models import Invoice
-from tendenci.addons.memberships.models import AppEntry, MembershipDefault
 
 
 class Command(BaseCommand):
@@ -15,48 +13,30 @@ class Command(BaseCommand):
         Loops through AppEntry instances and ports the
         data over to MembershipDefault instances.
         """
+        from tendenci.apps.entities.models import Entity
+        from tendenci.addons.memberships.models import AppEntry, MembershipDefault
         verbosity = options['verbosity']
 
         for e in AppEntry.objects.all():
 
-            m_default = MembershipDefault()
-
-            old_guid = e.guid
             if e.membership:
-                old_guid = e.membership.guid or e.guid
-
-            m_default = MembershipDefault.objects.first(guid=old_guid)
+                m_default = MembershipDefault.objects.first(
+                    create_dt=e.membership.create_dt,
+                    membership_type=e.membership.membership_type,
+                )
+            else:
+                m_default = MembershipDefault.objects.first(
+                    create_dt=e.create_dt,
+                    membership_type=e.membership_type,
+                )
 
             if m_default:
-                if verbosity:
-                    self.echo(m_default, e, created=False)
-                continue  # on to the next one
-
-            m_default.application_complete_dt = e.create_dt
-
-            if e.is_approved:
-                m_default.application_approved = True
-                m_default.application_approved_dt = e.decision_dt
-                m_default.application_approved_user = e.judge
-
-                if not e.is_renewal:
-                    m_default.join_dt = e.decision_dt
-                    m_default.set_join_dt()
-
-            if e.decision_dt:
-                m_default.application_approved_denied_dt = e.decision_dt
-
-                if hasattr(e.membership, 'user'):
-                    m_default.application_approved_denied_user = e.membership.user
-
-            m_default.set_renew_dt()
-            m_default.set_expire_dt()
-            m_default.set_invoice()
-
-            m_default.user.profile.refresh_member_number()
+                created = False
+            else:
+                created = True
+                m_default = MembershipDefault()
 
             if e.membership:
-                m_default.application_complete = e.membership.user
                 m_default.member_number = e.membership.member_number
                 m_default.membership_type = e.membership.membership_type
                 m_default.renewal = e.membership.renewal
@@ -91,7 +71,10 @@ class Command(BaseCommand):
                 # m_default.organization_entity
                 # m_default.corporate_entity
 
-                m_default.corporate_membership_id = e.membership.corporate_membership_id
+                if e.membership.corporate_membership_id:
+                    m_default.corporate_membership_id = e.membership.corporate_membership_id
+                else:
+                    m_default.corporate_membership_id = None
 
                 # m_default.home_state
                 # m_default.year_left_native_country
@@ -110,20 +93,51 @@ class Command(BaseCommand):
                 if hasattr(e.membership, 'user'):
                     m_default.user = e.membership.user
 
-            m_default.user = m_default.get_or_create_user(
+            m_default.user, created = m_default.get_or_create_user(
                 email=e.email, first_name=e.first_name, last_name=e.last_name
             )
 
+            m_default.application_complete_dt = e.create_dt
+            m_default.entity = Entity.objects.first()
+            m_default.organization_entity = m_default.entity
+            m_default.corporate_entity = m_default.entity
+
+            if e.is_approved:
+                m_default.application_approved = True
+                m_default.application_approved_dt = e.decision_dt
+                m_default.application_approved_user = e.judge
+
+                # is a join
+                if not e.is_renewal:
+                    m_default.join_dt = e.decision_dt
+                    m_default.set_join_dt()
+
+            if e.decision_dt:
+                m_default.application_approved_denied_dt = e.decision_dt
+                m_default.application_approved_denied_user = m_default.user
+
+                m_default.action_taken = True
+                m_default.action_taken_dt = e.decision_dt
+                m_default.action_taken_user = e.judge
+
+            m_default.set_renew_dt()
+            m_default.set_expire_dt()
+            m_default.user.profile.refresh_member_number()
             m_default.group_refresh()
 
+            self.set_invoice(m_default, e)
             self.set_owner_creator_fields(m_default, e)
             self.set_allow_fields(m_default, e.membership)
             self.set_status_fields(m_default, e.membership)
 
-            m_default.save(commit=False)
+            m_default.save()
+
+            # reset create_dt
+            self.set_owner_creator_fields(m_default, e)
+            m_default.save()
 
             if verbosity:
-                self.echo(m_default, e, created=True)
+                self.echo(m_default, e, created=created)
 
     def echo(self, m_default, e, created):
         """
@@ -132,7 +146,7 @@ class Command(BaseCommand):
         existing
         """
 
-        msg = u'already existed'
+        msg = u'updated'
         if created:
             msg = u'created'
 
@@ -147,6 +161,7 @@ class Command(BaseCommand):
         """
         Make copy of entry invoice if it does not exist
         """
+        from tendenci.apps.invoices.models import Invoice
 
         invoice_ct = ContentType.objects.get(
             app_label=e._meta.app_label,
@@ -170,7 +185,7 @@ class Command(BaseCommand):
             # nothing more to do here
             return False
         else:
-            if entry_invoice.pk:
+            if entry_invoice and entry_invoice.pk:
                 # copy invoice over
                 entry_invoice.pk = None
                 entry_invoice.object_id = m_default.pk
@@ -213,7 +228,7 @@ class Command(BaseCommand):
             m_default.allow_anonymous_view = membership.allow_anonymous_view
             m_default.allow_user_view = membership.allow_user_view
             m_default.allow_member_view = membership.allow_member_view
-            m_default.allow_anonymous_edit = membership.allow_anonymous_edit
+            m_default.allow_anonymous_edit = False
             m_default.allow_user_edit = membership.allow_user_edit
             m_default.allow_member_edit = membership.allow_member_edit
         else:
