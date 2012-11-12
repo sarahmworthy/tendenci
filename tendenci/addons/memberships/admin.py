@@ -134,8 +134,23 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
     def email(self, instance):
         return instance.user.email
 
-    list_display = ['first_name', 'last_name', 'email', 'member_number', 'create_dt']
-    list_filter = ['membership_type', 'status_detail']
+    def get_status(self, instance):
+        return instance.get_status().capitalize()
+    get_status.short_description = u'Status'
+
+    list_display = [
+        'first_name',
+        'last_name',
+        'email',
+        'member_number',
+        'create_dt',
+        'get_status',
+    ]
+
+    list_filter = [
+        'membership_type',
+        'status_detail'
+    ]
 
     def save_form(self, request, form, change):
         """
