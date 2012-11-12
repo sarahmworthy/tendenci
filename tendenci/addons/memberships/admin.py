@@ -168,11 +168,29 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         return instance.get_status().capitalize()
     get_status.short_description = u'Status'
 
+    def get_create_dt(self, instance):
+        return instance.create_dt.strftime('%b %d, %Y, %I:%M %p')
+    get_create_dt.short_description = u'Created On'
+
+    def get_approve_dt(self, instance):
+        dt = instance.application_approved_dt
+
+        if dt:
+            return dt.strftime('%b %d, %Y, %I:%M %p')
+        return u''
+    get_approve_dt.short_description = u'Approved On'
+
+    def get_actions(self, request):
+        actions = super(MembershipDefaultAdmin, self).get_actions(request)
+        actions['delete_selected'][0].short_description = "Delete Selected"
+        return actions
+
     list_display = [
         'name',
         'email',
         'member_number',
-        'create_dt',
+        # 'get_create_dt',
+        'get_approve_dt',
         'get_status',
     ]
 
