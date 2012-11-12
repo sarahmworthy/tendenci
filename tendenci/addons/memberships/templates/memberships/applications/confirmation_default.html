@@ -43,31 +43,31 @@
             <div>Last Name: {{ member.last_name }}</div>
             <div>Email: {{ member.email }}</div>
             <div>Email2: {{ member.email2 }}</div>
-            <div>Company: {{ member.company }}</div>
-            <div>Department: {{ member.department }}</div>
-            <div>Position Title: {{ member.position_title }}</div>
-            <div>Address: {{ member.address }}</div>
-            <div>Address2: {{ member.address2 }}</div>
-            <div>Address Type: {{ member.address_type }}</div>
-            <div>City: {{ member.city }}</div>
+            <div>Company: {{ member.profile.company }}</div>
+            <div>Department: {{ member.profile.department }}</div>
+            <div>Position Title: {{ member.profile.position_title }}</div>
+            <div>Address: {{ member.profile.address }}</div>
+            <div>Address2: {{ member.profile.address2 }}</div>
+            <div>Address Type: {{ member.profile.address_type }}</div>
+            <div>City: {{ member.profile.city }}</div>
             <div>State: {{ member.state }}</div>
-            <div>Zipcode: {{ member.zipcode }}</div>
-            <div>Country: {{ member.country }}</div>
-            <div>Phone: {{ member.phone }}</div>
-            <div>Phone2: {{ member.phone2 }}</div>
-            <div>Work Phone: {{ member.work_phone }}</div>
-            <div>Home Phone: {{ member.home_phone }}</div>
-            <div>Mobile Phone: {{ member.mobile_phone }}</div>
-            <div>Fax {{ member.fax }}</div>
-            <div>URL: {{ member.url }}</div>
-            <div>URL2: {{ member.url2 }}</div>
-            <div>DOB: {{ member.dob }}</div>
-            <div>Sex: {{ member.sex }}</div>
-            <div>Spouse: {{ member.spouse }}</div>
-            <div>Hide in Search: {{ member.hide_in_search|yesno:"Yes,No" }}</div>
-            <div>Hide Address: {{ member.hide_address|yesno:"Yes,No" }}</div>
-            <div>Hide Email: {{ member.hide_email|yesno:"Yes,No" }}</div>
-            <div>Hide Phone: {{ member.hide_phone|yesno:"Yes,No" }}</div>
+            <div>Zipcode: {{ member.profile.zipcode }}</div>
+            <div>Country: {{ member.profile.country }}</div>
+            <div>Phone: {{ member.profile.phone }}</div>
+            <div>Phone2: {{ member.profile.phone2 }}</div>
+            <div>Work Phone: {{ member.profile.work_phone }}</div>
+            <div>Home Phone: {{ member.profile.home_phone }}</div>
+            <div>Mobile Phone: {{ member.profile.mobile_phone }}</div>
+            <div>Fax {{ member.profile.fax }}</div>
+            <div>URL: {{ member.profile.url }}</div>
+            <div>URL2: {{ member.profile.url2 }}</div>
+            <div>DOB: {{ member.profile.dob }}</div>
+            <div>Sex: {{ member.profile.sex }}</div>
+            <div>Spouse: {{ member.profile.spouse }}</div>
+            <div>Hide in Search: {{ member.profile.hide_in_search|yesno:"Yes,No" }}</div>
+            <div>Hide Address: {{ member.profile.hide_address|yesno:"Yes,No" }}</div>
+            <div>Hide Email: {{ member.profile.hide_email|yesno:"Yes,No" }}</div>
+            <div>Hide Phone: {{ member.profile.hide_phone|yesno:"Yes,No" }}</div>
         {% endwith %}
 
         <hr />
