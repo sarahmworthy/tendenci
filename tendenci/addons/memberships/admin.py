@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from django.db.models import Q
 from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -165,6 +166,14 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(
             reverse('membership.application_detail_default')
         )
+
+    def queryset(self, request):
+        qs = super(MembershipDefaultAdmin, self).queryset(request)
+
+        qs_inactive = Q(status_detail='inactive')
+        qs_archived = Q(status_detail='archived')
+
+        return qs.exclude(qs_inactive | qs_archived)
 
 
 class MembershipTypeAdmin(admin.ModelAdmin):
