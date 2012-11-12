@@ -729,6 +729,12 @@ class MembershipDefault(TendenciBaseModel):
         """
         Looks through old memberships to discover join dt
         """
+
+        # cannot set renew dt if approved dt
+        # does not exist (DNE)
+        if not self.application_approved_dt:
+            return None
+
         memberships = self.qs_memberships().filter(
             join_dt__isnull=False
             ).exclude(status_detail='disapproved'
@@ -740,7 +746,7 @@ class MembershipDefault(TendenciBaseModel):
         if memberships:
             self.join_dt = memberships[0].join_dt
         else:
-            self.join_dt = self.join_dt or datetime.now()
+            self.join_dt = self.join_dt or self.application_approved_dt
 
     def set_renew_dt(self):
         """
