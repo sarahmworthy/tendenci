@@ -563,11 +563,6 @@ class TendenciBaseManager(models.Manager):
         Returns first instance that matches filters.
         If no instance is found then a none type object is returned.
         """
-        try:
-            instance = self.get(**kwargs)
-        except self.model.MultipleObjectsReturned:
-            instance = self.filter(**kwargs)[0]
-        except self.model.DoesNotExist:
-            instance = None
 
+        [instance] = self.filter(**kwargs).order_by('pk')[:1] or [None]
         return instance
