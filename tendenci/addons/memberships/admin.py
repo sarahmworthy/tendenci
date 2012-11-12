@@ -176,11 +176,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     def queryset(self, request):
         qs = super(MembershipDefaultAdmin, self).queryset(request)
-
-        qs_inactive = Q(status_detail='inactive')
-        qs_archived = Q(status_detail='archived')
-
-        return qs.exclude(qs_inactive | qs_archived)
+        return qs.order_by('-create_dt')
 
 
 class MembershipTypeAdmin(admin.ModelAdmin):
