@@ -126,12 +126,6 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         status,
     )
 
-    def first_name(self, instance):
-        return instance.user.first_name
-
-    def last_name(self, instance):
-        return instance.user.last_name
-
     def name(self, instance):
         name = '%s %s' % (
             instance.user.first_name,
