@@ -24,7 +24,7 @@ from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.user_groups.models import Group
 from tendenci.addons.memberships.managers import MembershipManager, \
-    MemberAppManager, MemberAppEntryManager
+    MembershipDefaultManager, MemberAppManager, MemberAppEntryManager
 from tendenci.core.base.utils import fieldify
 from tinymce import models as tinymce_models
 from tendenci.core.payments.models import PaymentMethod
@@ -524,6 +524,21 @@ class MembershipDefault(TendenciBaseModel):
             Profile.objects.create_profile(user)
 
         return user, created
+
+    def get_renewal_period_dt(self):
+        """
+         Returns a none type object or 2-tuple with start_dt and end_dt
+        """
+        if not self.membership_type.allow_renewal:
+            return None
+
+        if not isinstance(self.expire_dt, datetime):
+            return None
+
+        start_dt = self.expire_dt - timedelta(days=self.membership_type.renewal_period_start)
+        end_dt = self.expire_dt + timedelta(days=self.membership_type.renewal_period_end)
+
+        return (start_dt, end_dt)
 
     def can_renew(self):
         """
