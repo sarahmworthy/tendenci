@@ -689,6 +689,7 @@ class MembershipDefault(TendenciBaseModel):
     def qs_memberships(self, **kwargs):
         """
         Get all memberships of this type for this user.
+        Breaks if self.user is not set.
         """
         return MembershipDefault.objects.filter(
             user=self.user, membership_type=self.membership_type
