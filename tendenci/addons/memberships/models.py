@@ -1525,6 +1525,98 @@ class NoticeLogRecord(models.Model):
     create_dt = models.DateTimeField(auto_now_add=True)
 
 
+class MembershipApp(TendenciBaseModel):
+    guid = models.CharField(max_length=50, editable=False)
+
+    name = models.CharField(_("Name"), max_length=155)
+    slug = models.SlugField(max_length=200, unique=True)
+    description = models.TextField(blank=True,
+        help_text="Description of this application. " + \
+        "Displays at top of application.")
+    confirmation_text = tinymce_models.HTMLField()
+    notes = models.TextField(blank=True, default='')
+    use_captcha = models.BooleanField(_("Use Captcha"), default=True)
+    membership_types = models.ManyToManyField(MembershipType,
+                                              verbose_name="Membership Types")
+    payment_methods = models.ManyToManyField(PaymentMethod,
+                                             verbose_name="Payment Methods")
+
+    use_for_corp = models.BooleanField(_("Use for Corporate Individuals"),
+                                       default=True)
+
+    class Meta:
+        verbose_name = "Membership Application"
+        permissions = (("view_app", "Can view membership application"),)
+
+    def __unicode__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.guid = str(uuid.uuid1())
+        super(App, self).save(*args, **kwargs)
+
+
+class MembershipAppField(models.Model):
+    LABEL_MAX_LENGTH = 2000
+    FIELD_TYPE_CHOICES = (
+                    ("CharField", _("Text")),
+                    ("CharField/django.forms.Textarea", _("Paragraph Text")),
+                    ("BooleanField", _("Checkbox")),
+                    ("ChoiceField", _("Select One (Drop Down)")),
+                    ("ChoiceField/django.forms.RadioSelect", _("Select One (Radio Buttons)")),
+                    ("MultipleChoiceField", _("Multi select (Drop Down)")),
+                    ("MultipleChoiceField/django.forms.CheckboxSelectMultiple", _("Multi select (Checkboxes)")),
+                    ("EmailField", _("Email")),
+                    ("FileField", _("File upload")),
+                    ("DateField/django.forms.extras.SelectDateWidget", _("Date")),
+                    ("DateTimeField", _("Date/time")),
+                    ("section_break", _("Section Break")),
+                    ("page_break", _("Page Break")),
+                )
+
+    membership_app = models.ForeignKey("MembershipApp", related_name="fields")
+    label = models.CharField(_("Label"), max_length=LABEL_MAX_LENGTH)
+    content_type = models.ForeignKey(ContentType,
+                                     null=True)
+    field_name = models.CharField(max_length=100, blank=True, default='')
+    required = models.BooleanField(_("Required"), default=False, blank=True)
+    admin_only = models.BooleanField(_("Admin Only"), default=False)
+
+    field_type = models.CharField(_("Field Type"), choices=FIELD_TYPE_CHOICES,
+                                  max_length=64)
+    description = models.TextField(_("Description"),
+                                   max_length=200,
+                                   blank=True,
+                                   default='')
+    help_text = models.CharField(_("Help Text"),
+                                 max_length=200,
+                                 blank=True,
+                                 default='')
+    choices = models.CharField(_("Choices"), max_length=1000, blank=True,
+        help_text="Comma separated options where applicable")
+    default_value = models.CharField(_("Default Value"),
+                                     max_length=200,
+                                     blank=True,
+                                     default='')
+    css_class = models.CharField(_("CSS Class"),
+                                 max_length=200,
+                                 blank=True,
+                                 default='')
+
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _("Field")
+        verbose_name_plural = _("Fields")
+        ordering = ('order',)
+
+    def __unicode__(self):
+        if self.field_name:
+            return '%s (field name: %s)' % (self.label, self.field_name)
+        return '%s' % self.label
+
+
 class App(TendenciBaseModel):
     guid = models.CharField(max_length=50, editable=False)
 
