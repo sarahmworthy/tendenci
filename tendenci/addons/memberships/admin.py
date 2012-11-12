@@ -132,6 +132,14 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
     def last_name(self, instance):
         return instance.user.last_name
 
+    def name(self, instance):
+        name = '%s %s' % (
+            instance.user.first_name,
+            instance.user.last_name,
+        )
+        name.strip()
+        return name
+
     def email(self, instance):
         return instance.user.email
 
@@ -140,8 +148,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
     get_status.short_description = u'Status'
 
     list_display = [
-        'first_name',
-        'last_name',
+        'name',
         'email',
         'member_number',
         'create_dt',
