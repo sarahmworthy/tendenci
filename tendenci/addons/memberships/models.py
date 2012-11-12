@@ -349,6 +349,8 @@ class MembershipDefault(TendenciBaseModel):
     promotion_code = models.CharField(max_length=50, blank=True, default=u'')
     directory = models.ForeignKey(Directory, blank=True, null=True)
 
+    objects = MembershipDefaultManager()
+
     def save(self, *args, **kwargs):
         self.guid = self.guid or uuid.uuid1().get_hex()
         super(MembershipDefault, self).save(*args, **kwargs)
