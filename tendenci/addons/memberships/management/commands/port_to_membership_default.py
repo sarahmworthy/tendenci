@@ -125,7 +125,6 @@ class Command(BaseCommand):
             m_default.set_renew_dt()
             m_default.set_expire_dt()
             m_default.user.profile.refresh_member_number()
-            m_default.group_refresh()
 
             self.set_invoice(m_default, e)
             self.set_owner_creator_fields(m_default, e)
@@ -133,6 +132,9 @@ class Command(BaseCommand):
             self.set_status_fields(m_default, e.membership)
 
             m_default.save()
+
+            # add user to [membership] group
+            m_default.group_refresh()
 
             # reset create_dt
             self.set_owner_creator_fields(m_default, e)
