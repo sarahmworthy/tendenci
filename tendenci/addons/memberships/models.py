@@ -501,7 +501,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         status=True, status_detail='active'
         """
-        if self.is_active():
+        if self.is_active() and self.application_approved:
 
             # membership does not expire
             if self.is_forever():
