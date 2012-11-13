@@ -294,7 +294,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 class MembershipAppFieldAdmin(admin.TabularInline):
     model = MembershipAppField
     fields = ('label', 'field_name', 'display',
-              'required', 'admin_only', 
+              'required', 'admin_only', 'order',
               )
 #    readonly_fields = ('field_name',)
     extra = 0
@@ -331,11 +331,11 @@ class MembershipAppAdmin(admin.ModelAdmin):
         js = (
             '%sjs/jquery-1.4.2.min.js' % settings.STATIC_URL,
             '%sjs/jquery_ui_all_custom/jquery-ui-1.8.5.custom.min.js' % settings.STATIC_URL,
-            '%sjs/admin/custom_reg_form_inline_ordering.js' % settings.STATIC_URL,
+            '%sjs/admin/membapp_tabular_inline_ordering.js' % settings.STATIC_URL,
             '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
         )
         css = {'all': ['%scss/admin/dynamic-inlines-with-sort.css' % settings.STATIC_URL,
-                       '%scss/memberships-admin.css' % settings.LOCAL_STATIC_URL], }
+                       '%scss/memberships-admin.css' % settings.STATIC_URL], }
 
 
 class MembershipTypeAdmin(admin.ModelAdmin):
