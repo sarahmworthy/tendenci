@@ -16,8 +16,14 @@ from django.http import HttpResponseRedirect
 from tendenci.addons.memberships.forms import MembershipTypeForm
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.perms.utils import update_perms_and_save
-from tendenci.addons.memberships.models import Membership, MembershipDefault, MembershipType, Notice, App, AppField
-from tendenci.addons.memberships.forms import MembershipDefaultForm, AppForm, NoticeForm, AppFieldForm, AppEntryForm
+from tendenci.addons.memberships.models import (Membership, MembershipDefault,
+                                                MembershipType, Notice,
+                                                AppField,
+                                                MembershipAppField,
+                                                MembershipApp)
+from tendenci.addons.memberships.forms import (MembershipDefaultForm, AppForm,
+                            NoticeForm, AppFieldForm, AppEntryForm,
+                            MembershipAppForm)
 from tendenci.addons.memberships.utils import get_default_membership_fields, edit_app_update_corp_fields
 from tendenci.addons.memberships.middleware import ExceededMaxTypes
 from tendenci.core.payments.models import PaymentMethod
@@ -283,6 +289,52 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.expire()
+
+
+class MembershipAppFieldAdmin(admin.TabularInline):
+    model = MembershipAppField
+    fields = ('label', 'field_name',
+              'required', 'admin_only', 
+              )
+    readonly_fields = ('field_name',)
+    extra = 0
+    verbose_name = 'Section Break'
+    ordering = ("order",)
+    template = "memberships/admin/membershipapp/tabular.html"
+
+
+class MembershipAppAdmin(admin.ModelAdmin):
+    inlines = (MembershipAppFieldAdmin, )
+    list_display = ('name', 'status', 'status_detail')
+    search_fields = ('name', 'status', 'status_detail')
+    fieldsets = (
+        (None, {'fields': ('name', 'slug', 'description',
+                           'confirmation_text', 'notes',
+                           'membership_types', 'payment_methods',
+                           'use_for_corp', 'use_captcha',)},),
+        ('Administrative', {'fields': ('allow_anonymous_view',
+                                       'user_perms',
+                                       'member_perms',
+                                       'group_perms',
+                                       'status_detail')}),
+#        ('Add fields to your form', {'fields': ('app_field_selection',),
+#                                     'classes': ('mapped-fields', ),
+#                                     'description': 'The fields you ' + \
+#                                     'selected will be automatically ' + \
+#                                     'added to your form.'}),
+    )
+
+    form = MembershipAppForm
+
+    class Media:
+        js = (
+            '%sjs/jquery-1.4.2.min.js' % settings.STATIC_URL,
+            '%sjs/jquery_ui_all_custom/jquery-ui-1.8.5.custom.min.js' % settings.STATIC_URL,
+            '%sjs/admin/custom_reg_form_inline_ordering.js' % settings.STATIC_URL,
+            '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
+        )
+        css = {'all': ['%scss/admin/dynamic-inlines-with-sort.css' % settings.STATIC_URL,
+                       '%scss/memberships-admin.css' % settings.LOCAL_STATIC_URL], }
 
 
 class MembershipTypeAdmin(admin.ModelAdmin):
@@ -638,6 +690,7 @@ class AppEntryAdmin(admin.ModelAdmin):
 
 
 admin.site.register(MembershipDefault, MembershipDefaultAdmin)
+admin.site.register(MembershipApp, MembershipAppAdmin)
 admin.site.register(MembershipType, MembershipTypeAdmin)
 admin.site.register(Notice, NoticeAdmin)
 admin.site.register(App, AppAdmin)

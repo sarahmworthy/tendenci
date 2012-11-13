@@ -17,22 +17,22 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django.utils.importlib import import_module
 from django.core.files.storage import FileSystemStorage
-from django.core.files.storage import default_storage
 
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.addons.corporate_memberships.models import (CorporateMembership,
     AuthorizedDomain)
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.perms.forms import TendenciBaseForm
-from tendenci.addons.memberships.models import (Membership, MembershipDefault, MembershipType,
-    Notice, App, AppEntry, AppField, AppFieldEntry, MembershipImport)
+from tendenci.addons.memberships.models import (Membership, MembershipDefault,
+    MembershipType, Notice, App, AppEntry, AppField, AppFieldEntry,
+    MembershipImport, MembershipApp)
 from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
-    NoticeTimeTypeField)
+    NoticeTimeTypeField, AppFieldSelectionField)
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
 from tendenci.addons.memberships.utils import csv_to_dict, NoMembershipTypes
 from tendenci.addons.memberships.utils import normalize_field_names
 from tendenci.addons.memberships.widgets import (CustomRadioSelect, TypeExpMethodWidget,
-    NoticeTimeTypeWidget)
+    NoticeTimeTypeWidget, AppFieldSelectionWidget)
 from tendenci.addons.memberships.utils import get_notice_token_help_text
 from tendenci.apps.notifications.utils import send_welcome_email
 from tendenci.addons.educations.models import Education
@@ -404,6 +404,63 @@ class MembershipDefaultUploadForm(forms.ModelForm):
                         """ % (', '.join(missing_columns)))
 
         return upload_file
+
+
+class MembershipAppForm(TendenciBaseForm):
+
+    description = forms.CharField(required=False,
+        widget=TinyMCE(attrs={'style': 'width:100%'},
+        mce_attrs={'storme_app_label': MembershipApp._meta.app_label,
+        'storme_model': MembershipApp._meta.module_name.lower()}))
+
+    confirmation_text = forms.CharField(required=False,
+        widget=TinyMCE(attrs={'style': 'width:100%'},
+        mce_attrs={'storme_app_label': MembershipApp._meta.app_label,
+        'storme_model': MembershipApp._meta.module_name.lower()}))
+
+    status_detail = forms.ChoiceField(
+        choices=(
+            ('draft', 'Draft'),
+            ('published', 'Published')
+        ),
+        initial='published'
+    )
+#    app_field_selection = AppFieldSelectionField(label='Select Fields')
+
+    class Meta:
+        model = MembershipApp
+        fields = (
+            'name',
+            'slug',
+            'description',
+            'confirmation_text',
+            'notes',
+            'membership_types',
+            'payment_methods',
+            'use_for_corp',
+            'use_captcha',
+            'allow_anonymous_view',
+            'user_perms',
+            'member_perms',
+            'group_perms',
+            'status_detail',
+#            'app_field_selection',
+            )
+
+    def __init__(self, *args, **kwargs):
+        super(MembershipAppForm, self).__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['description'].widget.mce_attrs[
+                            'app_instance_id'] = self.instance.pk
+        else:
+            self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
+
+        if self.instance.pk:
+            self.fields['confirmation_text'].widget.mce_attrs[
+                            'app_instance_id'] = self.instance.pk
+        else:
+            self.fields['confirmation_text'].widget.mce_attrs[
+                                    'app_instance_id'] = 0
 
 
 class NoticeForm(forms.ModelForm):
