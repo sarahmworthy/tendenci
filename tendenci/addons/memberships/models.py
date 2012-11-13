@@ -1923,7 +1923,7 @@ class AppEntry(TendenciBaseModel):
             3. create new user
         - Update user with membership data (fn, ln, email)
         - Bind user with group
-        - Update memberhsip status_detail='active'
+        - Update membership status_detail='active'
         - Update decision_dt=datetime.now()
 
         More than 1 [active] membership of the same type cannot exist
