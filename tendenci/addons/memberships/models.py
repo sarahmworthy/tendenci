@@ -1581,6 +1581,7 @@ class MembershipAppField(models.Model):
                                      null=True)
     field_name = models.CharField(max_length=100, blank=True, default='')
     required = models.BooleanField(_("Required"), default=False, blank=True)
+    display = models.BooleanField(_("Show"), default=True, blank=True)
     admin_only = models.BooleanField(_("Admin Only"), default=False)
 
     field_type = models.CharField(_("Field Type"), choices=FIELD_TYPE_CHOICES,

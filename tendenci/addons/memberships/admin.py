@@ -293,11 +293,12 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
 class MembershipAppFieldAdmin(admin.TabularInline):
     model = MembershipAppField
-    fields = ('label', 'field_name',
+    fields = ('label', 'field_name', 'display',
               'required', 'admin_only', 
               )
     readonly_fields = ('field_name',)
     extra = 0
+    can_delete = False
     verbose_name = 'Section Break'
     ordering = ("order",)
     template = "memberships/admin/membershipapp/tabular.html"
