@@ -4,7 +4,9 @@ from django.db.models import Q
 from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
+from django.conf.urls.defaults import patterns, url
 from django.template.defaultfilters import slugify
 from django.http import HttpResponse
 from django.utils.html import escape
@@ -212,6 +214,45 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
     def queryset(self, request):
         qs = super(MembershipDefaultAdmin, self).queryset(request)
         return qs.order_by('-application_approved_dt')
+
+    def get_urls(self):
+        """
+        Add the export view to urls.
+        """
+        urls = super(MembershipDefaultAdmin, self).get_urls()
+
+        extra_urls = patterns('',
+            url("^approve/(?P<form_id>\d+)/$",
+                self.admin_site.admin_view(self.approve),
+                name='membership.admin_approve'),
+            url("^renew/(?P<form_id>\d+)/$",
+                self.admin_site.admin_view(self.renew),
+                name='membership.admin_renew'),
+            url("^expire/(?P<field_entry_id>\d+)/$",
+                self.admin_site.admin_view(self.expire),
+                name='membership.admin_expire'),
+        )
+        return extra_urls + urls
+
+    # admin custom views ----------------------------------------
+
+    def approve(self, request, pk):
+        """
+        """
+        m = get_object_or_404(MembershipDefault, pk=pk)
+        m.approve()
+
+    def renew(self, request, pk):
+        """
+        """
+        m = get_object_or_404(MembershipDefault, pk=pk)
+        m.renew()
+
+    def expire(self, request, pk):
+        """
+        """
+        m = get_object_or_404(MembershipDefault, pk=pk)
+        m.expire()
 
 
 class MembershipTypeAdmin(admin.ModelAdmin):
