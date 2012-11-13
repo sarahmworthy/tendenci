@@ -296,7 +296,7 @@ class MembershipAppFieldAdmin(admin.TabularInline):
     fields = ('label', 'field_name', 'display',
               'required', 'admin_only', 
               )
-    readonly_fields = ('field_name',)
+#    readonly_fields = ('field_name',)
     extra = 0
     can_delete = False
     verbose_name = 'Section Break'

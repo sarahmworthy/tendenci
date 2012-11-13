@@ -34,6 +34,10 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
         "membership_default_import_get_status",
         name="memberships.default_import_get_status"),
 
+    url(r"^get_app_fields/$",
+        "get_app_fields_json",
+        name="memberships.get_app_fields"),
+
     # reports
     url(r'^reports/$', 'membership_join_report', name='reports-memberships-joins'),
     url(r'^reports/pdf/$', 'membership_join_report_pdf', name='reports-memberships-joins-pdf'),

@@ -1554,7 +1554,7 @@ class MembershipApp(TendenciBaseModel):
     def save(self, *args, **kwargs):
         if not self.id:
             self.guid = str(uuid.uuid1())
-        super(App, self).save(*args, **kwargs)
+        super(MembershipApp, self).save(*args, **kwargs)
 
 
 class MembershipAppField(models.Model):

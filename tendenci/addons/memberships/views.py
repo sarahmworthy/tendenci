@@ -20,6 +20,7 @@ from django.utils import simplejson
 from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
 from django.db.models import ForeignKey, OneToOneField
+from django.template.loader import render_to_string
 
 
 from djcelery.models import TaskMeta
@@ -1157,6 +1158,21 @@ def download_default_template(request):
 
     return render_csv(filename, title_list,
                         data_row_list)
+    
+    
+@csrf_exempt
+@login_required
+def get_app_fields_json(request):
+    """
+    Get the app fields and return as json
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+
+    app_fields = render_to_string('memberships/app_fields.json',
+                               {}, context_instance=None)
+
+    return HttpResponse(simplejson.dumps(simplejson.loads(app_fields)))
 
 
 @staff_member_required
