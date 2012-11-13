@@ -99,6 +99,19 @@ class Command(BaseCommand):
                 email=e.email, first_name=e.first_name, last_name=e.last_name
             )
 
+            if not hasattr(m_default, 'membership_type'):
+                if e.membership_type:
+                    m_default.membership_type = e.membership_type
+
+                if verbosity:
+                    self.echo(
+                        m_default, e,
+                        created=m_default_created,
+                        skipped=True,
+                    )
+
+                continue  # on to the next one
+
             m_default.application_complete_dt = e.create_dt
             m_default.entity = Entity.objects.first()
             m_default.organization_entity = m_default.entity
@@ -144,7 +157,7 @@ class Command(BaseCommand):
             if verbosity:
                 self.echo(m_default, e, created=m_default_created)
 
-    def echo(self, m_default, e, created):
+    def echo(self, m_default, e, created, skipped=False):
         """
         Prints out message on screen.
         Dependent on Membership and MembershipDefault
@@ -154,6 +167,9 @@ class Command(BaseCommand):
         msg = u'updated'
         if created:
             msg = u'created'
+
+        if skipped:
+            msg = 'skipped'
 
         if e.membership:
             print 'Membership %s ==> MembershipDefault %s (%s)' % (
