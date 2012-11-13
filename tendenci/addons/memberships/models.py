@@ -2,6 +2,7 @@ import re
 import hashlib
 import uuid
 import time
+from copy import deepcopy
 from functools import partial
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -368,6 +369,92 @@ class MembershipDefault(TendenciBaseModel):
         Returns memberships of status_detail='pending'
         """
         return MembershipDefault.objects.filter(status_detail='pending')
+
+    def approve(self):
+        """
+        Approve this membership.
+        Returns False if membership has expired.
+        - In group membership.
+        - New invoice.
+        - Archive old memberships.
+        - Show member number on profile.
+        """
+
+        if not self.is_expired():
+            self.status = True,
+            self.status_detail = 'active'
+            self.application_approved_dt = \
+                self.application_approve_dt or datetime.now()
+            self.set_join_dt()
+            self.set_renew_dt()
+            self.set_expire_dt()
+            self.save()
+
+            # user in [membership] group
+            self.group_refresh()
+
+            # new invoice; bound via ct and object_id
+            self.save_invoice(status_detail='tendered')
+
+            # archive other membership [of this type]
+            self.archive_old_memberships()
+
+            # show member number on profile
+            self.user.profile.refresh_member_number()
+
+            return True
+
+        return
+
+    def renew(self):
+        """
+        Renew this membership.
+        Assumes user is bound to membership.
+        - In group membership.
+        - New invoice.
+        - Archive old memberships.
+        - Show member number on profile.
+        """
+        dupe = deepcopy(self)
+
+        dupe.pk = None  # disconnect from db record
+
+        dupe.status = True,
+        dupe.status_detail = 'active'
+        dupe.application_approved_dt = datetime.now()
+        dupe.set_join_dt()
+        dupe.set_renew_dt()
+        dupe.set_expire_dt()
+        dupe.save()
+
+        # add to [membership] group
+        dupe.group_refresh()
+
+        # new invoice; bound via ct and object_id
+        dupe.save_invoice(status_detail='tendered')
+
+        # archive other membership [of this type]
+        dupe.archive_old_memberships()
+
+        # show member number on profile
+        dupe.user.profile.refresh_member_number()
+
+    def expire(self):
+        """
+        Expire this membership.
+        - Set status_detail to 'expired'
+        - Remove grom group.
+        - Remove profile member number.
+        """
+        self.status = True
+        self.status_detail = 'expired'
+        self.save()
+
+        # remove from group
+        self.group_refresh()
+
+        # show member number on profile
+        self.user.profile.refresh_member_number()
 
     def is_forever(self):
         """
