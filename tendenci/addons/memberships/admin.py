@@ -191,7 +191,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         'name',
         'email',
         'member_number',
-        # 'get_create_dt',
+        'membership_type',
         'get_approve_dt',
         'get_status',
     ]
