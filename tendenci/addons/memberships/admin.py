@@ -39,16 +39,18 @@ class MembershipAdmin(admin.ModelAdmin):
 
 def approve_selected(modeladmin, request, queryset):
     """
-    Approves selected memberships.  Excludes already
-    approved memberships.
+    Approves selected memberships.
+    Exclude active and expired memberships.
     """
+
+    qs_active = Q(status_detail='active')
+    qs_expired = Q(status_detail='expired')
 
     # exclude already approved memberships
     memberships = queryset.exclude(
         status=True,
-        status_detail='active',
         application_approved_dt__isnull=False,
-    )
+    ).exclude(qs_active | qs_expired)
 
     # approve membership
     # set all date attributes
