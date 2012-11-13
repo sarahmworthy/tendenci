@@ -60,6 +60,32 @@ def approve_selected(modeladmin, request, queryset):
 approve_selected.short_description = u'Approve selected'
 
 
+def renew_selected(modeladmin, request, queryset):
+    """
+    Renew selected memberships.
+    """
+    for membership in queryset:
+        membership.renew()
+
+renew_selected.short_description = u'Renew selected'
+
+
+def expire_selected(modeladmin, request, queryset):
+    """
+    Expire [only active] selected memberships.
+    """
+
+    memberships = queryset.filter(
+        status=True,
+        status_detail='active'
+    )
+
+    for membership in memberships:
+        membership.renew()
+
+expire_selected.short_description = u'Expire selected'
+
+
 class MembershipDefaultAdmin(admin.ModelAdmin):
     """
     MembershipDefault model
@@ -195,7 +221,11 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         'status_detail'
     ]
 
-    actions = [approve_selected]
+    actions = [
+        approve_selected,
+        expire_selected,
+        renew_selected
+    ]
 
     def save_form(self, request, form, change):
         """
@@ -234,7 +264,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         )
         return extra_urls + urls
 
-    # admin custom views ----------------------------------------
+    # django-admin custom views ----------------------------------------
 
     def approve(self, request, pk):
         """
