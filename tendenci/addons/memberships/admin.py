@@ -52,16 +52,8 @@ def approve_selected(modeladmin, request, queryset):
         application_approved_dt__isnull=False,
     ).exclude(qs_active | qs_expired)
 
-    # approve membership
-    # set all date attributes
     for membership in memberships:
-        membership.status = True,
-        membership.status_detail = 'active'
-        membership.application_approved_dt = datetime.now()
-        membership.set_join_dt()
-        membership.set_renew_dt()
-        membership.set_expire_dt()
-        membership.save()
+        membership.approve()
 
 approve_selected.short_description = u'Approve selected'
 
