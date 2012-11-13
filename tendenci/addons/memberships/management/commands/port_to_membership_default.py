@@ -31,9 +31,11 @@ class Command(BaseCommand):
                 )
 
             if m_default:
-                created = False
+                # not found; then creating
+                m_default_created = False
             else:
-                created = True
+                # found; already created
+                m_default_created = True
                 m_default = MembershipDefault()
 
             if e.membership:
@@ -93,7 +95,7 @@ class Command(BaseCommand):
                 if hasattr(e.membership, 'user'):
                     m_default.user = e.membership.user
 
-            m_default.user, created = m_default.get_or_create_user(
+            m_default.user, user_created = m_default.get_or_create_user(
                 email=e.email, first_name=e.first_name, last_name=e.last_name
             )
 
@@ -137,7 +139,7 @@ class Command(BaseCommand):
             m_default.save()
 
             if verbosity:
-                self.echo(m_default, e, created=created)
+                self.echo(m_default, e, created=m_default_created)
 
     def echo(self, m_default, e, created):
         """
