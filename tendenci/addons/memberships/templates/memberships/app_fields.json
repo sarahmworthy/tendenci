@@ -1,5 +1,12 @@
 [
     {
+    "label": "Section 1. User Information",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
     "label": "First Name",
     "field_name": "first_name",
     "display": "true",
@@ -259,43 +266,15 @@
     "admin_only": "false"
     },
     {
-    "label": "Membership Type",
-    "field_name": "membership_type",
-    "display": "true",
-    "required": "true",
-    "admin_only": "false"
-    },
-    {
-    "label": "Payment Method",
-    "field_name": "payment_method",
-    "display": "true",
-    "required": "true",
-    "admin_only": "false"
-    },
-    {
-    "label": "User Groups",
-    "field_name": "user_group",
-    "display": "true",
-    "required": "true",
-    "admin_only": "false"
-    },
-    {
-    "label": "Industry",
-    "field_name": "industry",
-    "display": "true",
-    "required": "false",
-    "admin_only": "false"
-    },
-    {
-    "label": "Region",
-    "field_name": "region",
-    "display": "true",
-    "required": "false",
-    "admin_only": "false"
-    },
-    {
     "label": "Hide Phone",
     "field_name": "hide_phone",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 2. Membership Information",
+    "field_name": "",
     "display": "true",
     "required": "false",
     "admin_only": "false"
@@ -460,6 +439,83 @@
     "display": "true",
     "required": "false",
     "admin_only": "false"
+    },
+    {
+    "label": "Section 3. Membership Type",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Membership Type",
+    "field_name": "membership_type",
+    "display": "true",
+    "required": "true",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 4. Payment Method",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Payment Method",
+    "field_name": "payment_method",
+    "display": "true",
+    "required": "true",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 5. Join User Groups",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "User Groups",
+    "field_name": "user_group",
+    "display": "true",
+    "required": "true",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 6. Industry",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Industry",
+    "field_name": "industry",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 7. Region",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Region",
+    "field_name": "region",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 8. Admin Only",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "true"
     },
     {
     "label": "Admin Notes",
