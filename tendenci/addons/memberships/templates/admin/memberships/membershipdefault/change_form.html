@@ -8,7 +8,8 @@
   <ul class="object-tools">
     {% block object-tools-items %}
 
-    <li><a href="history/" class="historylink">{% trans "History" %}</a></li>
+    <li><a href="{% url profile original.user.username %}">
+        {% trans "Go to profile" %}</a></li>
 
     {% if original.is_approved %}
         <li><a href="{% url admin:membership.admin_expire original.pk %}" >
@@ -20,6 +21,8 @@
         <li><a href="{% url admin:membership.admin_approve original.pk %}" >
             {% trans "Approve" %}</a></li>
     {% endif %}
+
+    <li><a href="history/" class="historylink">{% trans "History" %}</a></li>
 
     {% if has_absolute_url %}<li><a href="../../../r/{{ content_type_id }}/{{ object_id }}/" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif%}
     {% endblock %}
