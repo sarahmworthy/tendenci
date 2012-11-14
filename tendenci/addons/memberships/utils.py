@@ -990,7 +990,7 @@ class ImportMembDefault(object):
             return date
 
         if field_type == 'DateTimeField':
-            return datetime
+            return datetime.now()
 
         if field_type == 'DecimalField':
             return Decimal(0)
@@ -1058,8 +1058,10 @@ class ImportMembDefault(object):
                     pass
 
             if not value:
+                if value == '':
+                    value = None
                 if not field.null:
-                    value = datetime
+                    value = datetime.now()
         elif field_type == 'DecimalField':
             try:
                 value = field.to_python(value)
