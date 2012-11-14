@@ -59,7 +59,7 @@
                         </div>
                     </div>
                     <div class="save-wrap">
-                        <input type="submit" value="Save all changes to these photos" onclick="event.preventDefault(); save_changes();"/>
+                        <input type="submit" value="Save all changes to these photos" onclick="event.preventDefault(); save_changes('{% url photoset_details photo_set.id %}');"/>
                     </div>
                 </div>
             </div>
@@ -134,7 +134,7 @@
 
 {% block extra_body %}
 {{ block.super }}
-<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.6.2.min.js"></script>
 <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.20.custom.min.js"></script>
 <script type="text/javascript">
     $(".photo-bulk-editor .title").keyup(function(event){
@@ -192,7 +192,7 @@
                     $('.minimize-all-button').text('{% trans "Enable Photo Drag/Drop Reordering" %}')
                 }
             }
-        }); 
+        });
     });
 
     $(window).scroll(function(){
@@ -207,34 +207,42 @@
 	    }
     });
 
-    function save_changes() {
+    function save_changes(path) { 
         $("#progress_bar").progressbar({
             max : $("#id_form-TOTAL_FORMS").val(),
         });
         var csrfstring = $(".batch-edit-form input[name='csrfmiddlewaretoken']").serialize()
         var id_regex = new RegExp('(form-\\d+-)');
-        $(".edit-wrap").each(function(){
+        $(".edit-wrap").each(function(i){
+            var current_wrap = $(this)
+            $(this).find('.position-wrap input').val(i+1);
+            // get the POST data for one form
             var string = csrfstring + '&';
             $(this).find(".field").each(function(){
                 if ($(this).children().serialize() != ''){
                     string = string + $(this).children().serialize().replace(id_regex, '') + '&';}
             });
             string = string + $(this).children('input:first-child').serialize().replace(id_regex, '');
-            console.log(string)
+            // send an ajax request for an individual form
             $.ajax({
                 type: 'POST',
                 url: '',
-                async: false,
+                async: true,
                 data: string,
                 success: function(xmlRequestObject, successString){
                     console.log(successString);
                 }
+            }).done(function(data){
+                // hide the current form
+                current_wrap.hide();
+                // update the progress bar
+                var progressSoFar = $( "#progress_bar" ).progressbar( "value" );
+                $( "#progress_bar" ).progressbar( "value", progressSoFar + 1 );
+                // check if progress bar has finished
+                if (progressSoFar + 1 == $("#id_form-TOTAL_FORMS").val()){
+                    window.location=path;}
             });
-            $(this).hide();
-            var progressSoFar = $( "#progress_bar" ).progressbar( "value" );
-            $( "#progress_bar" ).progressbar( "value", progressSoFar + 1 );
         });
-        window.location="{% url photoset_details photo_set.id %}"
     }
 
     function minimizeAll() {
