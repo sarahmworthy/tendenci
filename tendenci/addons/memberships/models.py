@@ -373,48 +373,64 @@ class MembershipDefault(TendenciBaseModel):
     def approve(self):
         """
         Approve this membership.
-        Returns False if membership has expired.
-        - In group membership.
-        - New invoice.
-        - Archive old memberships.
-        - Show member number on profile.
+            - Assert user is in group.
+            - Create new invoice.
+            - Archive old memberships [of same type].
+            - Show member number on profile.
+
+        Will not approve:
+            - Active memberships
+            - Expired memberships
+            - Archived memberships
         """
 
-        if not self.is_expired():
-            self.status = True,
-            self.status_detail = 'active'
-            self.application_approved_dt = \
-                self.application_approve_dt or datetime.now()
-            self.set_join_dt()
-            self.set_renew_dt()
-            self.set_expire_dt()
-            self.save()
+        good = (
+            not self.is_approved(),
+            not self.is_expired(),
+            self.status_detail != 'archived',
+        )
 
-            # user in [membership] group
-            self.group_refresh()
+        if not all(good):
+            return False
 
-            # new invoice; bound via ct and object_id
-            self.save_invoice(status_detail='tendered')
+        self.status = True,
+        self.status_detail = 'active'
+        self.application_approved_dt = \
+            self.application_approve_dt or datetime.now()
+        self.set_join_dt()
+        self.set_renew_dt()
+        self.set_expire_dt()
+        self.save()
 
-            # archive other membership [of this type]
-            self.archive_old_memberships()
+        # user in [membership] group
+        self.group_refresh()
 
-            # show member number on profile
-            self.user.profile.refresh_member_number()
+        # new invoice; bound via ct and object_id
+        self.save_invoice(status_detail='tendered')
 
-            return True
+        # archive other membership [of this type]
+        self.archive_old_memberships()
 
-        return
+        # show member number on profile
+        self.user.profile.refresh_member_number()
+
+        return True
 
     def renew(self):
         """
         Renew this membership.
-        Assumes user is bound to membership.
-        - In group membership.
-        - New invoice.
-        - Archive old memberships.
-        - Show member number on profile.
+            - Assert user is in group.
+            - Create new invoice.
+            - Archive old memberships [of same type].
+            - Show member number on profile.
+
+        Will not renew:
+            - Archived memberships
         """
+
+        if self.status_detail == 'archived':
+            return False
+
         dupe = deepcopy(self)
 
         dupe.pk = None  # disconnect from db record
@@ -439,13 +455,21 @@ class MembershipDefault(TendenciBaseModel):
         # show member number on profile
         dupe.user.profile.refresh_member_number()
 
+        return True
+
     def expire(self):
         """
         Expire this membership.
-        - Set status_detail to 'expired'
-        - Remove grom group.
-        - Remove profile member number.
+            - Set status_detail to 'expired'
+            - Remove grom group.
+            - Remove profile member number.
+
+        Will only expire approved memberships.
         """
+
+        if not self.is_approved():
+            return False
+
         self.status = True
         self.status_detail = 'expired'
         self.save()
@@ -455,6 +479,8 @@ class MembershipDefault(TendenciBaseModel):
 
         # show member number on profile
         self.user.profile.refresh_member_number()
+
+        return True
 
     def is_forever(self):
         """
@@ -499,7 +525,8 @@ class MembershipDefault(TendenciBaseModel):
 
     def is_approved(self):
         """
-        status=True, status_detail='active'
+        self.is_active()
+        self.application_approved
         """
         if self.is_active() and self.application_approved:
 
