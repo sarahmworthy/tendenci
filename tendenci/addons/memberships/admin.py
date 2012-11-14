@@ -256,9 +256,9 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     actions = [
         approve_selected,
-        expire_selected,
         renew_selected,
         disapprove_selected,
+        expire_selected,
     ]
 
     def save_form(self, request, form, change):
