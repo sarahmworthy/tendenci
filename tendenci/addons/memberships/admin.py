@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.contrib.contenttypes.models import ContentType
 from django.conf.urls.defaults import patterns, url
 from django.template.defaultfilters import slugify
@@ -268,13 +268,13 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         urls = super(MembershipDefaultAdmin, self).get_urls()
 
         extra_urls = patterns('',
-            url("^approve/(?P<form_id>\d+)/$",
+            url("^approve/(?P<pk>\d+)/$",
                 self.admin_site.admin_view(self.approve),
                 name='membership.admin_approve'),
-            url("^renew/(?P<form_id>\d+)/$",
+            url("^renew/(?P<pk>\d+)/$",
                 self.admin_site.admin_view(self.renew),
                 name='membership.admin_renew'),
-            url("^expire/(?P<field_entry_id>\d+)/$",
+            url("^expire/(?P<pk>\d+)/$",
                 self.admin_site.admin_view(self.expire),
                 name='membership.admin_expire'),
         )
@@ -288,17 +288,32 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.approve()
 
+        return redirect(reverse(
+            'admin:memberships_membershipdefault_change',
+            args=[pk],
+        ))
+
     def renew(self, request, pk):
         """
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.renew()
 
+        return redirect(reverse(
+            'admin:memberships_membershipdefault_change',
+            args=[pk],
+        ))
+
     def expire(self, request, pk):
         """
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.expire()
+
+        return redirect(reverse(
+            'admin:memberships_membershipdefault_change',
+            args=[pk],
+        ))
 
 
 class MembershipAppFieldAdmin(admin.TabularInline):
