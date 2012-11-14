@@ -457,6 +457,56 @@ class MembershipDefault(TendenciBaseModel):
 
         return True
 
+    def disapprove(self, request_user=None):
+        """
+        Disapprove this membership.
+
+        Will not disapprove:
+            - Archived memberships
+            - Expired memberships (instead: you should renew it)
+        """
+        good = (
+            not self.is_expired(),
+            self.status_detail != 'archived',
+        )
+
+        if not all(good):
+            return False
+
+        NOW = datetime.now()
+
+        self.status = True,
+        self.status_detail = 'disapproved'
+
+        # application approved/denied ---------------
+        self.application_denied = True
+        self.application_approved_denied_dt = \
+            self.application_approved_denied_dt or NOW
+        if request_user:  # else: don't set
+            self.application_approved_denied_user = request_user
+
+        # action_taken ------------------------------
+        self.action_taken = True
+        self.action_taken_dt = self.action_taken_dt or NOW
+        if request_user:  # else: don't set
+            self.action_taken_user = request_user
+
+        self.save()
+
+        # user in [membership] group
+        self.group_refresh()
+
+        # new invoice; bound via ct and object_id
+        self.save_invoice(status_detail='tendered')
+
+        # archive other membership [of this type]
+        self.archive_old_memberships()
+
+        # show member number on profile
+        self.user.profile.refresh_member_number()
+
+        return True
+
     def expire(self):
         """
         Expire this membership.
