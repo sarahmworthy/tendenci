@@ -19,7 +19,7 @@ jQuery(document).ready(function($){
     $('div.inline-related').find('td.field-order').hide();
     $('div.inline-related').find('th:nth-child(' + order_index +')').hide();
     
-    $('div.inline-related tr').css('cursor','move');
+    //$('div.inline-related tr').css('cursor','move');
     
     $('.add-row a').click(update);
     
