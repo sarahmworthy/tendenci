@@ -306,6 +306,7 @@ class MembershipAppFieldAdmin(admin.TabularInline):
 
 class MembershipAppAdmin(admin.ModelAdmin):
     inlines = (MembershipAppFieldAdmin, )
+    prepopulated_fields = {'slug': ['name']}
     list_display = ('name', 'status', 'status_detail')
     search_fields = ('name', 'status', 'status_detail')
     fieldsets = (
@@ -313,11 +314,16 @@ class MembershipAppAdmin(admin.ModelAdmin):
                            'confirmation_text', 'notes',
                            'membership_types', 'payment_methods',
                            'use_for_corp', 'use_captcha',)},),
-        ('Administrative', {'fields': ('allow_anonymous_view',
-                                       'user_perms',
-                                       'member_perms',
-                                       'group_perms',
-                                       'status_detail')}),
+        ('Permissions', {'fields': ('allow_anonymous_view',)}),
+        ('Advanced Permissions', {'classes': ('collapse',), 'fields': (
+            'user_perms',
+            'member_perms',
+            'group_perms',
+        )}),
+        ('Status', {'fields': (
+            'status',
+            'status_detail',
+        )}),
 #        ('Add fields to your form', {'fields': ('app_field_selection',),
 #                                     'classes': ('mapped-fields', ),
 #                                     'description': 'The fields you ' + \

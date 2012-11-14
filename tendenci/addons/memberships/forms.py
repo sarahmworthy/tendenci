@@ -443,6 +443,7 @@ class MembershipAppForm(TendenciBaseForm):
             'user_perms',
             'member_perms',
             'group_perms',
+            'status',
             'status_detail',
 #            'app_field_selection',
             )
