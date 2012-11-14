@@ -204,7 +204,7 @@ class Profile(Person):
         # look at active memberships
 
         active_memberships = self.user.membershipdefault_set.filter(
-            status=True, status_detail='active'
+            status=True, status_detail__iexact='active'
         )
 
         for membership in active_memberships:
@@ -218,7 +218,9 @@ class Profile(Person):
         return [membership.group for membership in memberships]
 
     def refresh_member_number(self):
-        memberships = self.user.memberships.active_strict(order_by='-pk')
+        memberships = self.user.membershipdefault_set.filter(
+            status=True, status_detail__iexact='active'
+        )
 
         if memberships:
             self.member_number = memberships[0].member_number
