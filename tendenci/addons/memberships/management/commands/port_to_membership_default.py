@@ -20,11 +20,12 @@ class Command(BaseCommand):
         for e in AppEntry.objects.all():
 
             if e.membership:
+                # use guid to match records
                 m_default = MembershipDefault.objects.first(
-                    create_dt=e.membership.create_dt,
-                    membership_type=e.membership.membership_type,
+                    guid=e.membership.guid,
                 )
             else:
+                # use create_dt and membership_type
                 m_default = MembershipDefault.objects.first(
                     create_dt=e.create_dt,
                     membership_type=e.membership_type,
