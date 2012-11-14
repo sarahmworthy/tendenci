@@ -878,7 +878,7 @@ class ImportMembDefault(object):
 
         self.assign_import_values_from_dict(memb, action_info['memb_action'])
 
-        if memb.status == None:
+        if memb.status == None or memb.status == '':
             memb.status = True
         if not memb.status_detail:
             memb.status_detail = 'active'
