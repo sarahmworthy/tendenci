@@ -83,6 +83,23 @@ def renew_selected(modeladmin, request, queryset):
 renew_selected.short_description = u'Renew selected'
 
 
+def disapprove_selected(modeladmin, request, queryset):
+    """
+    Disapprove [only pending and active]
+    selected memberships.
+    """
+
+    qs_pending = Q(status_detail='pending')
+    qs_active = Q(status_detail='active')
+
+    memberships = queryset.filter(qs_pending, qs_active)
+
+    for membership in memberships:
+        membership.disapprove(request_user=request.user)
+
+disapprove_selected.short_description = u'Disapprove selected'
+
+
 def expire_selected(modeladmin, request, queryset):
     """
     Expire [only active] selected memberships.
@@ -240,7 +257,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
     actions = [
         approve_selected,
         expire_selected,
-        renew_selected
+        renew_selected,
+        disapprove_selected,
     ]
 
     def save_form(self, request, form, change):
@@ -274,6 +292,9 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
             url("^renew/(?P<pk>\d+)/$",
                 self.admin_site.admin_view(self.renew),
                 name='membership.admin_renew'),
+            url("^disapprove/(?P<pk>\d+)/$",
+                self.admin_site.admin_view(self.disapprove),
+                name='membership.admin_disapprove'),
             url("^expire/(?P<pk>\d+)/$",
                 self.admin_site.admin_view(self.expire),
                 name='membership.admin_expire'),
@@ -284,6 +305,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     def approve(self, request, pk):
         """
+        Approve membership and redirect to
+        membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.approve()
@@ -295,6 +318,21 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     def renew(self, request, pk):
         """
+        Renew membership and redirect to
+        membershipdefault change page.
+        """
+        m = get_object_or_404(MembershipDefault, pk=pk)
+        m.renew()
+
+        return redirect(reverse(
+            'admin:memberships_membershipdefault_change',
+            args=[pk],
+        ))
+
+    def disapprove(self, request, pk):
+        """
+        Disapprove membership and redirect to
+        membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.renew()
@@ -306,6 +344,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     def expire(self, request, pk):
         """
+        Expire membership and redirect to
+        membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.expire()
