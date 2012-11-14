@@ -175,12 +175,11 @@
                             $this.siblings('td.field-display').find('input').attr('disabled', true);
                             $this.siblings('td.field-required').find('input').attr('disabled', true);
                         }
-                     });
-                    
-                    
+                     });    
                }
                $('.field-field_name input').attr('disabled', true);
-            
+               // remove add another
+               $('tr.add-row td').html('');
         }
         
         
