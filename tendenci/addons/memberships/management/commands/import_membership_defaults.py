@@ -34,11 +34,12 @@ class Command(BaseCommand):
             # catch any error
             try:
                 imd.process_default_membership(memb_data)
-            except:
-                mimport.status = 'error'
+            except Exception, e:
+                # mimport.status = 'error'
                 # TODO: add a fied to log the error
-                mimport.save()
-                raise  Exception(traceback.format_exc())
+                # mimport.save()
+                # raise  Exception(traceback.format_exc())
+                print e
 
             mimport.num_processed += 1
             # save the status
