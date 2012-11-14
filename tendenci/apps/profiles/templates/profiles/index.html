@@ -71,22 +71,39 @@
 		<h2>Contact Information</h2>
 
 		<table>
+
+            {% if not profile.is_superuser %}
+            {% if not profile.hide_email %}
 			<tr>
 				<td>Email</td>
 				<td>{{ user_this.email }}</td>
 			</tr>
+            {% endif %}
+            {% endif %}
+
+            {% if not profile.is_superuser %}
+            {% if not profile.hide_phone %}
 			<tr>
 				<td>Phone</td>
 				<td>{% firstof profile.phone profile.phone2 %}</td>
 			</tr>
+            {% endif %}
+            {% endif %}
+
 			<tr>
 				<td>Website</td>
 				<td>{{ profile.url }}</td>
 			</tr>
+
+            {% if not profile.is_superuser %}
+            {% if not profile.hide_address %}
 			<tr>
 				<td>Address</td>
 				<td>{{ profile.address }} <span class="city-state-zip">{{ city_state_zip }}</span></td>
 			</tr>
+            {% endif %}
+            {% endif %}
+
 		</table>
 		
     </div>
