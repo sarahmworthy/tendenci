@@ -48,17 +48,18 @@ class MembershipAdmin(admin.ModelAdmin):
 def approve_selected(modeladmin, request, queryset):
     """
     Approves selected memberships.
-    Exclude active and expired memberships.
+    Exclude active, expired, and archived memberships.
     """
 
     qs_active = Q(status_detail='active')
     qs_expired = Q(status_detail='expired')
+    qs_archived = Q(status_detail='archived')
 
     # exclude already approved memberships
     memberships = queryset.exclude(
         status=True,
         application_approved_dt__isnull=False,
-    ).exclude(qs_active | qs_expired)
+    ).exclude(qs_active | qs_expired | qs_archived)
 
     for membership in memberships:
         membership.approve()
@@ -69,8 +70,14 @@ approve_selected.short_description = u'Approve selected'
 def renew_selected(modeladmin, request, queryset):
     """
     Renew selected memberships.
+    Exclude archived memberships
     """
-    for membership in queryset:
+
+    qs_archived = Q(status_detail='archived')
+
+    memberships = queryset.exclude(qs_archived)
+
+    for membership in memberships:
         membership.renew()
 
 renew_selected.short_description = u'Renew selected'
@@ -83,11 +90,14 @@ def expire_selected(modeladmin, request, queryset):
 
     memberships = queryset.filter(
         status=True,
-        status_detail='active'
+        status_detail='active',
+        application_approved=True,
     )
 
     for membership in memberships:
-        membership.renew()
+        # check expire_dt + grace_period_dt
+        if not membership.is_expired():
+            membership.renew()
 
 expire_selected.short_description = u'Expire selected'
 
