@@ -148,26 +148,27 @@ def search(request, template_name="profiles/search.html"):
     if query:
         profiles = profiles.filter(Q(status=True), Q(status_detail="active"), Q(user__first_name__icontains=query) | Q(user__last_name__icontains=query) | Q(user__email__icontains=query) | Q(user__username__icontains=query))
 
+    is_not_member_filter = (Q(member_number="") | Q(user__is_active=False))
     if members:
         if not request.user.profile.is_superuser:
             if membership_view_perms == "private":
-                profiles = profiles.filter(member_number="")
+                profiles = profiles.filter(is_not_member_filter)
             elif membership_view_perms == "all-members" or membership_view_perms == "member-type":
                 if request.user.profile and request.user.profile.is_member:
-                    profiles = profiles.exclude(member_number="")
+                    profiles = profiles.exclude(is_not_member_filter)
                 else:
-                    profiles = profiles.filter(member_number="")
+                    profiles = profiles.filter(is_not_member_filter)
             else:
-                profiles = profiles.exclude(member_number="")
+                profiles = profiles.exclude(is_not_member_filter)
         else:
-            profiles = profiles.exclude(member_number="")
+            profiles = profiles.exclude(is_not_member_filter)
     else:
         if not request.user.profile.is_superuser:
             if membership_view_perms == "private":
-                    profiles = profiles.filter(member_number="")
+                    profiles = profiles.filter(is_not_member_filter)
             elif membership_view_perms == "all-members" or membership_view_perms == "member-type":
                 if not request.user.profile or not request.user.profile.is_member:
-                    profiles = profiles.filter(member_number="")
+                    profiles = profiles.filter(is_not_member_filter)
 
     profiles = profiles.order_by('user__last_name', 'user__first_name')
 
