@@ -370,7 +370,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         return MembershipDefault.objects.filter(status_detail='pending')
 
-    def approve(self):
+    def approve(self, request_user=None):
         """
         Approve this membership.
             - Assert user is in group.
@@ -393,10 +393,30 @@ class MembershipDefault(TendenciBaseModel):
         if not all(good):
             return False
 
+        NOW = datetime.now()
+
         self.status = True,
         self.status_detail = 'active'
+
+        # application approved ---------------
+        self.application_approved = True
         self.application_approved_dt = \
-            self.application_approve_dt or datetime.now()
+            self.application_approved_dt or NOW
+        if request_user:  # else: don't set
+            self.application_approved_user = request_user
+
+        # application approved/denied ---------------
+        self.application_approved_denied_dt = \
+            self.application_approved_denied_dt or NOW
+        if request_user:  # else: don't set
+            self.application_approved_denied_user = request_user
+
+        # action_taken ------------------------------
+        self.action_taken = True
+        self.action_taken_dt = self.action_taken_dt or NOW
+        if request_user:  # else: don't set
+            self.action_taken_user = request_user
+
         self.set_join_dt()
         self.set_renew_dt()
         self.set_expire_dt()
@@ -416,7 +436,7 @@ class MembershipDefault(TendenciBaseModel):
 
         return True
 
-    def renew(self):
+    def renew(self, request_user):
         """
         Renew this membership.
             - Assert user is in group.
@@ -431,13 +451,34 @@ class MembershipDefault(TendenciBaseModel):
         if self.status_detail == 'archived':
             return False
 
+        NOW = datetime.now()
+
         dupe = deepcopy(self)
 
         dupe.pk = None  # disconnect from db record
 
         dupe.status = True,
         dupe.status_detail = 'active'
-        dupe.application_approved_dt = datetime.now()
+
+        # application approved ---------------
+        self.application_approved = True
+        self.application_approved_dt = \
+            self.application_approved_dt or NOW
+        if request_user:  # else: don't set
+            self.application_approved_user = request_user
+
+        # application approved/denied ---------------
+        self.application_approved_denied_dt = \
+            self.application_approved_denied_dt or NOW
+        if request_user:  # else: don't set
+            self.application_approved_denied_user = request_user
+
+        # action_taken ------------------------------
+        self.action_taken = True
+        self.action_taken_dt = self.action_taken_dt or NOW
+        if request_user:  # else: don't set
+            self.action_taken_user = request_user
+
         dupe.set_join_dt()
         dupe.set_renew_dt()
         dupe.set_expire_dt()
@@ -507,7 +548,7 @@ class MembershipDefault(TendenciBaseModel):
 
         return True
 
-    def expire(self):
+    def expire(self, request_user):
         """
         Expire this membership.
             - Set status_detail to 'expired'
@@ -520,8 +561,17 @@ class MembershipDefault(TendenciBaseModel):
         if not self.is_approved():
             return False
 
+        NOW = datetime.now()
+
         self.status = True
         self.status_detail = 'expired'
+
+        # action_taken ------------------------------
+        self.action_taken = True
+        self.action_taken_dt = self.action_taken_dt or NOW
+        if request_user:  # else: don't set
+            self.action_taken_user = request_user
+
         self.save()
 
         # remove from group
