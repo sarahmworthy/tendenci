@@ -864,6 +864,14 @@ class ImportMembDefault(object):
         self.assign_import_values_from_dict(profile,
                                             action_info['user_action'])
         profile.user = user
+        if profile.status == None or profile.status == '' or \
+            self.memb_data.get('status', '') == '':
+            profile.status = True
+        if not profile.status_detail:
+            profile.status_detail = 'active'
+        else:
+            profile.status_detail = profile.status_detail.lower()
+
         profile.save()
 
         # membership
@@ -878,7 +886,8 @@ class ImportMembDefault(object):
 
         self.assign_import_values_from_dict(memb, action_info['memb_action'])
 
-        if memb.status == None or memb.status == '':
+        if memb.status == None or memb.status == '' or \
+            self.memb_data.get('status', '') == '':
             memb.status = True
         if not memb.status_detail:
             memb.status_detail = 'active'
@@ -902,7 +911,6 @@ class ImportMembDefault(object):
                 expire_dt = memb.membership_type.get_expiration_dt(
                                             join_dt=memb.join_dt)
                 setattr(memb, 'expire_dt', expire_dt)
-
         memb.save()
 
         memb.is_active = self.is_active(memb)
