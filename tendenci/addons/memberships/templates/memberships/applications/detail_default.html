@@ -20,7 +20,13 @@
     <h2>{{ app.name }}</h2>
     <p>{{ app.description|safe|urlize }}</p>
 
-    {{ form.errors }}
+    <div>{{ form.non_field_errors }}</div>
+
+    {% for field in form %}
+      {% if field.errors %}
+      <div>{{ field.label_tag }} {{ field.errors }}</div>
+      {% endif %}
+    {% endfor %}
 
     <div class="form-builder-wrap">
         <form action="" method="post">
