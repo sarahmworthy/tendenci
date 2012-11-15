@@ -181,5 +181,6 @@ setup(
         "django-tastypie",
         "johnny-cache==1.4",
         "docutils==0.9.1",
+        'chardet==2.1.1',
     ],
 )
