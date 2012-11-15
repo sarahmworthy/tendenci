@@ -1043,7 +1043,7 @@ def membership_default_import_preview(request, mimport_id,
             curr_page = int(request.GET.get('page', 1))
         except:
             curr_page = 1
-        num_items_per_page = 20
+        num_items_per_page = 10
         total_rows = len(data_list)
         # if total_rows not updated, update it
         if mimport.total_rows != total_rows:
