@@ -352,6 +352,10 @@ class MembershipDefault(TendenciBaseModel):
 
     objects = MembershipDefaultManager()
 
+    class Meta:
+        verbose_name = u'Membership'
+        verbose_name_plural = u'Memberships'
+
     def save(self, *args, **kwargs):
         self.guid = self.guid or uuid.uuid1().get_hex()
         super(MembershipDefault, self).save(*args, **kwargs)
