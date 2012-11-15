@@ -1441,6 +1441,7 @@ class MembershipDefaultForm(TendenciBaseForm):
 
     username = forms.CharField(initial=u'', required=False)
     password = forms.CharField(initial=u'', widget=forms.PasswordInput, required=False)
+    confirm_password = forms.CharField(initial=u'', widget=forms.PasswordInput, required=False)
 
     same_as_primary = forms.BooleanField(required=False)
     extra_address = forms.CharField(initial=u'', required=False)
@@ -1610,6 +1611,48 @@ class MembershipDefaultForm(TendenciBaseForm):
                     getattr(self.instance.user.profile, profile_attr)
         # -----------------------------------------------------
 
+    def clean(self):
+        """
+        Validating username and password fields.
+        """
+        super(MembershipDefaultForm, self).clean()
+
+        data = self.cleaned_data
+
+        un = data.get('username', u'').strip()
+        pw = data.get('password', u'').strip()
+        pw_confirm = data.get('confirm_password', u'').strip()
+
+        if un and pw:
+            # assert passwords match
+            if pw != pw_confirm:
+                raise forms.ValidationError(
+                    _('Passwords do not match.')
+                )
+
+            [u] = User.objects.filter(username=un)[:1] or [None]
+
+            if u:
+                # assert password;
+                if not u.check_password(pw):
+                    raise forms.ValidationError(
+                        _('Username and password did not match.')
+                    )
+            else:
+                pass
+                # username does not exist;
+                # create account with username and password
+
+        elif un:
+            [u] = User.objects.filter(username=un)[:1] or [None]
+            # assert username
+            if u:
+                raise forms.ValidationError(
+                    _('This username exists. If it\'s yours, please provide your password.')
+                )
+
+        return data
+
     def save(self, *args, **kwargs):
         """
         Create membership record.
@@ -1640,6 +1683,7 @@ class MembershipDefaultForm(TendenciBaseForm):
         # get or create user
         membership.user, created = membership.get_or_create_user(**{
             'username': self.cleaned_data.get('username'),
+            'password': self.cleaned_data.get('password'),
             'first_name': self.cleaned_data.get('first_name'),
             'last_name': self.cleaned_data.get('last_name'),
             'email': self.cleaned_data.get('email')
