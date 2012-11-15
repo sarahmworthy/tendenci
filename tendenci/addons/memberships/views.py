@@ -1,4 +1,5 @@
 import math
+import os
 import hashlib
 from hashlib import md5
 from datetime import datetime, timedelta
@@ -973,19 +974,29 @@ def membership_default_import_upload(request,
             memb_import.save()
 
             if memb_import.upload_file:
-                f = memb_import.upload_file.file
-                content = f.read()
-                f.close()
-                encoding = chardet.detect(content)['encoding']
-
-                if encoding not in ('ascii', 'utf8'):
-                    if encoding == 'ISO-8859-1' or encoding == 'ISO-8859-2':
-                        encoding = 'latin-1'
-                    content = content.decode(encoding)
-                    # convert file content to utf8
-                    content = content.encode('utf8')
-                    name = memb_import.upload_file.name
-                    default_storage.save(name, ContentFile(content))
+                # encode to utf8 and write to path2
+                path2 = '%s_utf8%s' % (os.path.splitext(
+                                        memb_import.upload_file.name))
+                default_storage.save(path2, ContentFile(''))
+                f = default_storage.open(memb_import.upload_file.name)
+                f2 = default_storage.open(path2, 'wb+')
+                encoding_updated = False
+                for chunk in f.chunks():
+                    encoding = chardet.detect(chunk)['encoding']
+                    if encoding not in ('ascii', 'utf8'):
+                        if encoding == 'ISO-8859-1' or encoding == 'ISO-8859-2':
+                            encoding = 'latin-1'
+                        chunk = chunk.decode(encoding)
+                        chunk = chunk.encode('utf8')
+                        encoding_updated = True
+                    f2.write(chunk)
+                f2.close()
+                if encoding_updated:
+                    memb_import.upload_file.file = f2
+                    memb_import.upload_file.name = f2.name
+                    memb_import.save()
+                else:
+                    default_storage.delete(path2)
 
             # redirect to preview page.
             return redirect(reverse('memberships.default_import_preview',
