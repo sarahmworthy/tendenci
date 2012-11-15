@@ -826,6 +826,9 @@ class ImportMembDefault(object):
         # handle user
         if not user:
             user = User()
+            username_before_assign = ''
+        else:
+            username_before_assign = user.username
 
         # exclude user
         if 'user' in self.field_names:
@@ -836,6 +839,11 @@ class ImportMembDefault(object):
         # make sure username is unique.
         if action_info['user_action'] == 'insert':
             user.username = get_unique_username(user)
+        else:
+            # it's update but a new username is assigned
+            # check if its unique
+            if user.username != username_before_assign:
+                user.username = get_unique_username(user)
 
         if 'password' in self.field_names and \
                 self.mimport.override and user.password:
