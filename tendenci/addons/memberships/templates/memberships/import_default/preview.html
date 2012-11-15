@@ -20,9 +20,9 @@
     <h3 class="import-step">{% trans "Step 2/3 - Preview" %}</h3>
     
     
-
+{% if mimport.status == 'encoding_done' %}
 <p>{% trans "You're almost done!  Please review your settings.  To complete your import, click the button"%} <strong>Import Now</strong>. </p>
-
+{% endif %}
 
 <div class="dimport-settings">
         <div>{% trans "Update" %}:
@@ -42,6 +42,8 @@
 
     
 </div> <!-- dimport settings -->
+
+{% if mimport.status == 'encoding_done' %}
 
     <form class="import" method="post" action="{% url memberships.default_import_process mimport.id %}">{% csrf_token %}
 
@@ -127,7 +129,53 @@
     </div>
 
     </form>
+    
+{% else %}
+    <div>
+        <img src="{{ STATIC_URL }}images/loadingicon.gif" alt="loading">
+        <div style="color: #0D4C83;"><small>Please wait while we're processing...</small></div>
+    </div>
+
+{% endif %}
 
 </div>
 </div>
 {% endblock %}
+
+{% block extra_body %}
+<script type="text/javascript">
+{% if mimport.status != 'encoding_done' %}
+
+  $(document).ready(function() {
+     // http://jqueryui.com/progressbar/#animated
+    var value;
+    var status_check_intval;
+    
+    var status_check = function(){
+        $.ajax({
+           type: "POST",
+           url: "{% url memberships.default_import_check_encode_status mimport.id %}",
+           success: function(status_data){
+               if (status_data == 'encoding_done'){
+                   clearInterval(status_check_intval);
+                   window.location.reload();
+               }
+             },
+             error: function(data){
+               clearInterval(status_check_intval);
+             }
+         });
+     }
+    
+    status_check();
+    status_check_intval = setInterval(function() {
+        status_check();  // check every 5 seconds
+    }, 5000);
+    
+  });
+  
+{% endif %}
+</script>
+
+{% endblock %}
+

@@ -1370,6 +1370,8 @@ class MembershipImport(models.Model):
 
     STATUS_CHOICES = (
         ('not_started', 'Not Started'),
+        ('encoding', 'Encoding'),
+        ('encoding_done', 'Encoding Done'),
         ('processing', 'Processing'),
         ('completed', 'Completed'),
     )
