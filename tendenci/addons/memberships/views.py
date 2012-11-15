@@ -4,6 +4,7 @@ from hashlib import md5
 from datetime import datetime, timedelta
 import subprocess
 from sets import Set
+import chardet
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -21,6 +22,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
 from django.db.models import ForeignKey, OneToOneField
 from django.template.loader import render_to_string
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 
 from djcelery.models import TaskMeta
@@ -968,6 +971,22 @@ def membership_default_import_upload(request,
             memb_import = form.save(commit=False)
             memb_import.creator = request.user
             memb_import.save()
+
+            if memb_import.upload_file:
+                f = memb_import.upload_file.file
+                content = f.read()
+                f.close()
+                encoding = chardet.detect(content)['encoding']
+
+                if encoding not in ('ascii', 'utf8'):
+                    if encoding == 'ISO-8859-1' or encoding == 'ISO-8859-2':
+                        encoding = 'latin-1'
+                    content = content.decode(encoding)
+                    # convert file content to utf8
+                    content = content.encode('utf8')
+                    name = memb_import.upload_file.name
+                    default_storage.save(name, ContentFile(content))
+
             # redirect to preview page.
             return redirect(reverse('memberships.default_import_preview',
                                      args=[memb_import.id]))
