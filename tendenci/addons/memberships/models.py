@@ -700,35 +700,41 @@ class MembershipDefault(TendenciBaseModel):
         """
         Return a user that's newly created or already existed.
         Return new or existing user.
+
+        If username is passed.  It uses the username to return
+        an existing user record or creates a new user record.
+
+        If a password is passed; it is only used in order to
+        create a new user account.
         """
         from tendenci.addons.memberships.utils import spawn_username
 
+        un = kwargs.get('username', u'')
+        pw = kwargs.get('password', u'')
         fn = kwargs.get('first_name', u'')
         ln = kwargs.get('last_name', u'')
         em = kwargs.get('email', u'')
 
         user = None
+        created = False
 
         # get user -------------
         if hasattr(self, 'user'):
-            created = False
             user = self.user
+        elif un:
+            # created = False
+            [user] = User.objects.filter(
+                username=un)[:1] or [None]
         elif em:
-            try:
-                created = True
-                user = User.objects.get(email=em)
-            except User.MultipleObjectsReturned:
-                created = True
-                user = User.objects.filter(email=em).order_by('-pk')[0]
-            except User.DoesNotExist:
-                user = None
+            [user] = User.objects.filter(
+                email=em).order_by('-pk')[:1] or [None]
 
         if not user:
             created = True
             user = User.objects.create_user(**{
-                'username': spawn_username(fn[:1], ln),
+                'username': un or spawn_username(fn[:1], ln),
                 'email': em,
-                'password': hashlib.sha1(em).hexdigest()[:6],
+                'password': pw or hashlib.sha1(em).hexdigest()[:6],
             })
 
             user.first_name = fn
