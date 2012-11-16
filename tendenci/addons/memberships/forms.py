@@ -1722,6 +1722,7 @@ class MembershipDefaultForm(TendenciBaseForm):
                 membership.set_expire_dt()
 
                 membership.archive_old_memberships()
+                membership.send_email(request, 'approve')
 
             else:  # approval required
                 # save invoice tendered
