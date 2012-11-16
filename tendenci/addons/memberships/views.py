@@ -24,7 +24,7 @@ from django.core.management import call_command
 from django.db.models import ForeignKey, OneToOneField
 from django.template.loader import render_to_string
 
-
+from johnny.cache import invalidate
 from djcelery.models import TaskMeta
 from geraldo.generators import PDFGenerator
 from tendenci.apps.notifications.utils import send_welcome_email
@@ -1171,7 +1171,7 @@ def membership_default_import_check_encode_status(request, mimport_id):
     """
     if not request.user.profile.is_superuser:
         raise Http403
-
+    invalidate('memberships_membershipimport')
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
 
