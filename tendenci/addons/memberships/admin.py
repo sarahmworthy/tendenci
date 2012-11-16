@@ -49,6 +49,8 @@ def approve_selected(modeladmin, request, queryset):
     """
     Approves selected memberships.
     Exclude active, expired, and archived memberships.
+
+    Sends email to member, member and global recipients.
     """
 
     qs_active = Q(status_detail='active')
@@ -63,6 +65,7 @@ def approve_selected(modeladmin, request, queryset):
 
     for membership in memberships:
         membership.approve(request_user=request.user)
+        membership.send_email(request, 'approve')
 
 approve_selected.short_description = u'Approve selected'
 
@@ -79,6 +82,7 @@ def renew_selected(modeladmin, request, queryset):
 
     for membership in memberships:
         membership.renew(request_user=request.user)
+        membership.send_email(request, 'renewal')
 
 renew_selected.short_description = u'Renew selected'
 
@@ -96,6 +100,7 @@ def disapprove_selected(modeladmin, request, queryset):
 
     for membership in memberships:
         membership.disapprove(request_user=request.user)
+        membership.send_email(request, 'disapprove')
 
 disapprove_selected.short_description = u'Disapprove selected'
 
