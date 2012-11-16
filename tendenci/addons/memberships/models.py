@@ -1394,7 +1394,7 @@ class MembershipImport(models.Model):
         ('completed', 'Completed'),
     )
 
-    UPLOAD_DIR = "imports/memberships"
+    UPLOAD_DIR = "imports/memberships/%s" % uuid.uuid1().get_hex()[:8]
 
     app = models.ForeignKey('App', null=True)
     upload_file = models.FileField(_("Upload File"), max_length=260,
