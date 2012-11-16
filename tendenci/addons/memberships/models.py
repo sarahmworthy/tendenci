@@ -22,6 +22,7 @@ from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.utils import get_notice_recipients, has_perm
 from tendenci.core.perms.object_perms import ObjectPermission
+from tendenci.core.base.fields import DictField
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.user_groups.models import Group
 from tendenci.addons.memberships.managers import MembershipManager, \
@@ -1388,8 +1389,8 @@ class MembershipImport(models.Model):
 
     STATUS_CHOICES = (
         ('not_started', 'Not Started'),
-        ('encoding', 'Encoding'),
-        ('encoding_done', 'Encoding Done'),
+        ('preprocessing', 'Pre_processing'),
+        ('preprocess_done', 'Pre_process Done'),
         ('processing', 'Processing'),
         ('completed', 'Completed'),
     )
@@ -1429,6 +1430,20 @@ class MembershipImport(models.Model):
 
     def __unicode__(self):
         return self.get_file().file.name
+
+
+class MembershipImportData(models.Model):
+    mimport = models.ForeignKey(MembershipImport,
+                                related_name="membership_import_data",)
+    # dictionary object representing a row in csv
+    row_data = DictField(_('Row Data'))
+    # the original row number in the uploaded csv file
+    row_num = models.IntegerField(_('Row #'))
+    # action_taken can be 'insert', 'update' or 'mixed'
+    action_taken = models.CharField(_('Action Taken'),
+                                    max_length=20, null=True)
+
+
 
 NOTICE_TYPES = (
     ('join', 'Join Date'),
