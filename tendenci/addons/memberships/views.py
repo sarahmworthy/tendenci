@@ -42,7 +42,8 @@ from tendenci.core.exports.utils import render_csv, run_export_task
 
 from tendenci.apps.profiles.models import Profile
 from tendenci.addons.memberships.models import (App, AppEntry, Membership,
-    MembershipType, Notice, MembershipImport, MembershipDefault)
+    MembershipType, Notice, MembershipImport, MembershipDefault,
+    MembershipImportData)
 from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, MembershipDefaultForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
     AppEntryForm, MembershipDefaultUploadForm)
@@ -970,31 +971,6 @@ def membership_default_import_upload(request,
             memb_import = form.save(commit=False)
             memb_import.creator = request.user
             memb_import.save()
-            # commenting out it's causing timeout in heroku
-#            if memb_import.upload_file:
-#                # encode to utf8 and write to path2
-#                path2 = '%s_utf8%s' % (os.path.splitext(
-#                                        memb_import.upload_file.name))
-#                default_storage.save(path2, ContentFile(''))
-#                f = default_storage.open(memb_import.upload_file.name)
-#                f2 = default_storage.open(path2, 'wb+')
-#                encoding_updated = False
-#                for chunk in f.chunks():
-#                    encoding = chardet.detect(chunk)['encoding']
-#                    if encoding not in ('ascii', 'utf8'):
-#                        if encoding == 'ISO-8859-1' or encoding == 'ISO-8859-2':
-#                            encoding = 'latin-1'
-#                        chunk = chunk.decode(encoding)
-#                        chunk = chunk.encode('utf8')
-#                        encoding_updated = True
-#                    f2.write(chunk)
-#                f2.close()
-#                if encoding_updated:
-#                    memb_import.upload_file.file = f2
-#                    memb_import.upload_file.name = f2.name
-#                    memb_import.save()
-#                else:
-#                    default_storage.delete(path2)
 
             # redirect to preview page.
             return redirect(reverse('memberships.default_import_preview',
@@ -1032,19 +1008,23 @@ def membership_default_import_preview(request, mimport_id,
     """
     Preview the import
     """
+    import time
     if not request.user.profile.is_superuser:
         raise Http403
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
 
-    if mimport.status == 'encoding_done':
-        fieldnames, data_list = memb_import_parse_csv(mimport)
+    if mimport.status == 'preprocess_done':
+        t0 = time.time()
+#        fieldnames, data_list = memb_import_parse_csv(mimport)
         try:
             curr_page = int(request.GET.get('page', 1))
         except:
             curr_page = 1
         num_items_per_page = 10
-        total_rows = len(data_list)
+#        total_rows = len(data_list)
+        total_rows = MembershipImportData.objects.filter(
+                                mimport=mimport).count()
         # if total_rows not updated, update it
         if mimport.total_rows != total_rows:
             mimport.total_rows = total_rows
@@ -1056,19 +1036,28 @@ def membership_default_import_preview(request, mimport_id,
             curr_page = 1
 
         # slice the data_list
-        start_index = (curr_page - 1) * num_items_per_page
-        end_index = curr_page * num_items_per_page
-        if end_index > total_rows:
-            end_index = total_rows
-        data_list_slice = data_list[start_index:end_index]
+        start_index = (curr_page - 1) * num_items_per_page + 2
+        end_index = curr_page * num_items_per_page + 2
+        if end_index - 2 > total_rows:
+            end_index = total_rows + 2
+#        data_list_slice = data_list[start_index:end_index]
+        data_list = MembershipImportData.objects.filter(
+                                mimport=mimport,
+                                row_num__gte=start_index,
+                                row_num__lt=end_index).order_by(
+                                    'row_num')
 
         users_list = []
+        #print data_list
         imd = ImportMembDefault(request.user, mimport, dry_run=True)
         # to be efficient, we only process memberships on the current page
-        for i, memb_data in enumerate(data_list_slice):
-            user_display = imd.process_default_membership(memb_data)
-            user_display['row_num'] = start_index + i + 1
+        fieldnames = None
+        for idata in data_list:
+            user_display = imd.process_default_membership(idata.row_data)
+            user_display['row_num'] = idata.row_num
             users_list.append(user_display)
+            if not fieldnames:
+                fieldnames = idata.row_data.keys()
 
         return render_to_response(template_name, {
             'mimport': mimport,
@@ -1082,14 +1071,18 @@ def membership_default_import_preview(request, mimport_id,
             'fieldnames': fieldnames,
             }, context_instance=RequestContext(request))
     else:
-        if mimport.status == 'not_started':
-            subprocess.Popen(["python", "manage.py",
-                          "encode_import_uploaded_file",
-                          str(mimport.pk)])
-        
-        return render_to_response(template_name, {
-            'mimport': mimport,
-            }, context_instance=RequestContext(request))
+        if mimport.status in ('processing', 'completed'):
+                return redirect(reverse('memberships.default_import_status',
+                                     args=[mimport.id]))
+        else:
+            if mimport.status == 'not_started':
+                subprocess.Popen(["python", "manage.py",
+                              "membership_import_preprocess",
+                              str(mimport.pk)])
+
+            return render_to_response(template_name, {
+                'mimport': mimport,
+                }, context_instance=RequestContext(request))
 
 
 @login_required
@@ -1101,7 +1094,7 @@ def membership_default_import_process(request, mimport_id):
         raise Http403
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
-    if mimport.status == 'encoding_done':
+    if mimport.status == 'preprocess_done':
         mimport.status = 'processing'
         mimport.num_processed = 0
         mimport.save()
@@ -1129,8 +1122,8 @@ def membership_default_import_status(request, mimport_id,
         raise Http403
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
-    if mimport.status == 'not_started':
-        return redirect(reverse('memberships.default_import_process',
+    if mimport.status not in ('processing', 'completed'):
+        return redirect(reverse('memberships.default_import',
                                      args=[mimport.id]))
 
     return render_to_response(template_name, {
@@ -1165,7 +1158,7 @@ def membership_default_import_get_status(request, mimport_id):
 
 @csrf_exempt
 @login_required
-def membership_default_import_check_encode_status(request, mimport_id):
+def membership_default_import_check_preprocess_status(request, mimport_id):
     """
     Get the import encoding status
     """

@@ -20,7 +20,7 @@
     <h3 class="import-step">{% trans "Step 2/3 - Preview" %}</h3>
     
     
-{% if mimport.status == 'encoding_done' %}
+{% if mimport.status == 'preprocess_done' %}
 <p>{% trans "You're almost done!  Please review your settings.  To complete your import, click the button"%} <strong>Import Now</strong>. </p>
 {% endif %}
 
@@ -38,12 +38,10 @@
         <div>&nbsp;</div>
         <div>
          <strong>{% trans "Total Rows" %}:  {{ total_rows }}</strong>    
-        </div>
-
-    
+        </div>  
 </div> <!-- dimport settings -->
 
-{% if mimport.status == 'encoding_done' %}
+{% if mimport.status == 'preprocess_done' %}
 
     <form class="import" method="post" action="{% url memberships.default_import_process mimport.id %}">{% csrf_token %}
 
@@ -102,6 +100,7 @@
         
     </div>
     
+    {% if num_pages > 1%}
     <div id="import-paginate">
         {% if prev %}
         <a href="?page={{ prev }}">Prev</a>
@@ -123,15 +122,16 @@
         <a href="?page={{ next }}">Next</a>
          {% endif %}
     </div>
+    {% endif %}
 
-    <div>
+    <div style="margin-top: 1em;">
     <input type="submit" class="submit-btn btn" name="submit" value="Import Now" >
     </div>
 
     </form>
-    
+
 {% else %}
-    <div>
+    <div style="margin: 5em;">
         <img src="{{ STATIC_URL }}images/loadingicon.gif" alt="loading">
         <div style="color: #0D4C83;"><small>Please wait while we're processing...</small></div>
     </div>
@@ -144,7 +144,7 @@
 
 {% block extra_body %}
 <script type="text/javascript">
-{% if mimport.status != 'encoding_done' %}
+{% if mimport.status != 'preprocess_done' %}
 
   $(document).ready(function() {
      // http://jqueryui.com/progressbar/#animated
@@ -154,9 +154,9 @@
     var status_check = function(){
         $.ajax({
            type: "POST",
-           url: "{% url memberships.default_import_check_encode_status mimport.id %}",
+           url: "{% url memberships.default_import_check_preprocess_status mimport.id %}",
            success: function(status_data){
-               if (status_data == 'encoding_done'){
+               if (status_data == 'preprocess_done'){
                    clearInterval(status_check_intval);
                    window.location.reload();
                }
