@@ -374,6 +374,20 @@ class MembershipDefault(TendenciBaseModel):
         """
         return MembershipDefault.objects.filter(status_detail='pending')
 
+    def send_email(self, request, notice_type):
+        """
+        Convenience method for sending
+            typical membership emails.
+        Returns outcome via boolean.
+        """
+        return Notice.send_notice(
+            request=request,
+            emails=self.user.email,
+            notice_type=notice_type,
+            membership=self,
+            membership_type=self.membership_type,
+        )
+
     def approve(self, request_user=None):
         """
         Approve this membership.
