@@ -1474,38 +1474,14 @@ class Notice(models.Model):
         www.tendenci.com developed by Schipul - The Web Marketing Company
         """
 
-    def get_entry_items(self, entry, membership):
-        items = {}
-        if membership:
-            items = membership.entry_items
-        else:
-            if entry:
-                for field in entry.fields.all():
-                    label = slugify(field.field.label).replace('-', '_')
-                    items[label] = field.value
-        return items
-
-    def get_subject(self, entry=None, membership=None):
+    def get_default_context(self, membership=None):
         """
-        Return self.subject replace shortcode (context) variables
-        The membership object takes priority over entry object
+        Returns a dictionary with default context items.
         """
-        context = self.get_entry_items(entry, membership)
-
-        return self.build_notice(self.subject, context=context)
-
-    def get_content(self, entry=None, membership=None):
-        """
-        Return self.email_content with self.footer appended
-        and replace shortcode (context) variables
-        """
-
-        # defaults
         global_setting = partial(get_setting, 'site', 'global')
-        corporate_msg = ''
-        expiration_dt = ''
+        corporate_msg, expiration_dt = u'', u''
 
-        context = self.get_entry_items(entry, membership)
+        context = {}
 
         if membership:
 
@@ -1540,7 +1516,22 @@ class Notice(models.Model):
             'corporatemembernotice': corporate_msg,
         })
 
+        return context
+
+    def get_subject(self, membership=None):
+        """
+        Return self.subject replace shortcode (context) variables
+        The membership object takes priority over entry object
+        """
+        return self.build_notice(self.subject, context={})
+
+    def get_content(self, membership=None):
+        """
+        Return self.email_content with self.footer appended
+        and replace shortcode (context) variables
+        """
         content = "%s\n<br /><br />\n%s" % (self.email_content, self.footer)
+        context = self.get_default_context(membership)
 
         return self.build_notice(content, context=context)
 
@@ -1550,11 +1541,11 @@ class Notice(models.Model):
         Values are pulled from membership, user, profile, and site_settings
         In the future, maybe we can pull from the membership application entry
         """
-        context = kwargs.get('context') or {}  # get context
         content = fieldify(content)
-
-        context = Context(context)
         template = Template(content)
+
+        context = kwargs.get('context') or {}
+        context = Context(context)
 
         return template.render(context)
 
@@ -1568,14 +1559,16 @@ class Notice(models.Model):
 
         Allowed Notice Types: joined, renewed, approved, disapproved
         """
-        from tendenci.apps.notifications import models as notification
+        from notification import models as notification
 
         notice_type = kwargs.get('notice_type') or 'joined'
         membership_type = kwargs.get('membership_type')
         membership = kwargs.get('membership')
         emails = kwargs.get('emails') or []
         request = kwargs.get('request')
-        entry = kwargs.get('entry')
+
+        if not isinstance(membership, MembershipDefault):
+            return False
 
         if isinstance(emails, basestring):
             emails = [emails]  # expecting list of emails
@@ -1615,8 +1608,8 @@ class Notice(models.Model):
                 notification.send_emails(
                     emails,
                     'membership_%s_to_member' % template_type, {
-                    'subject': notice.get_subject(entry=entry, membership=membership),
-                    'content': notice.get_content(entry=entry, membership=membership),
+                    'subject': notice.get_subject(membership=membership),
+                    'content': notice.get_content(membership=membership),
                     'membership_total': Membership.objects.active().count(),
                     'reply_to': notice.sender,
                     'sender': notice.sender,
@@ -1631,7 +1624,6 @@ class Notice(models.Model):
         if recipients and notification:
             notification.send_emails(recipients,
                 'membership_%s_to_admin' % template_type, {
-                'entry': entry,
                 'request': request,
                 'membership_total': Membership.objects.active().count(),
             })
@@ -1640,11 +1632,10 @@ class Notice(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return ('membership.notice_email_content', [self.id])
+        return ('membership.notice_email_content', [self.pk])
 
     def save(self, *args, **kwargs):
-        if not self.id:
-            self.guid = str(uuid.uuid1())
+        self.guid = self.guid or unicode(uuid.uuid1())
         super(Notice, self).save(*args, **kwargs)
 
 
