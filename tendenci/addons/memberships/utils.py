@@ -1,5 +1,6 @@
 import os
 import csv
+import re
 from decimal import Decimal
 from datetime import datetime, date, timedelta
 import dateutil.parser as dparser
@@ -836,6 +837,9 @@ class ImportMembDefault(object):
 
         self.assign_import_values_from_dict(user, action_info['user_action'])
 
+        # clean username
+        if user.username:
+            user.username = re.sub('[^+-.\w\d@]', '', user.username)
         # make sure username is unique.
         if action_info['user_action'] == 'insert':
             user.username = get_unique_username(user)
