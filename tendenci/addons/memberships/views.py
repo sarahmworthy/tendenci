@@ -1030,7 +1030,6 @@ def membership_default_import_preview(request, mimport_id,
             mimport.total_rows = total_rows
             mimport.save()
         num_pages = int(math.ceil(total_rows * 1.0 / num_items_per_page))
-        page_nums = [x + 1 for x in range(0, num_pages)]
         if curr_page <= 0 or curr_page > num_pages:
             curr_page = 1
 
@@ -1041,9 +1040,9 @@ def membership_default_import_preview(request, mimport_id,
         max_num_in_group = 10
         if num_pages > start_num:
             # first group
-            page_range = page_nums[:max_num_in_group]
+            page_range = range(1, max_num_in_group + 1)
             # middle group
-            i = curr_page - int(max_num_in_group/2)
+            i = curr_page - int(max_num_in_group / 2)
             if i <= max_num_in_group:
                 i = max_num_in_group
             else:
@@ -1051,13 +1050,14 @@ def membership_default_import_preview(request, mimport_id,
             j = i + max_num_in_group
             if j > num_pages - max_num_in_group:
                 j = num_pages - max_num_in_group
-            page_range.extend(page_nums[i:j])
+            page_range.extend(range(i, j + 1))
             if j < num_pages - max_num_in_group:
                 page_range.extend(['...'])
             # last group
-            page_range.extend(page_nums[-max_num_in_group:])
+            page_range.extend(range(num_pages - max_num_in_group,
+                                    num_pages + 1))
         else:
-            page_range = page_nums
+            page_range = range(1, num_pages + 1)
 
         # slice the data_list
         start_index = (curr_page - 1) * num_items_per_page + 2
