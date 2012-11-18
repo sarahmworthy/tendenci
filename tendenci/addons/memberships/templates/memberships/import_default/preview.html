@@ -108,12 +108,16 @@
         Prev
          {% endif %}
          
-        {% for page in page_nums %}
-        {% if page == curr_page %}
-        <strong>{{ page }}</strong>
-        {% else %}
-        <a href="?page={{ page }}">{{ page }}</a>
-        {% endif %}
+        {% for page in page_range %}
+            {% if page = '...' %}
+                {{ page }}
+            {% else %}
+                {% if page == curr_page %}
+                <strong>{{ page }}</strong>
+                {% else %}
+                <a href="?page={{ page }}">{{ page }}</a>
+                {% endif %}
+            {% endif %}
         {% endfor %}
         
         {% if curr_page >= num_pages  %}

@@ -1031,16 +1031,39 @@ def membership_default_import_preview(request, mimport_id,
             mimport.save()
         num_pages = int(math.ceil(total_rows * 1.0 / num_items_per_page))
         page_nums = [x + 1 for x in range(0, num_pages)]
-
         if curr_page <= 0 or curr_page > num_pages:
             curr_page = 1
+
+        # calculate the page range to display if the total # of pages > 35
+        # display links in 3 groups - first 10, middle 10 and last 10
+        # the middle group will contain the current page.
+        start_num = 35
+        max_num_in_group = 10
+        if num_pages > start_num:
+            # first group
+            page_range = page_nums[:max_num_in_group]
+            # middle group
+            i = curr_page - int(max_num_in_group/2)
+            if i <= max_num_in_group:
+                i = max_num_in_group
+            else:
+                page_range.extend(['...'])
+            j = i + max_num_in_group
+            if j > num_pages - max_num_in_group:
+                j = num_pages - max_num_in_group
+            page_range.extend(page_nums[i:j])
+            if j < num_pages - max_num_in_group:
+                page_range.extend(['...'])
+            # last group
+            page_range.extend(page_nums[-max_num_in_group:])
+        else:
+            page_range = page_nums
 
         # slice the data_list
         start_index = (curr_page - 1) * num_items_per_page + 2
         end_index = curr_page * num_items_per_page + 2
         if end_index - 2 > total_rows:
             end_index = total_rows + 2
-#        data_list_slice = data_list[start_index:end_index]
         data_list = MembershipImportData.objects.filter(
                                 mimport=mimport,
                                 row_num__gte=start_index,
@@ -1063,11 +1086,11 @@ def membership_default_import_preview(request, mimport_id,
             'mimport': mimport,
             'users_list': users_list,
             'curr_page': curr_page,
-            'page_nums': page_nums,
             'total_rows': total_rows,
             'prev': curr_page - 1,
             'next': curr_page + 1,
             'num_pages': num_pages,
+            'page_range': page_range,
             'fieldnames': fieldnames,
             }, context_instance=RequestContext(request))
     else:
