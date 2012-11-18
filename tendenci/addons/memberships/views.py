@@ -1008,14 +1008,12 @@ def membership_default_import_preview(request, mimport_id,
     """
     Preview the import
     """
-    import time
     if not request.user.profile.is_superuser:
         raise Http403
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
 
     if mimport.status == 'preprocess_done':
-        t0 = time.time()
 #        fieldnames, data_list = memb_import_parse_csv(mimport)
         try:
             curr_page = int(request.GET.get('page', 1))
