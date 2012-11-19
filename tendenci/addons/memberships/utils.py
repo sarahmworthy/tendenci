@@ -372,15 +372,15 @@ def get_notice_token_help_text(notice=None):
     else:
         help_text += '<div>No field tokens because there is no applications.</div>'
 
-    other_labels = ['membernumber',
-                    'membershiptype',
-                    'membershiplink',
-                    'renewlink',
-                    'expirationdatetime',
-                    'sitecontactname',
-                    'sitecontactemail',
-                    'sitedisplayname',
-                    'timesubmitted'
+    other_labels = ['member_number',
+                    'membership_type',
+                    'membership_link',
+                    'renew_link',
+                    'expire_dt',
+                    'site_contact_name',
+                    'site_contact_email',
+                    'site_display_name',
+                    'time_submitted',
                     ]
     help_text += '<div style="font-weight: bold;">Non-field Tokens</div>'
     help_text += "<ul>"
