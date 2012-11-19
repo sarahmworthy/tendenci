@@ -525,13 +525,16 @@ def assign_fields(form, app_field_objs):
             field.label = obj.label
             field.required = obj.required
             obj.field_stype = field.widget.__class__.__name__.lower()
+
             if obj.field_stype == 'textinput':
                 size = get_field_size(obj)
                 field.widget.attrs.update({'size': size})
             elif obj.field_stype == 'datetimeinput':
                 field.widget.attrs.update({'class': 'datepicker'})
             label_type = []
-            if obj.field_name not in ['payment_method', 'membership_type']:
+            if obj.field_name not in ['payment_method',
+                                      'membership_type',
+                                      'groups']:
                 obj.field_div_class = 'inline-block'
                 label_type.append('inline-block')
                 if len(obj.label) < 20:
@@ -595,10 +598,12 @@ class MembershipDefault2Form(forms.ModelForm):
         if 'status_detail' in self_fields_keys:
             self.fields['status_detail'].widget = forms.widgets.Select(
                         choices=self.STATUS_DETAIL_CHOICES)
-#        if 'user_group' in self_fields_keys:
-#            self.fields['user_group'].widget = forms.widgets.CheckboxSelectMultiple(
-#                                    choices = get_group_choices(request_user)
-#                                    )
+        if 'groups' in self_fields_keys:
+            self.fields['groups'].widget = forms.widgets.CheckboxSelectMultiple()
+            self.fields['groups'].queryset = Group.objects.filter(
+                                                allow_self_add=True,
+                                                status=True,
+                                                status_detail='active')
         if 'corporate_membership_id' in self_fields_keys:
             self.fields['corporate_membership_id'].widget = forms.widgets.Select(
                                     choices=get_corporate_membership_choices())
@@ -608,7 +613,6 @@ class MembershipDefault2Form(forms.ModelForm):
 
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
-        print self.field_names
 
 
 class NoticeForm(forms.ModelForm):

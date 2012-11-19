@@ -477,7 +477,7 @@
     },
     {
     "label": "User Groups",
-    "field_name": "user_group",
+    "field_name": "groups",
     "display": "true",
     "required": "true",
     "admin_only": "false"

@@ -33,6 +33,7 @@ from tendenci.core.payments.models import PaymentMethod
 from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.profiles.models import Profile
+from tendenci.apps.user_groups.models import Group
 from tendenci.core.files.models import File
 from tendenci.apps.entities.models import Entity
 from tendenci.apps.notifications import models as notification
@@ -351,6 +352,7 @@ class MembershipDefault(TendenciBaseModel):
     company_size = models.CharField(max_length=50, blank=True, default=u'')
     promotion_code = models.CharField(max_length=50, blank=True, default=u'')
     directory = models.ForeignKey(Directory, blank=True, null=True)
+    groups = models.ManyToManyField(Group, null=True)
 
     objects = MembershipDefaultManager()
 
