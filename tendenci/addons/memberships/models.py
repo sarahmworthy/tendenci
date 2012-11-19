@@ -1515,41 +1515,47 @@ class Notice(models.Model):
         Returns a dictionary with default context items.
         """
         global_setting = partial(get_setting, 'site', 'global')
-        corporate_msg, expiration_dt = u'', u''
+        corporate_msg, expire_dt = u'', u''
 
         context = {}
 
-        if membership:
+        context.update({
+            'site_contact_name': global_setting('sitecontactname'),
+            'site_contact_email': global_setting('sitecontactemail'),
+            'site_display_name': global_setting('sitedisplayname'),
+            'time_submitted': time.strftime("%d-%b-%y %I:%M %p", datetime.now().timetuple()),
+        })
 
-            if membership.corporate_membership_id:
-                corporate_msg = """
-                <br /><br />
-                <font color="#FF0000">
-                Organizational Members, please contact your company Membership coordinator
-                to ensure that your membership is being renewed.
-                </font>
-                """
+        # return basic context
+        if not membership:
+            return context
 
-            if membership.expire_dt:
-                expiration_dt = time.strftime(
-                    "%d-%b-%y %I:%M %p",
-                    membership.expire_dt.timetuple()
-                )
+        if membership.corporate_membership_id:
+            corporate_msg = """
+            <br /><br />
+            <font color="#FF0000">
+            Organizational Members, please contact your company Membership coordinator
+            to ensure that your membership is being renewed.
+            </font>
+            """
 
+        if membership.expire_dt:
             context.update({
-                'membernumber': membership.member_number,
-                'membershiptype': membership.membership_type.name,
-                'membershiplink': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
-                'renewlink': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
+                'expire_dt': time.strftime(
+                "%d-%b-%y %I:%M %p",
+                membership.expire_dt.timetuple()),
             })
 
         context.update({
-            'expirationdatetime': expiration_dt,
-            'sitecontactname': global_setting('sitecontactname'),
-            'sitecontactemail': global_setting('sitecontactemail'),
-            'sitedisplayname': global_setting('sitedisplayname'),
-            'timesubmitted': time.strftime("%d-%b-%y %I:%M %p", datetime.now().timetuple()),
-            'corporatemembernotice': corporate_msg,
+            'first_name': membership.user.first_name,
+            'last_name': membership.user.last_name,
+            'email': membership.user.email,
+            'member_number': membership.member_number,
+            'membership_type': membership.membership_type.name,
+            'payment_method': membership.payment_method.human_name,
+            'membership_link': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
+            'renew_link': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
+            'corporate_membership_notice': corporate_msg,
         })
 
         return context
