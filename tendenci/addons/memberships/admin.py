@@ -315,6 +315,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.approve()
+        m.send_email(request, 'approve')
 
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
@@ -328,6 +329,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.renew()
+        m.send_email(request, 'renewal')
 
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
@@ -341,6 +343,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.renew()
+        m.send_email(request, 'disapprove')
 
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
@@ -508,53 +511,53 @@ class MembershipTypeAdmin(admin.ModelAdmin):
         instance.save()
         
         #form.save_m2m()
-        
+
         return instance
-    
+
 class NoticeAdmin(admin.ModelAdmin):
     def notice_log(self):
         if self.notice_time == 'attimeof':
             return '--'
-        return '<a href="%s%s?notice_id=%d">View logs</a>' % (get_setting('site', 'global', 'siteurl'), 
+        return '<a href="%s%s?notice_id=%d">View logs</a>' % (get_setting('site', 'global', 'siteurl'),
                          reverse('membership.notice.log.search'), self.id)
     notice_log.allow_tags = True
-    
-    list_display = ['notice_name', notice_log, 'content_type', 
+
+    list_display = ['notice_name', notice_log, 'content_type',
                      'membership_type', 'status', 'status_detail']
     list_filter = ['notice_type', 'status_detail']
-    
+
     fieldsets = (
         (None, {'fields': ('notice_name', 'notice_time_type', 'membership_type')}),
         ('Email Fields', {'fields': ('subject', 'content_type', 'sender', 'sender_display', 'email_content')}),
         ('Other Options', {'fields': ('status', 'status_detail')}),
     )
-    
+
     form = NoticeForm
-    
+
     class Media:
         js = (
             "%sjs/jquery-1.4.2.min.js" % settings.STATIC_URL,
             '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
         )
-                
+
     def save_model(self, request, object, form, change):
         instance = form.save(commit=False)
-        
+
         # save the expiration method fields
         notice_time_type = form.cleaned_data['notice_time_type']
         notice_time_type_list = notice_time_type.split(",")
         instance.num_days = notice_time_type_list[0]
         instance.notice_time = notice_time_type_list[1]
         instance.notice_type = notice_time_type_list[2]
-         
+
         if not change:
             instance.creator = request.user
             instance.creator_username = request.user.username
             instance.owner = request.user
             instance.owner_username = request.user.username
-            
+
         instance.save()
-        
+
         return instance
 
 
