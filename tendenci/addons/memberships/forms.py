@@ -32,6 +32,8 @@ from tendenci.addons.memberships.fields import (TypeExpMethodField, PriceInput,
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
 from tendenci.addons.memberships.utils import csv_to_dict, NoMembershipTypes
 from tendenci.addons.memberships.utils import normalize_field_names
+from tendenci.addons.memberships.utils import (get_membership_type_choices,
+                                               get_corporate_membership_choices)
 from tendenci.addons.memberships.widgets import (CustomRadioSelect, TypeExpMethodWidget,
     NoticeTimeTypeWidget, AppFieldSelectionWidget)
 from tendenci.addons.memberships.utils import get_notice_token_help_text
@@ -465,6 +467,48 @@ class MembershipAppForm(TendenciBaseForm):
                                     'app_instance_id'] = 0
 
 
+field_size_dict = {
+        'initials': 12,
+        'displayname': 36,
+        'company': 36,
+        'department': 20,
+        'city': 24,
+        'state': 12,
+        'country': 14,
+        'zipcode': 24,
+        'phone': 22,
+        'phone2': 22,
+        'work_phone': 22,
+        'fax': 22,
+        'primary_practive': 75,
+        'networking': 30,
+        'government_agency': 50,
+        'company_size': 5,
+        'referral_source_member_name': 40,
+        'referral_source_other': 28,
+        'referral_source_member_number': 20,
+        'member_number': 15,
+        'application_approved_denied_user': 10,
+        'application_complete_user': 10,
+        'license_state': 10,
+        'network_sectors': 35,
+        'website': 36,
+        'affiliation_member_number': 30,
+        'how_long_in_practice': 5,
+        'license_number': 15,
+        'url': 36,
+        'url2': 36,
+        'sex': 20,
+        'username': 20,
+        'home_state': 10,
+        'address2': 15
+                   }
+
+
+def get_field_size(app_field_obj):
+    return field_size_dict.get(app_field_obj.field_name, '') or 28
+
+
 def assign_fields(form, app_field_objs):
     form_field_keys = form.fields.keys()
     # a list of names of app fields
@@ -481,11 +525,16 @@ def assign_fields(form, app_field_objs):
             field.label = obj.label
             field.required = obj.required
             obj.field_stype = field.widget.__class__.__name__.lower()
+            if obj.field_stype == 'textinput':
+                size = get_field_size(obj)
+                field.widget.attrs.update({'size': size})
+            elif obj.field_stype == 'datetimeinput':
+                field.widget.attrs.update({'class': 'datepicker'})
             label_type = []
             if obj.field_name not in ['payment_method', 'membership_type']:
                 obj.field_div_class = 'inline-block'
                 label_type.append('inline-block')
-                if len(obj.label) <= 20:
+                if len(obj.label) < 20:
                     label_type.append('short-label')
                     if obj.field_stype == 'textarea':
                         label_type.append('float-left')
@@ -500,6 +549,10 @@ class UserForm(forms.ModelForm):
     def __init__(self, app_field_objs, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
         assign_fields(self, app_field_objs)
+        self.fields['confirm_password'] = forms.CharField(
+                                              initial=u'',
+                                              widget=forms.PasswordInput,
+                                              required=False)
         self.field_names = [name for name in self.fields.keys()]
 
 
@@ -514,13 +567,48 @@ class ProfileForm(forms.ModelForm):
 
 
 class MembershipDefault2Form(forms.ModelForm):
+    STATUS_DETAIL_CHOICES = (
+            ('active', 'Active'),
+            ('pending', 'Pending'),
+            ('admin_hold', 'Admin Hold'),
+            ('inactive', 'Inactive'),
+            ('expired', 'Expired'),
+            ('archive', 'Archive'),
+                             )
+
     class Meta:
         model = MembershipDefault
 
     def __init__(self, app_field_objs, *args, **kwargs):
+        request_user = kwargs.pop('request_user')
+        membership_app = kwargs.pop('membership_app')
         super(MembershipDefault2Form, self).__init__(*args, **kwargs)
+        self.fields['membership_type'].widget = forms.widgets.RadioSelect(
+                    choices=get_membership_type_choices(request_user,
+                                                        membership_app),
+                    attrs=self.fields['membership_type'].widget.attrs)
+        self.fields['payment_method'].empty_label = None
+        self.fields['payment_method'].widget = forms.widgets.RadioSelect(
+                    choices=self.fields['payment_method'].widget.choices,
+                    attrs=self.fields['payment_method'].widget.attrs)
+        self_fields_keys = self.fields.keys()
+        if 'status_detail' in self_fields_keys:
+            self.fields['status_detail'].widget = forms.widgets.Select(
+                        choices=self.STATUS_DETAIL_CHOICES)
+#        if 'user_group' in self_fields_keys:
+#            self.fields['user_group'].widget = forms.widgets.CheckboxSelectMultiple(
+#                                    choices = get_group_choices(request_user)
+#                                    )
+        if 'corporate_membership_id' in self_fields_keys:
+            self.fields['corporate_membership_id'].widget = forms.widgets.Select(
+                                    choices=get_corporate_membership_choices())
+            self.fields['corporate_membership_id'].queryset = CorporateMembership.objects.filter(
+                                            status=True).exclude(
+                                            status_detail__in=['archive', 'inactive'])
+
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
+        print self.field_names
 
 
 class NoticeForm(forms.ModelForm):

@@ -52,6 +52,7 @@ def render_membership_field(request, field_obj,
                             user_form,
                             profile_form,
                             membership_form):
+    field_pwd = None
     if field_obj.field_type == "section_break":
         field = None
     else:
@@ -62,7 +63,10 @@ def render_membership_field(request, field_obj,
             field = profile_form[field_name]
         elif field_name in user_form.field_names:
             field = user_form[field_name]
+            if field_obj.field_name == 'password':
+                field_pwd = user_form['confirm_password']
         else:
             field = None
 
-    return {'request': request, 'field_obj': field_obj, 'field': field}
+    return {'request': request, 'field_obj': field_obj,
+            'field': field, 'field_pwd': field_pwd}

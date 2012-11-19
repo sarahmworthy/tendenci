@@ -1257,7 +1257,9 @@ def membership_default_preview(request, app_id,
 
     user_form = UserForm(app_fields)
     profile_form = ProfileForm(app_fields)
-    membership_form = MembershipDefault2Form(app_fields)
+    membership_form = MembershipDefault2Form(app_fields,
+                                             request_user=request.user,
+                                             membership_app=app)
     #print membership_form.field_names
 
     context = {'app': app,

@@ -15,6 +15,7 @@ from django.template.defaultfilters import slugify
 from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core import exceptions
+from django.utils.safestring import mark_safe
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.utils import has_perm
@@ -106,6 +107,39 @@ def get_corporate_membership_choices():
         cm_list.append((row[0], row[1]))
 
     return cm_list
+
+
+def get_membership_type_choices(user, membership_app, renew=False):
+    mt_list = []
+    membership_types = membership_app.membership_types.all()
+
+    if not user or not user.profile.is_superuser:
+        membership_types = membership_types.filter(admin_only=False)
+    membership_types = membership_types.order_by('order')
+    currency_symbol = get_setting("site", "global", "currencysymbol")
+
+    for mt in membership_types:
+        if not renew:
+            if mt.admin_fee:
+                price_display = '%s - %s%0.2f (+ %s%s admin fee )' % (
+                                              mt.name,
+                                              currency_symbol,
+                                              mt.price,
+                                              currency_symbol,
+                                              mt.admin_fee)
+            else:
+                price_display = '%s - %s%0.2f' % (mt.name,
+                                                  currency_symbol,
+                                                  mt.price)
+        else:
+            price_display = '%s - %s%0.2f' % (mt.name,
+                                              currency_symbol,
+                                              mt.renewal_price)
+
+        price_display = mark_safe(price_display)
+        mt_list.append((mt.id, price_display))
+
+    return mt_list
 
 
 def has_null_byte(file_path):

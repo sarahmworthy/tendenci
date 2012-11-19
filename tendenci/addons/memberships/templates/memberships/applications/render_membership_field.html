@@ -47,6 +47,19 @@
                     <div class="field {{ field_obj.field_div_class }}">
                         {{ field }}
                     </div>
+                    
+                    {% if field_obj.field_name == 'password' %}
+                    <br />
+                    <div class="label{% if field.field.required %} required{% endif %} {{ field_obj.label_type }}">
+                        {{ field_pwd.label_tag }}
+                    </div>
+                    
+                    <div class="field {{ field_obj.field_div_class }}">
+                        {{ field_pwd }}
+                    </div>
+
+                    {% endif %}
+                    
                     {% if field_obj.field_stype == 'textarea' %}
                     <div class="clear"></div>
                     {% endif %}
