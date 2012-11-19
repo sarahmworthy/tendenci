@@ -1663,10 +1663,11 @@ class Notice(models.Model):
         admin_recipients = get_notice_recipients('site', 'global', 'allnoticerecipients')
         recipients = list(set(membership_recipients + admin_recipients))
 
-        if recipients and notification:
+        if recipients:
             notification.send_emails(recipients,
                 'membership_%s_to_admin' % template_type, {
                 'request': request,
+                'membership': membership,
                 'membership_total': Membership.objects.active().count(),
             })
 
