@@ -1710,6 +1710,10 @@ class MembershipApp(TendenciBaseModel):
     def __unicode__(self):
         return self.name
 
+    @models.permalink
+    def get_absolute_url(self):
+        return ('membership_default.preview', [self.pk])
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.guid = str(uuid.uuid1())

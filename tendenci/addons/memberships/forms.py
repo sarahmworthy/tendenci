@@ -22,6 +22,7 @@ from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.addons.corporate_memberships.models import (CorporateMembership,
     AuthorizedDomain)
 from tendenci.apps.user_groups.models import Group
+from tendenci.apps.profiles.models import Profile
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.addons.memberships.models import (Membership, MembershipDefault,
     MembershipType, Notice, App, AppEntry, AppField, AppFieldEntry,
@@ -462,6 +463,64 @@ class MembershipAppForm(TendenciBaseForm):
         else:
             self.fields['confirmation_text'].widget.mce_attrs[
                                     'app_instance_id'] = 0
+
+
+def assign_fields(form, app_field_objs):
+    form_field_keys = form.fields.keys()
+    # a list of names of app fields
+    field_names = [field.field_name for field in app_field_objs \
+                   if field.field_name != '' and \
+                   field.field_name in form_field_keys]
+    for name in form_field_keys:
+        if name not in field_names:
+            del form.fields[name]
+    # update the field attrs - label, required...
+    for obj in app_field_objs:
+        if obj.field_name in field_names:
+            field = form.fields[obj.field_name]
+            field.label = obj.label
+            field.required = obj.required
+            obj.field_stype = field.widget.__class__.__name__.lower()
+            label_type = []
+            if obj.field_name not in ['payment_method', 'membership_type']:
+                obj.field_div_class = 'inline-block'
+                label_type.append('inline-block')
+                if len(obj.label) <= 20:
+                    label_type.append('short-label')
+                    if obj.field_stype == 'textarea':
+                        label_type.append('float-left')
+                        obj.field_div_class = 'float-left'
+            obj.label_type = ' '.join(label_type)
+
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+
+    def __init__(self, app_field_objs, *args, **kwargs):
+        super(UserForm, self).__init__(*args, **kwargs)
+        assign_fields(self, app_field_objs)
+        self.field_names = [name for name in self.fields.keys()]
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+
+    def __init__(self, app_field_objs, *args, **kwargs):
+        super(ProfileForm, self).__init__(*args, **kwargs)
+        assign_fields(self, app_field_objs)
+        self.field_names = [name for name in self.fields.keys()]
+
+
+class MembershipDefault2Form(forms.ModelForm):
+    class Meta:
+        model = MembershipDefault
+
+    def __init__(self, app_field_objs, *args, **kwargs):
+        super(MembershipDefault2Form, self).__init__(*args, **kwargs)
+        assign_fields(self, app_field_objs)
+        self.field_names = [name for name in self.fields.keys()]
 
 
 class NoticeForm(forms.ModelForm):

@@ -1,0 +1,55 @@
+{% extends "memberships/base-wide.html" %}
+{% load base_filters %}
+{% load i18n %}
+{% load membership_tags %}
+{% load styled_forms %}
+
+{% block title %}{% endblock %}
+{% block meta_description %}{% endblock %}
+{% block meta_keywords %}{% endblock %}
+{% block meta_canonical_url %}<link rel="canonical" href="" />{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/memberships.css">
+<style>
+    .inline-block{
+        display: inline-block;
+    }
+    div.short-label{
+        width: 125px;
+    }
+    div.float-left{
+        float: left;
+    }
+    div.clear{
+        clear: both;
+    }
+    div.form-field{
+        margin: 3px 0;
+    }
+    div.admin-only-header{
+        color: #CC0000;
+    }
+    div.section-break{
+        margin: 2em 0 1em 0;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="t">
+<div class="application-form-wrap">
+
+        <h1>{{ app.name }}</h1>
+        {{ app.description|safe }}
+
+       {% for field_obj in app_fields %}
+            {% render_membership_field request field_obj user_form profile_form membership_form %} 
+        {% endfor %}
+        
+        <input class="btn" type="submit" name="submit" value="Submit" disabled="true" />
+
+</div>
+</div>
+{% endblock %}

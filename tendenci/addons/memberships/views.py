@@ -43,10 +43,10 @@ from tendenci.core.exports.utils import render_csv, run_export_task
 from tendenci.apps.profiles.models import Profile
 from tendenci.addons.memberships.models import (App, AppEntry, Membership,
     MembershipType, Notice, MembershipImport, MembershipDefault,
-    MembershipImportData)
+    MembershipImportData, MembershipApp)
 from tendenci.addons.memberships.forms import (AppCorpPreForm, MembershipForm, MembershipDefaultForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
-    AppEntryForm, MembershipDefaultUploadForm)
+    AppEntryForm, MembershipDefaultUploadForm, UserForm, ProfileForm, MembershipDefault2Form)
 from tendenci.addons.memberships.utils import (is_import_valid, prepare_chart_data,
     get_days, get_over_time_stats, get_status_filter,
     get_membership_stats, NoMembershipTypes, ImportMembDefault)
@@ -1226,8 +1226,8 @@ def download_default_template(request):
 
     return render_csv(filename, title_list,
                         data_row_list)
-    
-    
+
+
 @csrf_exempt
 @login_required
 def get_app_fields_json(request):
@@ -1241,6 +1241,31 @@ def get_app_fields_json(request):
                                {}, context_instance=None)
 
     return HttpResponse(simplejson.dumps(simplejson.loads(app_fields)))
+
+
+def membership_default_preview(request, app_id,
+                           template='memberships/applications/preview.html'):
+    """
+    Membership default add.
+    """
+    app = get_object_or_404(MembershipApp, pk=app_id)
+    is_superuser = request.user.profile.is_superuser
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.order_by('order')
+
+    user_form = UserForm(app_fields)
+    profile_form = ProfileForm(app_fields)
+    membership_form = MembershipDefault2Form(app_fields)
+    #print membership_form.field_names
+
+    context = {'app': app,
+               "app_fields": app_fields,
+               'user_form': user_form,
+               'profile_form': profile_form,
+               'membership_form': membership_form}
+    return render_to_response(template, context, RequestContext(request))
 
 
 @staff_member_required
