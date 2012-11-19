@@ -35,6 +35,7 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.files.models import File
 from tendenci.apps.entities.models import Entity
+from tendenci.apps.notifications import models as notification
 from tendenci.addons.directories.models import Directory
 from tendenci.addons.industries.models import Industry
 from tendenci.addons.regions.models import Region
@@ -1601,7 +1602,6 @@ class Notice(models.Model):
 
         Allowed Notice Types: joined, renewed, approved, disapproved
         """
-        from notification import models as notification
 
         notice_type = kwargs.get('notice_type') or 'joined'
         membership_type = kwargs.get('membership_type')
