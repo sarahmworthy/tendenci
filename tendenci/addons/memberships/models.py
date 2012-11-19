@@ -357,6 +357,13 @@ class MembershipDefault(TendenciBaseModel):
         verbose_name = u'Membership'
         verbose_name_plural = u'Memberships'
 
+    @models.permalink
+    def get_absolute_url(self):
+        """
+        Returns admin change_form page.
+        """
+        return ('admin:memberships_membershipdefault_change', [self.pk])
+
     def save(self, *args, **kwargs):
         self.guid = self.guid or uuid.uuid1().get_hex()
         super(MembershipDefault, self).save(*args, **kwargs)
