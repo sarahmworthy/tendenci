@@ -318,8 +318,10 @@ def get_over_time_stats():
     for time in times:
         start_dt = time[1]
         d = {}
-        active_mems = Membership.objects.active(expire_dt__gt=start_dt)
-        d['new'] = active_mems.filter(subscribe_dt__gt=start_dt).count()  # just joined in that time period
+        active_mems = MembershipDefault.objects.filter(
+            status=True, status_detail='active')
+        active_mems = active_mems.filter(expire_dt__gt=start_dt)
+        d['new'] = active_mems.filter(join_dt__gt=start_dt).count()  # just joined in that time period
         d['renewing'] = active_mems.filter(renewal=True).count()
         d['active'] = active_mems.count()
         d['time'] = time[0]
