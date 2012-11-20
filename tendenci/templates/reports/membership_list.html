@@ -23,10 +23,11 @@
         Download CSV File</a></p>
     {% endif %}
 
+    <div class="membership-report-list">
     <table>
         <tr>
             {% if active %}
-            <th>#</a></th>
+            <th></th>
             <th>
 				{% if is_ascending_username %}
 				<a href="{% url reports-active-members %}?sort=username" >{% trans "Username" %}
@@ -49,13 +50,6 @@
 				{% endif %}
 			</th>
             <th>
-				{% if is_ascending_app %}
-				<a href="{% url reports-active-members %}?sort=application" >{% trans "Application" %}</a>
-				{% else %}
-				<a href="{% url reports-active-members %}?sort=-application" >{% trans "Application" %}</a>
-				{% endif %}
-			</th>
-            <th>
 				{% if is_ascending_type %}
 				<a href="{% url reports-active-members %}?sort=type" >{% trans "Type" %}</a>
 				{% else %}
@@ -64,9 +58,9 @@
 			</th>
             <th>
 				{% if is_ascending_subscription %}
-				<a href="{% url reports-active-members %}?sort=subscription" >{% trans "Subscription" %}</a>
+				<a href="{% url reports-active-members %}?sort=subscription" >{% trans "Join" %}</a>
 				{% else %}
-				<a href="{% url reports-active-members %}?sort=-subscription" >{% trans "Subscription" %}</a>
+				<a href="{% url reports-active-members %}?sort=-subscription" >{% trans "Join" %}</a>
 				{% endif %}
 			</th>
             <th>
@@ -84,7 +78,7 @@
 				{% endif %}
 			</th>
             {% else %}
-            <th>#</th>
+            <th></th>
             <th>
 				{% if is_ascending_username %}
 				<a href="{% url reports-expired-members %}?sort=username" >{% trans "Username" %}</a>
@@ -107,13 +101,6 @@
 				{% endif %}
 			</th>
             <th>
-				{% if is_ascending_app %}
-				<a href="{% url reports-expired-members %}?sort=application" >{% trans "Application" %}</a>
-				{% else %}
-				<a href="{% url reports-expired-members %}?sort=-application" >{% trans "Application" %}</a>
-				{% endif %}
-			</th>
-            <th>
 				{% if is_ascending_type %}
 				<a href="{% url reports-expired-members %}?sort=type" >{% trans "Type" %}</a>
 				{% else %}
@@ -122,9 +109,9 @@
 			</th>
             <th>
 				{% if is_ascending_subscription %}
-				<a href="{% url reports-expired-members %}?sort=subscription" >{% trans "Subscription" %}</a>
+				<a href="{% url reports-expired-members %}?sort=subscription" >{% trans "Join" %}</a>
 				{% else %}
-				<a href="{% url reports-expired-members %}?sort=-subscription" >{% trans "Subscription" %}</a>
+				<a href="{% url reports-expired-members %}?sort=-subscription" >{% trans "Join" %}</a>
 				{% endif %}
 			</th>
             <th>
@@ -149,17 +136,19 @@
                 <td><a href="{% url profile mem.user.username %}">{{ mem.user.username }}</a></td>
                 <td>{{ mem.user.get_full_name }}</td>
                 <td><a href="mailto:{{ mem.user.email }}">{{ mem.user.email }}</td>
-                <td>{{ mem.ma }}</td>
                 <td>{{ mem.membership_type }}</td>
-                <th>{{ mem.subscribe_dt }}</th>
-                <th>{{ mem.expire_dt }}</th>
+                <td>{{ mem.join_dt|date:"N j, Y" }}</td>
+                <td>{{ mem.expire_dt|date:"N j, Y" }}</td>
                 <td>
-                    {% if mem.get_entry.invoice.pk %}
-                    <a href="{% url invoice.view mem.get_entry.invoice.pk %}">{{ mem.get_entry.invoice.pk }}</a>
-                    {% else %} - {% endif %}
+                    {% if mem.get_invoice %}
+                    <a href="{% url invoice.view mem.get_invoice.pk %}">
+                        {{ mem.get_invoice.pk }}</a>
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}
     </table>
+    </div>
+
     {% paginate %}
 {% endblock content %}
