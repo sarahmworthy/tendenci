@@ -604,6 +604,7 @@ class MembershipDefault2Form(forms.ModelForm):
                                                 allow_self_add=True,
                                                 status=True,
                                                 status_detail='active')
+            self.fields['groups'].help_text = ''
         if 'corporate_membership_id' in self_fields_keys:
             self.fields['corporate_membership_id'].widget = forms.widgets.Select(
                                     choices=get_corporate_membership_choices())
