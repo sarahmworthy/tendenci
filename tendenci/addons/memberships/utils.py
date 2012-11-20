@@ -229,8 +229,12 @@ def count_active_memberships(date):
     """
     Counts all active memberships in a given date
     """
-    return Membership.objects.active(
-        create_dt__lte=date, expire_dt__gt=date).count()
+    return MembershipDefault.objects.filter(
+        status=True,
+        status_detail='active',
+        create_dt__lte=date,
+        expire_dt__gt=date,
+    ).count()
 
 
 def prepare_chart_data(days, height=300):
