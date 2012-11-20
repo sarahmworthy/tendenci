@@ -831,16 +831,9 @@ class MembershipDefault(TendenciBaseModel):
         content_type = ContentType.objects.get(
             app_label=self._meta.app_label, model=self._meta.module_name)
 
-        try:
-            invoice = Invoice.objects.get(
+        [invoice] = Invoice.objects.filter(
                 object_type=content_type, object_id=self.pk
-            )
-        except Invoice.MultipleObjectsReturned:
-            invoice = Invoice.objects.filter(
-                object_type=content_type, object_id=self.pk
-            )[0]
-        except Invoice.DoesNotExist:
-            invoice = None
+            )[:1] or [None]
 
         return invoice
 
