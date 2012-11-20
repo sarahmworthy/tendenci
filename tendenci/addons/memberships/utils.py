@@ -481,7 +481,6 @@ def get_user(**kwargs):
 
 
 def get_membership_stats():
-    now = datetime.now()
     summary = []
     types = MembershipType.objects.all()
     total_active = 0
@@ -489,10 +488,10 @@ def get_membership_stats():
     total_expired = 0
     total_total = 0
     for mem_type in types:
-        mems = Membership.objects.filter(membership_type=mem_type)
-        active = mems.filter(status_detail='active', expire_dt__gt=now)
-        expired = mems.filter(status_detail='active', expire_dt__lte=now)
-        pending = AppEntry.objects.filter(app__membership_types=mem_type, is_approved__isnull=True)
+        mems = MembershipDefault.objects.filter(membership_type=mem_type)
+        active = mems.filter(status=True, status_detail='active')
+        pending = mems.filter(status=True, status_detail='pending')
+        expired = mems.filter(status=True, status_detail='expired')
         total_all = active.count() + pending.count() + expired.count()
         total_active += active.count()
         total_pending += pending.count()
