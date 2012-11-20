@@ -476,13 +476,7 @@ def get_user(**kwargs):
     Returns first user that matches filters.
     If no user is found then a non type object is returned.
     """
-    try:
-        user = User.objects.get(**kwargs)
-    except User.MultipleObjectsReturned:
-        user = User.objects.filter(**kwargs)[0]
-    except User.DoesNotExist:
-        user = None
-
+    [user] = User.objects.filter(**kwargs)[:1] or [None]
     return user
 
 
