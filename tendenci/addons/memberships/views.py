@@ -1504,12 +1504,6 @@ def report_expired_members(request, template_name='reports/membership_list.html'
     elif sort == '-email':
         mems = mems.order_by('-user__email')
         is_ascending_email = True
-    elif sort == 'application':
-        mems = mems.order_by('ma')
-        is_ascending_app = False
-    elif sort == '-application':
-        mems = mems.order_by('-ma')
-        is_ascending_app = True
     elif sort == 'type':
         mems = mems.order_by('membership_type')
         is_ascending_type = False
@@ -1531,24 +1525,12 @@ def report_expired_members(request, template_name='reports/membership_list.html'
     elif sort == 'invoice':
         # since we need to sort by a related field with the proper
         # conditions we'll need to bring the sorting to the python level
-        for mem in mems:
-            mem.valid_invoice = None
-            if mem.get_entry():
-                if mem.get_entry().invoice:
-                    mem.valid_invoice = mem.get_entry().invoice.pk
-
-        mems = sorted(mems, key=lambda mem: mem.valid_invoice, reverse=True)
+        mems = sorted(mems, key=lambda mem: mem.get_invoice(), reverse=True)
         is_ascending_invoice = False
     elif sort == '-invoice':
         # since we need to sort by a related field with the proper
         # conditions we'll need to bring the sorting to the python level
-        for mem in mems:
-            mem.valid_invoice = None
-            if mem.get_entry():
-                if mem.get_entry().invoice:
-                    mem.valid_invoice = mem.get_entry().invoice.pk
-
-        mems = sorted(mems, key=lambda mem: mem.valid_invoice, reverse=False)
+        mems = sorted(mems, key=lambda mem: mem.get_invoice(), reverse=False)
         is_ascending_invoice = True
 
     EventLog.objects.log()
@@ -1561,23 +1543,28 @@ def report_expired_members(request, template_name='reports/membership_list.html'
             'username',
             'full name',
             'email',
-            'application',
             'type',
-            'subscription',
+            'join',
             'expiration',
+            'invoice',
         ]
 
         table_data = []
         for mem in mems:
-            table_data = [
+
+            invoice_pk = u''
+            if mem.get_invoice():
+                invoice_pk = u'%i' % mem.get_invoice().pk
+
+            table_data.append([
                 mem.user.username,
-                mem.user.get_full_name,
+                mem.user.get_full_name(),
                 mem.user.email,
-                mem.ma.name,
                 mem.membership_type.name,
-                mem.subscribe_dt,
+                mem.join_dt,
                 mem.expire_dt,
-            ]
+                invoice_pk,
+            ])
 
         return render_csv(
             'expired-memberships.csv',
@@ -1592,7 +1579,6 @@ def report_expired_members(request, template_name='reports/membership_list.html'
             'is_ascending_username': is_ascending_username,
             'is_ascending_full_name': is_ascending_full_name,
             'is_ascending_email': is_ascending_email,
-            'is_ascending_app': is_ascending_app,
             'is_ascending_type': is_ascending_type,
             'is_ascending_subscription': is_ascending_subscription,
             'is_ascending_expiration': is_ascending_expiration,
