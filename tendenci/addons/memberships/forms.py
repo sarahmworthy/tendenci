@@ -556,6 +556,7 @@ class UserForm(forms.ModelForm):
                                               initial=u'',
                                               widget=forms.PasswordInput,
                                               required=False)
+        self.fields['confirm_password'].widget.attrs.update({'size': 28}) 
         self.field_names = [name for name in self.fields.keys()]
 
 
@@ -590,10 +591,16 @@ class MembershipDefault2Form(forms.ModelForm):
                     choices=get_membership_type_choices(request_user,
                                                         membership_app),
                     attrs=self.fields['membership_type'].widget.attrs)
-        self.fields['payment_method'].empty_label = None
-        self.fields['payment_method'].widget = forms.widgets.RadioSelect(
-                    choices=self.fields['payment_method'].widget.choices,
-                    attrs=self.fields['payment_method'].widget.attrs)
+        # if all membership types are free, no need to display payment method
+        require_payment = membership_app.membership_types.filter(
+                                Q(price__gt=0) | Q(admin_fee__gt=0)).exists()
+        if not require_payment:
+            del self.fields['payment_method']
+        else:
+            self.fields['payment_method'].empty_label = None
+            self.fields['payment_method'].widget = forms.widgets.RadioSelect(
+                        choices=self.fields['payment_method'].widget.choices,
+                        attrs=self.fields['payment_method'].widget.attrs)
         self_fields_keys = self.fields.keys()
         if 'status_detail' in self_fields_keys:
             self.fields['status_detail'].widget = forms.widgets.Select(
