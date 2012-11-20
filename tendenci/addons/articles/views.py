@@ -224,25 +224,17 @@ def delete(request, id, template_name="articles/delete.html"):
 @staff_member_required
 def articles_report(request, template_name='reports/articles.html'):
     article_type = ContentType.objects.get(app_label="articles", model="article")
-    stats = EventLog.objects.filter(event_id=435000, content_type=article_type) \
+    stats = EventLog.objects.filter(content_type=article_type) \
                     .values('content_type', 'object_id', 'headline')\
-                    .annotate(count=Count('pk'))\
-                    .order_by('-count')
-
-    # get sort order
-    sort = request.GET.get('sort', 'viewed')
-    if sort == 'viewed':
-        stats = stats.order_by('-count')
-    elif sort == 'name':
-        stats = stats.order_by('headline')
-    elif sort == 'created':
-        stats = stats.order_by('create_dt')
+                    .distinct('object_id')
 
     for item in stats:
-
+        item['count'] = EventLog.objects.filter(object_id=item['object_id'], content_type=article_type) \
+                                        .count()
         try:
             article = Article.objects.get(pk=item['object_id'])
             item['article'] = article
+            item['create_dt'] = article.create_dt
             if article.age().days > 0:
                 item['per_day'] = item['count'] * 1.0 / article.age().days
             else:
@@ -252,8 +244,16 @@ def articles_report(request, template_name='reports/articles.html'):
 
     EventLog.objects.log()
 
-    # special sort option
-    if sort == 'day':
+    # default sort order - by views
+    stats = sorted(stats, key=lambda item: item['count'], reverse=True)
+
+    # get sort order
+    sort = request.GET.get('sort', 'viewed')
+    if sort == 'name':
+        stats = sorted(stats, key=lambda item: item['headline'])
+    elif sort == 'created':
+        stats = sorted(stats, key=lambda item: item['create_dt'], reverse=True)
+    elif sort == 'day':
         stats = sorted(stats, key=lambda item: item['per_day'], reverse=True)
 
     return render_to_response(template_name, {

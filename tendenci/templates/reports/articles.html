@@ -16,7 +16,7 @@
 </tr>
 {% for item in stats %}
 <tr>
-	<td>{{ item.count }}</td>
+	<td><a href="{% url event_log.search %}?application=articles&object_id={{ item.article.pk }}">{{ item.count }}</a></td>
 {% if item.article %}
 	<td><a href="{% url article item.article.slug %}">{{ item.article }}</a></td>
 	<td>{{ item.per_day|floatformat:2 }}</td>
