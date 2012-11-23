@@ -59,7 +59,7 @@ class NewsMeta():
         if geo_location:
             value = '%s in %s' % (value, geo_location)
 
-        return value
+        return value[:100]
 
     def get_description(self):
         object = self.object

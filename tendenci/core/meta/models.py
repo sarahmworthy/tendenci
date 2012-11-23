@@ -9,7 +9,7 @@ class Meta(models.Model):
     This meta information has to do with html-meta tags,
     such as: title, keyword and description.
     """
-    title = models.CharField(max_length=200, blank=True)
+    title = models.CharField(max_length=100, blank=True)
     keywords = models.TextField(blank=True)
     description = models.TextField(blank=True)
     canonical_url = models.CharField(max_length=500, blank=True)
