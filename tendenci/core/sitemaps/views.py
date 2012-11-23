@@ -13,14 +13,31 @@ from django.template.response import TemplateResponse
 from django.conf import settings
 from django.core.cache import cache
 from tendenci.core.sitemaps import TendenciSitemap
+from tendenci.core.site_settings.utils import get_setting
 
 
 _sitemap_cache = []
 def get_all_sitemaps():
     for app in settings.INSTALLED_APPS:
         _try_import(app + '.feeds')
-    return TendenciSitemap.__subclasses__()
+    sitemaps = []
+    # only include sitemaps whose module is enabled
+    for sitemap in TendenciSitemap.__subclasses__():
+        if check_enabled(sitemap):
+            sitemaps.append(sitemap)
+    return sitemaps
 
+def check_enabled(value):
+    ''' 
+    Format for module is <packages>.<app_label>.feeds
+    We first get the app_label to be passed to the get_setting function
+    '''
+    module = value.__module__.split('.')
+    app = module[(len(module)-2)]
+    # Only check if it's false since other packages may not use our settings
+    if get_setting('module', app, 'enabled') == False:
+        return False
+    return True
 
 def _try_import(module):
     try:
