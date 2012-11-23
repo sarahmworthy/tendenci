@@ -40,6 +40,7 @@
                 <li><a href="{% url settings.index "module" "users" %}">{% trans "Settings" %}</a></li>
             {% endif %}
             <li><a href="{% url profile.search %}">{% trans "Search Users" %}</a></li>
+            <li><a href="{% url group.smart_groups %}">{% trans "Smart Groups" %}</a></li>
             {% if can_add_profile %}
                 <li><a href="{% url profile.add %}">{% trans "Add a User" %}</a></li>
             {% endif %}

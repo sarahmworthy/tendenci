@@ -43,6 +43,7 @@
                 <li><a href="{% url settings.index "module" "groups" %}">{% trans "Settings" %}</a></li>
             {% endif %}
             <li><a href="{% url groups %}">{% trans "Group List" %}</a></li>
+            <li><a href="{% url group.smart_groups %}">{% trans "Smart Groups" %}</a></li>
             {% if can_add_group %}
                 <li><a href="{% url group.add %}">{% trans "Add Group" %}</a></li>
             {% endif %}

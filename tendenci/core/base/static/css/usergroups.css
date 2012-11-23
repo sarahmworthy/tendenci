@@ -250,3 +250,15 @@
 	border: 1px solid #ccc;
 	margin-top: 1em;
 }
+
+/* Smart Groups */
+.smart-group-form .search-form fieldset, .search-form fieldset div.form-field{
+    float: left;
+    width: 50%;
+}
+.smart-group-form .search-form fieldset div.form-field input{
+    width: 100px;
+}
+.smart-group-form .search-form fieldset legend{
+    font-weight: bold;
+}

@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from datetime import date
 from djcelery.models import TaskMeta
@@ -6,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 from django.template import RequestContext
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models import Count
@@ -22,11 +23,13 @@ from tendenci.apps.entities.models import Entity
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.event_logs.utils import request_month_range, day_bars
 from tendenci.core.event_logs.views import event_colors
+from tendenci.apps.profiles.models import Profile
 from tendenci.apps.user_groups.models import Group, GroupMembership
 from tendenci.apps.user_groups.forms import GroupForm, GroupMembershipForm
-from tendenci.apps.user_groups.forms import GroupPermissionForm, GroupMembershipBulkForm
+from tendenci.apps.user_groups.forms import GroupPermissionForm, GroupMembershipBulkForm, ExportForm
 from tendenci.apps.user_groups.importer.forms import UploadForm
 from tendenci.apps.user_groups.importer.tasks import ImportSubscribersTask
+from tendenci.apps.user_groups.tasks import ExportSmartGroupsTask
 from tendenci.apps.notifications import models as notification
 
 
@@ -67,6 +70,100 @@ def search_redirect(request):
     have a search feature if a search index is available.
     """
     return HttpResponseRedirect(reverse('groups'))
+
+
+def smart_groups(request, template_name="user_groups/smart_groups.html"):
+    join_start = request.GET.get('join_start_dt', None)
+    join_end = request.GET.get('join_end_dt', None)
+    login_start = request.GET.get('login_start_dt', None)
+    login_end = request.GET.get('login_end_dt', None)
+    contributions_start = request.GET.get('contribution_start', None)
+    contributions_end = request.GET.get('contribution_end', None)
+    invoices_start = request.GET.get('invoices_start', None)
+    invoices_end = request.GET.get('invoices_end', None)
+
+    users = Profile.objects.all()
+    if join_start:
+        users = users.filter(create_dt__gte=join_start)
+    if join_end:
+        users = users.filter(create_dt__lte=join_end)
+    if login_start:
+        users = users.filter(user__last_login__gte=login_start)
+    if login_end:
+        users = users.filter(user__last_login__lte=login_end)
+    if contributions_start:
+        users = users.annotate(c_count=Count('user__contributions_contribution_owner')).filter(c_count__gte=contributions_start)
+    if contributions_end:
+        users = users.annotate(c_count=Count('user__contributions_contribution_owner')).filter(c_count__lte=contributions_end)
+    if invoices_start:
+        users = users.annotate(i_count=Count('user__invoice_owner')).filter(i_count__gte=invoices_start)
+    if invoices_end:
+        users = users.annotate(i_count=Count('user__invoice_owner')).filter(i_count__lte=invoices_end)      
+
+    sid = str(int(time.time()))
+    request.session[sid] = {'users': users}
+
+    return render_to_response(template_name, {'users':users, 'sid':sid}, 
+        context_instance=RequestContext(request))
+
+def smart_groups_export(request, sid, template_name="user_groups/smart_groups_export.html"):
+
+    if not request.user.profile.is_staff:
+        raise Http404
+
+    if request.method == 'POST':
+        form = ExportForm(request.POST, user=request.user)
+        if form.is_valid():
+            users = (request.session[sid]).get('users', [])
+
+            if not settings.CELERY_IS_ACTIVE:
+                task = ExportSmartGroupsTask(users)
+                response = task.run()
+                return response
+            else:
+                task = ExportSmartGroupsTask.delay(users)
+                task_id = task.task_id
+                return redirect('group.smart_groups_export_status', task_id)
+    else:
+        form = ExportForm(user=request.user)
+        
+    return render_to_response(template_name, {
+        'form':form,
+    }, context_instance=RequestContext(request))
+
+def smart_groups_export_status(request, task_id, template_name="user_groups/smart_groups_export_status.html"):
+    try:
+        task = TaskMeta.objects.get(task_id=task_id)
+    except TaskMeta.DoesNotExist:
+        task = None
+        
+    return render_to_response(template_name, {
+        'task':task,
+        'task_id':task_id,
+        'user_this':None,
+    }, context_instance=RequestContext(request))
+
+def smart_groups_export_check(request, task_id):
+    try:
+        task = TaskMeta.objects.get(task_id=task_id)
+    except TaskMeta.DoesNotExist:
+        task = None
+        
+    if task and task.status == "SUCCESS":
+        return HttpResponse("OK")
+    else:
+        return HttpResponse("DNE")
+
+def smart_groups_export_download(request, task_id):
+    try:
+        task = TaskMeta.objects.get(task_id=task_id)
+    except TaskMeta.DoesNotExist:
+        task = None
+        
+    if task and task.status == "SUCCESS":
+        return task.result
+    else:
+        return Http404
 
 def group_detail(request, group_slug, template_name="user_groups/detail.html"):
     group = get_object_or_404(Group, slug=group_slug)

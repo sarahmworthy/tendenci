@@ -91,6 +91,11 @@ def render_excel(filename, title_list, data_list, file_extension='.xls'):
                         row_item_list[i] = row_item_list[i].strftime(
                             '%H:%M:%S'
                             )
+                    # catch other values
+                    row_item_list[i] = str(row_item_list[i])
+                else:
+                    row_item_list[i] = u''
+
             str_out += ','.join(row_item_list)
 
         content_type = "application/text"

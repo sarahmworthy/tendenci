@@ -21,3 +21,7 @@ def user_group_nav(context, user, group=None):
 @register.inclusion_tag("user_groups/search-form.html", takes_context=True)
 def group_search(context):
     return context
+
+@register.inclusion_tag("user_groups/smart_groups-form.html", takes_context=True)
+def smart_group_search(context):
+    return context

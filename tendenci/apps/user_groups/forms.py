@@ -155,3 +155,18 @@ class GroupMembershipEditForm(forms.ModelForm):
     class Meta:
         model = GroupMembership
         fields = ('role', 'status', 'status_detail')
+
+class ExportForm(forms.Form):
+    passcode = forms.CharField(
+                    label="Type Your Password", 
+                    widget=forms.PasswordInput(render_value=False))
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super(ExportForm, self).__init__(*args, **kwargs)
+        
+    def clean_passcode(self):
+        value = self.cleaned_data['passcode']
+        if not self.user.check_password(value):
+            raise forms.ValidationError("Invalid password.")
+        return value

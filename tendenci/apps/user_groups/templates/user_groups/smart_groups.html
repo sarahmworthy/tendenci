@@ -1,0 +1,58 @@
+{% extends "user_groups/base.html" %}
+{% load pagination_tags %}
+{% load user_group_tags %}
+{% load profile_tags %}
+{% load base_tags %}
+{% load base_filters %}
+{% load search_tags %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}{% trans "Search" %}{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/iconrow.css">
+<link type="text/css" href="{{ STATIC_URL }}css/jquery_ui_all_custom/jquery-ui-1.8.5.custom.css" rel="stylesheet" />
+<link rel="stylesheet" href="{{ STATIC_URL }}css/usergroups.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}css/profiles.css">
+{% endblock %}
+
+{% block body %}
+<div class="t">
+ <div class="t-group">
+ <div class="t-search">
+
+    {% user_group_nav request.user %}
+    <h1>{{ SITE_GLOBAL_SITEPRIMARYKEYWORDS }} {% firstof MODULE_USERGROUPS_LABEL_PLURAL 'Smart Groups' %}</h1>  
+
+    {% autopaginate users 10 %}
+    <div class="smart-group-form">
+    {% smart_group_search %}
+    </div>
+    <span><em>{{ paginator.count }} User{{ paginator.count|pluralize }} {% trans "Found" %}</em></span>
+    <a href="{% url group.smart_groups_export sid%}">{% trans "Export List" %}</a>
+    
+    <div class="profiles-wrap">
+    {% for user in users %}
+        {% search_result user %}
+    {% empty %}
+        
+    {% endfor %}
+    </div>
+
+    {% paginate %}
+ </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+    {{ block.super }}
+	<script type="text/javascript" src="{{ STATIC_URL }}js/jquery_ui_all_custom/jquery-ui-1.8.5.custom.min.js"></script>
+	<script type="text/javascript">
+	   $(".datepicker").live('focus', function() {
+            console.log('this', this);
+            $(this).datepicker({ dateFormat: 'yy-mm-dd' });
+       });
+	</script>
+{% endblock %}
