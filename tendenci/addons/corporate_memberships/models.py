@@ -19,7 +19,8 @@ from tendenci.core.base.utils import day_validate
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.apps.invoices.models import Invoice
-from tendenci.addons.memberships.models import MembershipType, App, Membership
+from tendenci.addons.memberships.models import (MembershipType, App,
+                                                MembershipApp, Membership)
 from tendenci.apps.forms_builder.forms.settings import FIELD_MAX_LENGTH, LABEL_MAX_LENGTH
 from tendenci.addons.corporate_memberships.managers import (
                                                 CorporateMembershipManager,
@@ -313,6 +314,98 @@ class CorpMembership(TendenciBaseModel):
     @property
     def module_name(self):
         return self._meta.module_name
+
+
+class CorpMembershipApp(TendenciBaseModel):
+    guid = models.CharField(max_length=50)
+    name = models.CharField(_("Name"), max_length=155)
+    slug = models.SlugField(_("URL Path"), max_length=155, unique=True)
+    corp_memb_type = models.ManyToManyField("CorporateMembershipType",
+                                            verbose_name=_("Corp. Memb. Type"))
+    authentication_method = models.CharField(_("Authentication Method"),
+                                             choices=AUTH_METHOD_CHOICES,
+                                    default='admin', max_length=50,
+                                    help_text='Define a method for ' + \
+                                    'individuals to be bound to their' + \
+                                    ' corporate memberships when signing up.')
+    description = tinymce_models.HTMLField(_("Description"),
+                                    blank=True, null=True,
+                                   help_text='Will display at the top of ' + \
+                                   'the application form.')
+    notes = models.TextField(_("Notes"), blank=True, null=True,
+                                   help_text='Notes for editor. ' + \
+                                   'Will not display on the application form.')
+    confirmation_text = models.TextField(_("Confirmation Text"),
+                                         blank=True, null=True)
+
+    memb_app = models.OneToOneField(MembershipApp,
+                            help_text=_("App for individual memberships."),
+                            related_name='corp_app',
+                            verbose_name=_("Membership Application"))
+    payment_methods = models.ManyToManyField(PaymentMethod,
+                                             verbose_name="Payment Methods")
+
+    class Meta:
+        verbose_name = _("Corporate Membership Application")
+        verbose_name_plural = _("Corporate Membership Applications")
+        ordering = ('name',)
+
+    def __unicode__(self):
+        return self.name
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ("corp_memb.add", [self.slug])
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.guid = str(uuid.uuid1())
+        super(CorpMembershipApp, self).save(*args, **kwargs)
+
+
+class CorpMembershipAppField(models.Model):
+    corp_app = models.ForeignKey("CorpMembershipApp", related_name="fields")
+    label = models.CharField(_("Label"), max_length=LABEL_MAX_LENGTH)
+    # hidden fields - field_name and object_type
+    field_name = models.CharField(_("Field Name"), max_length=30, blank=True,
+                                  null=True, editable=False)
+    field_type = models.CharField(_("Field Type"), choices=FIELD_CHOICES,
+                                  max_length=80,
+                                  blank=True, null=True,
+                                  default='CharField')
+
+    required = models.BooleanField(_("Required"), default=False)
+    display = models.BooleanField(_("Show"), default=True)
+    admin_only = models.BooleanField(_("Admin Only"), default=0)
+
+    help_text = models.CharField(_("Instruction for User"),
+                                 max_length=2000, blank=True, default='')
+    choices = models.CharField(_("Choices"), max_length=1000, blank=True,
+                    null=True,
+                    help_text="Comma separated options where applicable")
+    # checkbox/radiobutton
+    field_layout = models.CharField(_("Choice Field Layout"),
+                                    choices=FIELD_LAYOUT_CHOICES,
+                                    max_length=50, blank=True,
+                                    null=True, default='1')
+    size = models.CharField(_("Field Size"), choices=SIZE_CHOICES,
+                            max_length=1,
+                            blank=True, null=True, default='m')
+    default_value = models.CharField(_("Predefined Value"),
+                                     max_length=100, blank=True, default='')
+    css_class = models.CharField(_("CSS Class Name"),
+                                 max_length=50, blank=True, default='')
+    order = models.IntegerField(_("Order"), default=0)
+
+    class Meta:
+        verbose_name = _("Field")
+        verbose_name_plural = _("Fields")
+        ordering = ('order',)
+
+    def __unicode__(self):
+        if self.field_name:
+            return '%s (field name: %s)' % (self.label, self.field_name)
+        return '%s' % self.label
 
 
 class CorporateMembership(TendenciBaseModel):
