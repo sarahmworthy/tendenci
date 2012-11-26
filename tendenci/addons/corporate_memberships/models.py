@@ -21,7 +21,9 @@ from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.apps.invoices.models import Invoice
 from tendenci.addons.memberships.models import MembershipType, App, Membership
 from tendenci.apps.forms_builder.forms.settings import FIELD_MAX_LENGTH, LABEL_MAX_LENGTH
-from tendenci.addons.corporate_memberships.managers import CorporateMembershipManager
+from tendenci.addons.corporate_memberships.managers import (
+                                                CorporateMembershipManager,
+                                                CorpMembershipManager)
 #from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.core.payments.models import PaymentMethod
@@ -32,6 +34,8 @@ from tendenci.core.base.utils import send_email_notification
 from tendenci.addons.corporate_memberships.settings import use_search_index
 from tendenci.addons.corporate_memberships.utils import dues_rep_emails_list, corp_memb_update_perms
 from tendenci.core.imports.utils import get_unique_username
+from tendenci.addons.industries.models import Industry
+from tendenci.addons.regions.models import Region
 
 
 FIELD_CHOICES = (
@@ -213,8 +217,104 @@ class CorporateMembershipType(TendenciBaseModel):
                         expiration_dt = expiration_dt + relativedelta(years=1)
                         
                 return expiration_dt
-        
-    
+
+
+class CorpMembership(TendenciBaseModel):
+    guid = models.CharField(max_length=50)
+    name = models.CharField(max_length=250, unique=True)
+    corporate_membership_type = models.ForeignKey("CorporateMembershipType",
+                                    verbose_name=_("MembershipType")) 
+    address = models.CharField(_('Address'), max_length=150, blank=True)
+    address2 = models.CharField(_('Address2'), max_length=100, default='',
+                                blank=True, null=True)
+    city = models.CharField(_('City'), max_length=50, blank=True)
+    state = models.CharField(_('State'), max_length=50, blank=True)
+    zip = models.CharField(_('Zipcode'), max_length=50,
+                           blank=True, null=True)
+    country = models.CharField(_('Country'), max_length=50,
+                               blank=True, null=True)
+    phone = models.CharField(_('Phone'), max_length=50,
+                             blank=True, null=True)
+    email = models.CharField(_('Email'), max_length=200,
+                             blank=True, null=True)
+    url = models.CharField(_('URL'), max_length=100, blank=True, null=True)
+    secret_code = models.CharField(max_length=50, blank=True, null=True)
+
+    industry = models.ForeignKey(Industry, blank=True, null=True)
+    region = models.ForeignKey(Region, blank=True, null=True)
+    number_employees = models.IntegerField(default=0)
+    chapter = models.CharField(_('Chapter'), max_length=150,
+                               blank=True, null=True)
+    tax_exempt = models.BooleanField(_("Tax exempt"), default=0)
+    notes = models.CharField(_('Notes'), max_length=500,
+                               blank=True, null=True)
+    admin_notes = models.CharField(_('Admin notes'), max_length=500,
+                               blank=True, null=True)
+    annual_revenue = models.CharField(_('Annual revenue'), max_length=75,
+                               blank=True, null=True)
+    annual_ad_expenditure = models.CharField(max_length=75,
+                               blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    ud1 = models.TextField(blank=True, null=True)
+    ud2 = models.TextField(blank=True, null=True)
+    ud3 = models.TextField(blank=True, null=True)
+    ud4 = models.TextField(blank=True, null=True)
+    ud5 = models.TextField(blank=True, null=True)
+
+    renewal = models.BooleanField(default=0)
+    renew_entry_id = models.IntegerField(default=0, blank=True, null=True)
+    invoice = models.ForeignKey(Invoice, blank=True, null=True)
+    join_dt = models.DateTimeField(_("Join Date Time"))
+    renew_dt = models.DateTimeField(_("Renew Date Time"), null=True)
+    expiration_dt = models.DateTimeField(_("Expiration Date Time"),
+                                         blank=True, null=True)
+    approved = models.BooleanField(_("Approved"), default=0)
+    approved_denied_dt = models.DateTimeField(_(
+                                        "Approved or Denied Date Time"),
+                                              null=True)
+    approved_denied_user = models.ForeignKey(User,
+                                     verbose_name=_("Approved or Denied User"),
+                                     null=True)
+    payment_method = models.ForeignKey(PaymentMethod,
+                                       verbose_name=_("Payment Method"),
+                                       null=True, default=None)
+
+    invoice = models.ForeignKey(Invoice, blank=True, null=True)
+
+    anonymous_creator = models.ForeignKey('Creator', null=True)
+
+    perms = generic.GenericRelation(ObjectPermission,
+                                      object_id_field="object_id",
+                                      content_type_field="content_type")
+
+    objects = CorpMembershipManager()
+
+    class Meta:
+        if get_setting('module', 'corporate_memberships', 'label'):
+            verbose_name = get_setting('module',
+                                       'corporate_memberships',
+                                       'label')
+            verbose_name_plural = get_setting('module',
+                                              'corporate_memberships',
+                                              'label_plural')
+        else:
+            verbose_name = _("Corporate Member")
+            verbose_name_plural = _("Corporate Members")
+
+    def __unicode__(self):
+        return "%s" % (self.name)
+
+    def save(self, *args, **kwargs):
+        if not self.guid:
+            self.guid = str(uuid.uuid1())
+        super(CorpMembership, self).save(*args, **kwargs)
+
+    @property
+    def module_name(self):
+        return self._meta.module_name
+
+
 class CorporateMembership(TendenciBaseModel):
     guid = models.CharField(max_length=50)
     name = models.CharField(max_length=250, unique=True)
