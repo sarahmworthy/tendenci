@@ -45,6 +45,9 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r"^applications/(?P<app_id>\d+)/preview/$",
         "membership_default_preview",
         name="membership_default.preview"),
+    url(r"^applications/add/$",
+        "membership_default_add",
+        name="membership_default.add"),
 
     # reports
     url(r'^reports/$', 'membership_join_report', name='reports-memberships-joins'),

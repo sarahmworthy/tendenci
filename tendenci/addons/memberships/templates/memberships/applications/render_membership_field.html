@@ -32,20 +32,25 @@
                 </div>
                 <div style="clear: both"><!-- IE7 --></div>
             {% else %}
-                    {% if field.errors %}
-                     <div class="error">
-                         {% for error in field.errors %}
-                            <p>{{ error }}</p>
-                         {% endfor %}
-                     </div>
-                    {% endif %}
+                    
                     
                     <div class="label{% if field.field.required %} required{% endif %} {{ field_obj.label_type }}">
                         {{ field_obj.label }}
                     </div>
                     
                     <div class="field {{ field_obj.field_div_class }}">
+                        {% if field.errors %}
+                         <div class="error">
+                             {% for error in field.errors %}
+                                <p>{{ error }}</p>
+                             {% endfor %}
+                         </div>
+                        {% endif %}
+                    
                         {{ field }}
+                        {% if field.help_text %}
+                            <span class="help-text"><small>{{ field.help_text }}</small></span>
+                        {% endif %}
                     </div>
                     
                     {% if field_obj.field_name == 'password' %}
@@ -64,9 +69,7 @@
                     <div class="clear"></div>
                     {% endif %}
                     
-                    {% if field.help_text %}
-                        <div class="help-text">{{ field.help_text }}</div>
-                    {% endif %}
+                    
                     
                     {% if field|is_radioselect or field|is_checkboxselectmultiple %}
                     <div style="clear: both"><!-- IE7 --></div>

@@ -537,7 +537,7 @@ def assign_fields(form, app_field_objs):
                                       'groups']:
                 obj.field_div_class = 'inline-block'
                 label_type.append('inline-block')
-                if len(obj.label) < 20:
+                if len(obj.label) < 16:
                     label_type.append('short-label')
                     if obj.field_stype == 'textarea':
                         label_type.append('float-left')
@@ -551,12 +551,17 @@ class UserForm(forms.ModelForm):
 
     def __init__(self, app_field_objs, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
+        del self.fields['groups']
         assign_fields(self, app_field_objs)
-        self.fields['confirm_password'] = forms.CharField(
-                                              initial=u'',
-                                              widget=forms.PasswordInput,
-                                              required=False)
-        self.fields['confirm_password'].widget.attrs.update({'size': 28}) 
+        self_fields_keys = self.fields.keys()
+        if 'password' in self_fields_keys:
+            self.fields['confirm_password'] = forms.CharField(
+                                                  initial=u'',
+                                                  widget=forms.PasswordInput,
+                                                  required=False)
+            self.fields['confirm_password'].widget.attrs.update({'size': 28})
+        if 'username' in self_fields_keys:
+            self.fields['username'].help_text = 'Letters, numbers and @/./+/-/_ characters'
         self.field_names = [name for name in self.fields.keys()]
 
 
@@ -579,6 +584,10 @@ class MembershipDefault2Form(forms.ModelForm):
             ('expired', 'Expired'),
             ('archive', 'Archive'),
                              )
+    STATUS_CHOICES = (
+                      (1, 'Active'),
+                      (0, 'Inactive')
+                      )
 
     class Meta:
         model = MembershipDefault
@@ -605,6 +614,9 @@ class MembershipDefault2Form(forms.ModelForm):
         if 'status_detail' in self_fields_keys:
             self.fields['status_detail'].widget = forms.widgets.Select(
                         choices=self.STATUS_DETAIL_CHOICES)
+        if 'status' in self_fields_keys:
+            self.fields['status'].widget = forms.widgets.Select(
+                        choices=self.STATUS_CHOICES)
         if 'groups' in self_fields_keys:
             self.fields['groups'].widget = forms.widgets.CheckboxSelectMultiple()
             self.fields['groups'].queryset = Group.objects.filter(

@@ -1246,7 +1246,7 @@ def get_app_fields_json(request):
 def membership_default_preview(request, app_id,
                            template='memberships/applications/preview.html'):
     """
-    Membership default add.
+    Membership default preview.
     """
     app = get_object_or_404(MembershipApp, pk=app_id)
     is_superuser = request.user.profile.is_superuser
@@ -1261,6 +1261,44 @@ def membership_default_preview(request, app_id,
                                              request_user=request.user,
                                              membership_app=app)
     #print membership_form.field_names
+
+    context = {'app': app,
+               "app_fields": app_fields,
+               'user_form': user_form,
+               'profile_form': profile_form,
+               'membership_form': membership_form}
+    return render_to_response(template, context, RequestContext(request))
+
+
+def membership_default_add(request,
+                           template='memberships/applications/add.html'):
+    """
+    Membership default add.
+    """
+    [app] = MembershipApp.objects.filter(status=True,
+                                       status_detail__in=['active', 'published']
+                                       ).order_by('id')[:1] or [None]
+    if not app:
+        raise Http404
+    is_superuser = request.user.profile.is_superuser
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.order_by('order')
+
+    user_form = UserForm(app_fields, request.POST or None)
+    profile_form = ProfileForm(app_fields, request.POST or None)
+    membership_form = MembershipDefault2Form(app_fields,
+                                             request.POST or None,
+                                             request_user=request.user,
+                                             membership_app=app)
+    if request.method == 'POST':
+        if all([user_form.is_valid(),
+                profile_form.is_valid(),
+                membership_form.is_valid()]):
+            pass
+    
+    
 
     context = {'app': app,
                "app_fields": app_fields,
