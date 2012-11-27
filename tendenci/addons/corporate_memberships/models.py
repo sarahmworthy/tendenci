@@ -389,7 +389,7 @@ class CorpMembershipAppField(models.Model):
 
     required = models.BooleanField(_("Required"), default=False)
     display = models.BooleanField(_("Show"), default=True)
-    admin_only = models.BooleanField(_("Admin Only"), default=0)
+    admin_only = models.BooleanField(_("Admin Only"), default=False)
 
     help_text = models.CharField(_("Instruction for User"),
                                  max_length=2000, blank=True, default='')
