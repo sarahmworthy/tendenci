@@ -366,9 +366,8 @@ class CorpMembershipApp(TendenciBaseModel):
 class CorpMembershipAppField(models.Model):
     corp_app = models.ForeignKey("CorpMembershipApp", related_name="fields")
     label = models.CharField(_("Label"), max_length=LABEL_MAX_LENGTH)
-    # hidden fields - field_name and object_type
     field_name = models.CharField(_("Field Name"), max_length=30, blank=True,
-                                  null=True, editable=False)
+                                  default='')
     field_type = models.CharField(_("Field Type"), choices=FIELD_CHOICES,
                                   max_length=80,
                                   blank=True, null=True,

@@ -8,26 +8,6 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'CorpMembershipAppField'
-        db.create_table('corporate_memberships_corpmembershipappfield', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('corp_app', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fields', to=orm['corporate_memberships.CorpMembershipApp'])),
-            ('label', self.gf('django.db.models.fields.CharField')(max_length=2000)),
-            ('field_name', self.gf('django.db.models.fields.CharField')(max_length=30, null=True, blank=True)),
-            ('field_type', self.gf('django.db.models.fields.CharField')(default='CharField', max_length=80, null=True, blank=True)),
-            ('required', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('display', self.gf('django.db.models.fields.BooleanField')(default=True)),
-            ('admin_only', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('help_text', self.gf('django.db.models.fields.CharField')(default='', max_length=2000, blank=True)),
-            ('choices', self.gf('django.db.models.fields.CharField')(max_length=1000, null=True, blank=True)),
-            ('field_layout', self.gf('django.db.models.fields.CharField')(default='1', max_length=50, null=True, blank=True)),
-            ('size', self.gf('django.db.models.fields.CharField')(default='m', max_length=1, null=True, blank=True)),
-            ('default_value', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
-            ('css_class', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
-            ('order', self.gf('django.db.models.fields.IntegerField')(default=0)),
-        ))
-        db.send_create_signal('corporate_memberships', ['CorpMembershipAppField'])
-
         # Adding model 'CorpMembershipApp'
         db.create_table('corporate_memberships_corpmembershipapp', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -72,12 +52,29 @@ class Migration(SchemaMigration):
         ))
         db.create_unique('corporate_memberships_corpmembershipapp_payment_methods', ['corpmembershipapp_id', 'paymentmethod_id'])
 
+        # Adding model 'CorpMembershipAppField'
+        db.create_table('corporate_memberships_corpmembershipappfield', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('corp_app', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fields', to=orm['corporate_memberships.CorpMembershipApp'])),
+            ('label', self.gf('django.db.models.fields.CharField')(max_length=2000)),
+            ('field_name', self.gf('django.db.models.fields.CharField')(default='', max_length=30, blank=True)),
+            ('field_type', self.gf('django.db.models.fields.CharField')(default='CharField', max_length=80, null=True, blank=True)),
+            ('required', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('display', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('admin_only', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('help_text', self.gf('django.db.models.fields.CharField')(default='', max_length=2000, blank=True)),
+            ('choices', self.gf('django.db.models.fields.CharField')(max_length=1000, null=True, blank=True)),
+            ('field_layout', self.gf('django.db.models.fields.CharField')(default='1', max_length=50, null=True, blank=True)),
+            ('size', self.gf('django.db.models.fields.CharField')(default='m', max_length=1, null=True, blank=True)),
+            ('default_value', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('css_class', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('order', self.gf('django.db.models.fields.IntegerField')(default=0)),
+        ))
+        db.send_create_signal('corporate_memberships', ['CorpMembershipAppField'])
+
 
     def backwards(self, orm):
         
-        # Deleting model 'CorpMembershipAppField'
-        db.delete_table('corporate_memberships_corpmembershipappfield')
-
         # Deleting model 'CorpMembershipApp'
         db.delete_table('corporate_memberships_corpmembershipapp')
 
@@ -86,6 +83,9 @@ class Migration(SchemaMigration):
 
         # Removing M2M table for field payment_methods on 'CorpMembershipApp'
         db.delete_table('corporate_memberships_corpmembershipapp_payment_methods')
+
+        # Deleting model 'CorpMembershipAppField'
+        db.delete_table('corporate_memberships_corpmembershipappfield')
 
 
     models = {
@@ -104,7 +104,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 26, 17, 40, 16, 563000)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 26, 18, 22, 43, 254323)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -112,7 +112,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 26, 17, 40, 16, 562877)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 26, 18, 22, 43, 254203)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -280,7 +280,7 @@ class Migration(SchemaMigration):
             'default_value': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
             'display': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'field_layout': ('django.db.models.fields.CharField', [], {'default': "'1'", 'max_length': '50', 'null': 'True', 'blank': 'True'}),
-            'field_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True', 'blank': 'True'}),
+            'field_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '30', 'blank': 'True'}),
             'field_type': ('django.db.models.fields.CharField', [], {'default': "'CharField'", 'max_length': '80', 'null': 'True', 'blank': 'True'}),
             'help_text': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '2000', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
