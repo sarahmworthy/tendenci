@@ -258,7 +258,7 @@ class CorpMembership(TendenciBaseModel):
                                blank=True, default='')
     description = models.TextField(blank=True, default='')
     expectations = models.TextField(blank=True, default='')
-    notes = models.CharField(_('Notes'), max_length=500,
+    notes = models.TextField(_('Notes'),
                                blank=True, default='')
 
     referral_source = models.CharField(max_length=150,
@@ -270,13 +270,13 @@ class CorpMembership(TendenciBaseModel):
     referral_source_member_number = models.CharField(max_length=50,
                              blank=True, default='')
 
-    ud1 = models.TextField(blank=True, default='')
-    ud2 = models.TextField(blank=True, default='')
-    ud3 = models.TextField(blank=True, default='')
-    ud4 = models.TextField(blank=True, default='')
-    ud5 = models.TextField(blank=True, default='')
+    ud1 = models.CharField(max_length=100, blank=True, default='')
+    ud2 = models.CharField(max_length=100, blank=True, default='')
+    ud3 = models.CharField(max_length=100, blank=True, default='')
+    ud4 = models.CharField(max_length=100, blank=True, default='')
+    ud5 = models.CharField(max_length=100, blank=True, default='')
 
-    admin_notes = models.CharField(_('Admin notes'), max_length=500,
+    admin_notes = models.TextField(_('Admin notes'),
                                blank=True, null=True)
     renewal = models.BooleanField(default=0)
     renew_dt = models.DateTimeField(_("Renew Date Time"), null=True)
@@ -369,7 +369,7 @@ class CorpMembershipApp(TendenciBaseModel):
 
     @models.permalink
     def get_absolute_url(self):
-        return ("corp_memb.add", [self.slug])
+        return ("corpmembership_app.preview", [self.id])
 
     def save(self, *args, **kwargs):
         if not self.id:

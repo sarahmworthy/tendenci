@@ -27,7 +27,10 @@ from tendenci.core.perms.utils import has_perm
 from tendenci.core.base.decorators import password_required
 from tendenci.core.event_logs.models import EventLog
 
-from tendenci.addons.corporate_memberships.models import (CorpApp, CorpField, CorporateMembership,
+from tendenci.addons.corporate_memberships.models import (
+                                            CorpMembershipApp,
+                                            CorpApp, CorpField,
+                                            CorporateMembership,
                                           CorporateMembershipType,
                                           CorporateMembershipRep, 
                                           Creator,
@@ -35,7 +38,9 @@ from tendenci.addons.corporate_memberships.models import (CorpApp, CorpField, Co
                                           IndivMembRenewEntry,
                                           CorpFieldEntry,
                                           AuthorizedDomain)
-from tendenci.addons.corporate_memberships.forms import (CorpMembForm, 
+from tendenci.addons.corporate_memberships.forms import (
+                                         CorpMembershipForm,
+                                         CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
                                          CorpMembRepForm, 
@@ -43,7 +48,8 @@ from tendenci.addons.corporate_memberships.forms import (CorpMembForm,
                                          CorpMembRenewForm,
                                          CSVForm,
                                          ExportForm)
-from tendenci.addons.corporate_memberships.utils import (get_corporate_membership_type_choices,
+from tendenci.addons.corporate_memberships.utils import (
+                                        get_corporate_membership_type_choices,
                                          get_payment_method_choices,
                                          corp_memb_inv_add, 
                                          dues_rep_emails_list,
@@ -95,9 +101,30 @@ def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     context = {"form": form,
                'corp_app': corp_app}
     return render_to_response(template, context, RequestContext(request))
-    
-    
-    
+
+
+def app_preview(request, app_id,
+                           template='corporate_memberships/applications/preview.html'):
+    """
+    Membership default preview.
+    """
+    app = get_object_or_404(CorpMembershipApp, pk=app_id)
+    is_superuser = request.user.profile.is_superuser
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.order_by('order')
+
+    corpmembership_form = CorpMembershipForm(app_fields,
+                                             request_user=request.user,
+                                             corpmembership_app=app)
+    #print membership_form.field_names
+
+    context = {'app': app,
+               "app_fields": app_fields,
+               'corpmembership_form': corpmembership_form}
+    return render_to_response(template, context, RequestContext(request))
+
 
 def add(request, slug=None, hash=None, template="corporate_memberships/add.html"):
     """

@@ -36,6 +36,41 @@ def get_corpapp_default_fields_list():
         return simplejson.loads(data)
     return None
 
+
+def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
+    cmt_list = []
+    corporate_membership_types = corpmembership_app.corp_memb_type.all()
+
+    if not user.profile.is_superuser:
+        corporate_membership_types = corporate_membership_types.filter(
+                                                        admin_only=False)
+    corporate_membership_types = corporate_membership_types.order_by('order')
+    currency_symbol = get_setting("site", "global", "currencysymbol")
+
+    for cmt in corporate_membership_types:
+        if not renew:
+            price_display = '%s - %s%0.2f' % (cmt.name, currency_symbol, cmt.price)
+        else:
+            indiv_renewal_price = cmt.membership_type.renewal_price
+            if not indiv_renewal_price:
+                indiv_renewal_price = 'Free<span class="type-ind-price"></span>'
+            else:
+                indiv_renewal_price = '%s<span class="type-ind-price">%0.2f</span>' % (currency_symbol, indiv_renewal_price)
+            if not cmt.renewal_price:
+                cmt.renewal_price = 0
+
+            price_display = """%s - <b>%s<span class="type-corp-price">%0.2f</span></b> 
+                            (individual members renewal:
+                            <b>%s</b>)""" % (cmt.name,
+                                            currency_symbol,
+                                            cmt.renewal_price,
+                                            indiv_renewal_price)
+        price_display = mark_safe(price_display)
+        cmt_list.append((cmt.id, price_display))
+
+    return cmt_list
+
+
 def get_corporate_membership_type_choices(user, corpapp, renew=False):
     cmt_list = []
     corporate_membership_types = corpapp.corp_memb_type.all()

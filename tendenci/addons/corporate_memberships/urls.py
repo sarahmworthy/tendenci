@@ -47,6 +47,10 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         "get_app_fields_json",
         name="corpmemberships.get_app_fields"),
 
+    url(r"^applications/(?P<app_id>\d+)/preview/$",
+        "app_preview",
+        name="corpmembership_app.preview"),
+
     # export
     url(r"^export/$", "corp_export", name="corp_export"),
 

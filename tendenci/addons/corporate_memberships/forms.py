@@ -17,6 +17,7 @@ from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.addons.memberships.fields import PriceInput
 from tendenci.addons.corporate_memberships.models import (
                     CorporateMembershipType,
+                    CorpMembership,
                     CorpMembershipApp,
                     CorpApp,
                     CorpField,
@@ -25,6 +26,7 @@ from tendenci.addons.corporate_memberships.models import (
                     CorporateMembershipRep,
                     CorpMembRenewEntry)
 from tendenci.addons.corporate_memberships.utils import (
+                 get_corpmembership_type_choices,
                  get_corpapp_default_fields_list,
                  update_auth_domains,
                  get_payment_method_choices,
@@ -127,6 +129,108 @@ class CorpMembershipAppForm(TendenciBaseForm):
                                         'app_instance_id'] = 0
             self.fields['confirmation_text'].widget.mce_attrs[
                                         'app_instance_id'] = 0
+
+field_size_dict = {
+        'name': 36,
+        'city': 24,
+        'state': 12,
+        'country': 14,
+        'zip': 24,
+        'phone': 22,
+        'url': 36,
+        'number_employees': 5,
+        'referral_source': 28,
+        'referral_source_member_name': 40,
+        'referral_source_other': 28,
+        'referral_source_member_number': 20,
+                   }
+
+
+def get_field_size(app_field_obj):
+    return field_size_dict.get(app_field_obj.field_name, '') or 28
+
+
+def assign_fields(form, app_field_objs):
+    form_field_keys = form.fields.keys()
+    # a list of names of app fields
+    field_names = [field.field_name for field in app_field_objs \
+                   if field.field_name != '' and \
+                   field.field_name in form_field_keys]
+    for name in form_field_keys:
+        if name not in field_names:
+            del form.fields[name]
+    # update the field attrs - label, required...
+    for obj in app_field_objs:
+        if obj.field_name in field_names:
+            field = form.fields[obj.field_name]
+            field.label = obj.label
+            field.required = obj.required
+            obj.field_stype = field.widget.__class__.__name__.lower()
+
+            if obj.field_stype == 'textinput':
+                size = get_field_size(obj)
+                field.widget.attrs.update({'size': size})
+            elif obj.field_stype == 'datetimeinput':
+                field.widget.attrs.update({'class': 'datepicker'})
+            label_type = []
+            if obj.field_name not in ['payment_method',
+                                      'corporate_membership_type',
+                                      ]:
+                obj.field_div_class = 'inline-block'
+                label_type.append('inline-block')
+                if len(obj.label) < 16:
+                    label_type.append('short-label')
+                    if obj.field_stype == 'textarea':
+                        label_type.append('float-left')
+                        obj.field_div_class = 'float-left'
+            obj.label_type = ' '.join(label_type)
+
+
+class CorpMembershipForm(forms.ModelForm):
+    STATUS_DETAIL_CHOICES = (
+            ('active', 'Active'),
+            ('pending', 'Pending'),
+            ('admin_hold', 'Admin Hold'),
+            ('inactive', 'Inactive'),
+            ('expired', 'Expired'),
+            ('archive', 'Archive'),
+                             )
+    STATUS_CHOICES = (
+                      (1, 'Active'),
+                      (0, 'Inactive')
+                      )
+
+    class Meta:
+        model = CorpMembership
+
+    def __init__(self, app_field_objs, *args, **kwargs):
+        request_user = kwargs.pop('request_user')
+        corpmembership_app = kwargs.pop('corpmembership_app')
+        super(CorpMembershipForm, self).__init__(*args, **kwargs)
+        self.fields['corporate_membership_type'].widget = forms.widgets.RadioSelect(
+                    choices=get_corpmembership_type_choices(request_user,
+                                                        corpmembership_app),
+                    attrs=self.fields['corporate_membership_type'].widget.attrs)
+        # if all membership types are free, no need to display payment method
+        require_payment = corpmembership_app.corp_memb_type.filter(
+                                price__gt=0).exists()
+        if not require_payment:
+            del self.fields['payment_method']
+        else:
+            self.fields['payment_method'].empty_label = None
+            self.fields['payment_method'].widget = forms.widgets.RadioSelect(
+                        choices=self.fields['payment_method'].widget.choices,
+                        attrs=self.fields['payment_method'].widget.attrs)
+        self_fields_keys = self.fields.keys()
+        if 'status_detail' in self_fields_keys:
+            self.fields['status_detail'].widget = forms.widgets.Select(
+                        choices=self.STATUS_DETAIL_CHOICES)
+        if 'status' in self_fields_keys:
+            self.fields['status'].widget = forms.widgets.Select(
+                        choices=self.STATUS_CHOICES)
+
+        assign_fields(self, app_field_objs)
+        self.field_names = [name for name in self.fields.keys()]
 
 
 class CorpAppForm(forms.ModelForm):
