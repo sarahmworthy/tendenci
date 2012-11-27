@@ -70,7 +70,8 @@ class CorpMembershipAppAdmin(admin.ModelAdmin):
     list_display = ('name', 'status', 'status_detail')
     search_fields = ('name', 'status', 'status_detail')
     fieldsets = (
-        (None, {'fields': ('name', 'slug', 'description',
+        (None, {'fields': ('name', 'slug', 'authentication_method',
+                           'description',
                            'confirmation_text', 'notes',
                            'corp_memb_type', 'payment_methods',
                            'memb_app',)},),
