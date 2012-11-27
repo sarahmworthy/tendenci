@@ -67,6 +67,7 @@
 </div>
 
 <script type="text/javascript">
+
 (function($) {
     $(document).ready(function($) {
         var rows = "#{{ inline_admin_formset.formset.prefix }}-group .tabular.inline-related tbody tr";
@@ -146,18 +147,24 @@
             $(row_added).find('.field-label input').attr('value', field_label);
             $(row_added).find('.field-field_name input').attr('value', field_name);
             
-            if (display == "true"){
+            if (display === "true"){
                 $(row_added).find('.field-display input[type="checkbox"]').attr('checked', 'checked');
+            }else{
+               $(row_added).find('.field-display input[type="checkbox"]').attr('checked', ''); 
             }
-            if (required == "true"){
+            if (required === "true"){
                 $(row_added).find('.field-required input[type="checkbox"]').attr('checked', 'checked');
+            }else{
+                $(row_added).find('.field-required input[type="checkbox"]').attr('checked', '');
             }
-            if (admin_only == "true"){
+            if (admin_only === "true"){
                 $(row_added).find('.field-admin_only input[type="checkbox"]').attr('checked', 'checked');
-            }      
+            }else{
+                $(row_added).find('.field-admin_only input[type="checkbox"]').attr('checked', '');
+            }     
         }
         
-        var required_fields = ['first_name', 'last_name', 'email', 'membership_type', 'payment_method'];
+        var required_fields = ['name', 'corporate_membership_type', 'payment_method'];
         var required_field;
         var disableFields = function(){
              $('.inline-deletelink').hide();
@@ -184,7 +191,7 @@
         if ($('.dynamic-fields').length == 0){
             $.ajax({
                type: "POST",
-               url: "{% url memberships.get_app_fields %}",
+               url: "{% url corpmemberships.get_app_fields %}",
                success: function(status_data){
                    var objs = $.parseJSON(status_data);
                     for (var i=0; i<objs.length; i++){

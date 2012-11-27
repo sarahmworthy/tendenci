@@ -43,6 +43,10 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         'corp_import_invalid_records_download',
         name="corp_memb_import_download_invalid"),
 
+    url(r"^get_app_fields/$",
+        "get_app_fields_json",
+        name="corpmemberships.get_app_fields"),
+
     # export
     url(r"^export/$", "corp_export", name="corp_export"),
 

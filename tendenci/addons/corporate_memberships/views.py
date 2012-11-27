@@ -17,6 +17,8 @@ from django.utils.encoding import smart_str
 from django.utils import simplejson
 from django.db.models import Q
 from django.core.files.storage import default_storage
+from django.views.decorators.csrf import csrf_exempt
+from django.template.loader import render_to_string
 
 from tendenci.core.imports.utils import render_excel
 
@@ -61,6 +63,20 @@ from tendenci.apps.profiles.models import Profile
 from tendenci.addons.corporate_memberships.settings import use_search_index
 from tendenci.core.site_settings.utils import get_setting
 
+
+@csrf_exempt
+@login_required
+def get_app_fields_json(request):
+    """
+    Get the app fields and return as json
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+
+    app_fields = render_to_string('corporate_memberships/app_fields.json',
+                               {}, context_instance=None)
+
+    return HttpResponse(simplejson.dumps(simplejson.loads(app_fields)))
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     corp_app = get_object_or_404(CorpApp, slug=slug)

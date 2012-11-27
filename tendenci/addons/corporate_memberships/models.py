@@ -225,49 +225,63 @@ class CorpMembership(TendenciBaseModel):
     name = models.CharField(max_length=250, unique=True)
     corporate_membership_type = models.ForeignKey("CorporateMembershipType",
                                     verbose_name=_("MembershipType")) 
-    address = models.CharField(_('Address'), max_length=150, blank=True)
+    address = models.CharField(_('Address'), max_length=150,
+                               blank=True, default='')
     address2 = models.CharField(_('Address2'), max_length=100, default='',
-                                blank=True, null=True)
-    city = models.CharField(_('City'), max_length=50, blank=True)
-    state = models.CharField(_('State'), max_length=50, blank=True)
+                                blank=True)
+    city = models.CharField(_('City'), max_length=50, blank=True, default='')
+    state = models.CharField(_('State'), max_length=50, blank=True,
+                             default='')
     zip = models.CharField(_('Zipcode'), max_length=50,
-                           blank=True, null=True)
+                           blank=True, default='')
     country = models.CharField(_('Country'), max_length=50,
-                               blank=True, null=True)
+                               blank=True, default='')
     phone = models.CharField(_('Phone'), max_length=50,
-                             blank=True, null=True)
+                             blank=True, default='')
     email = models.CharField(_('Email'), max_length=200,
-                             blank=True, null=True)
-    url = models.CharField(_('URL'), max_length=100, blank=True, null=True)
-    secret_code = models.CharField(max_length=50, blank=True, null=True)
+                             blank=True, default='')
+    url = models.CharField(_('URL'), max_length=100, blank=True,
+                           default='')
+    secret_code = models.CharField(max_length=50, blank=True,
+                                   default='')
 
     industry = models.ForeignKey(Industry, blank=True, null=True)
     region = models.ForeignKey(Region, blank=True, null=True)
     number_employees = models.IntegerField(default=0)
     chapter = models.CharField(_('Chapter'), max_length=150,
-                               blank=True, null=True)
+                               blank=True, default='')
     tax_exempt = models.BooleanField(_("Tax exempt"), default=0)
+
+    annual_revenue = models.CharField(_('Annual revenue'), max_length=75,
+                               blank=True, default='')
+    annual_ad_expenditure = models.CharField(max_length=75,
+                               blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    expectations = models.TextField(blank=True, default='')
     notes = models.CharField(_('Notes'), max_length=500,
-                               blank=True, null=True)
+                               blank=True, default='')
+
+    referral_source = models.CharField(max_length=150,
+                             blank=True, default='')
+    referral_source_other = models.CharField(max_length=150,
+                             blank=True, default='')
+    referral_source_member_name = models.CharField(max_length=50,
+                             blank=True, default='')
+    referral_source_member_number = models.CharField(max_length=50,
+                             blank=True, default='')
+
+    ud1 = models.TextField(blank=True, default='')
+    ud2 = models.TextField(blank=True, default='')
+    ud3 = models.TextField(blank=True, default='')
+    ud4 = models.TextField(blank=True, default='')
+    ud5 = models.TextField(blank=True, default='')
+
     admin_notes = models.CharField(_('Admin notes'), max_length=500,
                                blank=True, null=True)
-    annual_revenue = models.CharField(_('Annual revenue'), max_length=75,
-                               blank=True, null=True)
-    annual_ad_expenditure = models.CharField(max_length=75,
-                               blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
-
-    ud1 = models.TextField(blank=True, null=True)
-    ud2 = models.TextField(blank=True, null=True)
-    ud3 = models.TextField(blank=True, null=True)
-    ud4 = models.TextField(blank=True, null=True)
-    ud5 = models.TextField(blank=True, null=True)
-
     renewal = models.BooleanField(default=0)
-    renew_entry_id = models.IntegerField(default=0, blank=True, null=True)
+    renew_dt = models.DateTimeField(_("Renew Date Time"), null=True)
     invoice = models.ForeignKey(Invoice, blank=True, null=True)
     join_dt = models.DateTimeField(_("Join Date Time"))
-    renew_dt = models.DateTimeField(_("Renew Date Time"), null=True)
     expiration_dt = models.DateTimeField(_("Expiration Date Time"),
                                          blank=True, null=True)
     approved = models.BooleanField(_("Approved"), default=0)

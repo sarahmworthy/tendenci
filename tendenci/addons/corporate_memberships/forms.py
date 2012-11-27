@@ -13,9 +13,11 @@ from django.db.models import Q
 from captcha.fields import CaptchaField
 from tinymce.widgets import TinyMCE
 
+from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.addons.memberships.fields import PriceInput
 from tendenci.addons.corporate_memberships.models import (
                     CorporateMembershipType,
+                    CorpMembershipApp,
                     CorpApp,
                     CorpField,
                     CorporateMembership,
@@ -69,6 +71,62 @@ class CorporateMembershipTypeForm(forms.ModelForm):
                   'status',
                   'status_detail',
                   )
+
+
+class CorpMembershipAppForm(TendenciBaseForm):
+    description = forms.CharField(required=False,
+                     widget=TinyMCE(
+                    attrs={'style': 'width:70%'},
+                    mce_attrs={
+                   'storme_app_label': CorpMembershipApp._meta.app_label,
+                   'storme_model': CorpMembershipApp._meta.module_name.lower()}),
+                   help_text='Will show at the top of the application form.')
+    confirmation_text = forms.CharField(required=False,
+                 widget=TinyMCE(
+                    attrs={'style': 'width:70%'},
+                    mce_attrs={'storme_app_label': CorpMembershipApp._meta.app_label,
+                               'storme_model': CorpMembershipApp._meta.module_name.lower()}),
+                               help_text='Will show on the confirmation page.')
+    notes = forms.CharField(label=_('Notes'), required=False,
+               widget=forms.Textarea(attrs={'rows': '3'}),
+               help_text='Notes for editor. Will not display on the application form.')
+    status_detail = forms.ChoiceField(
+        choices=(('active', 'Active'),
+                 ('inactive', 'Inactive'),
+                 ('admin hold', 'Admin Hold'),))
+
+    class Meta:
+        model = CorpMembershipApp
+        fields = (
+                  'name',
+                  'slug',
+                  'corp_memb_type',
+                  'authentication_method',
+                  'memb_app',
+                  'payment_methods',
+                  'description',
+                  'confirmation_text',
+                  'notes',
+                  'allow_anonymous_view',
+                  'user_perms',
+                  'member_perms',
+                  'group_perms',
+                  'status',
+                  'status_detail',
+                  )
+
+    def __init__(self, *args, **kwargs):
+        super(CorpMembershipAppForm, self).__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['description'].widget.mce_attrs[
+                                    'app_instance_id'] = self.instance.pk
+            self.fields['confirmation_text'].widget.mce_attrs[
+                                    'app_instance_id'] = self.instance.pk
+        else:
+            self.fields['description'].widget.mce_attrs[
+                                        'app_instance_id'] = 0
+            self.fields['confirmation_text'].widget.mce_attrs[
+                                        'app_instance_id'] = 0
 
 
 class CorpAppForm(forms.ModelForm):
