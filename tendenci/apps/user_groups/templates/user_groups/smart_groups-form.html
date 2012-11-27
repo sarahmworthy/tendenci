@@ -1,103 +1,35 @@
-<form class="search-form" action="{% url group.smart_groups %}" method="get">
+<form action="{% url group.smart_groups %}" method="get">
 
 <fieldset>
-    <legend>Join Date</legend>
-    <div class="form-field clearfix">
-        <div class="id_join_start_dt">
-                <div class="label">
-                    <label for="join_start_dt">From:</label>
-                </div>
-                <div class="field">
-                    <input type="text" class="datepicker" name="join_start_dt" value="" />
-                </div>
-         </div>
-    </div>
-
-    <div class="form-field clearfix">
-        <div class="id_join_end_dt">
-                <div class="label">
-                    <label for="join_end_dt">To:</label>
-                </div>
-                <div class="field">
-                    <input type="text" class="datepicker" name="join_end_dt" value="" />
-                </div>
-         </div>
-    </div>
+    <span>Join Date</span>
+    <label for="join_start_dt">from:</label>
+    <input type="text" class="datepicker" name="join_start_dt" value="" />
+    <label for="join_end_dt">to:</label>
+    <input type="text" class="datepicker" name="join_end_dt" value="" />
 </fieldset>
 
 <fieldset>
-    <legend>Last Login</legend>
-    <div class="form-field clearfix">
-        <div class="id_login_start_dt">
-                <div class="label">
-                    <label for="login_start_dt">From:</label>
-                </div>
-                <div class="field">
-                    <input type="text" class="datepicker" name="login_start_dt" value="" />
-                </div>
-         </div>
-    </div>
-
-    <div class="form-field clearfix">
-        <div class="id_login_end_dt">
-                <div class="label">
-                    <label for="login_end_dt">To:</label>
-                </div>
-                <div class="field">
-                    <input type="text" class="datepicker" name="login_end_dt" value="" />
-                </div>
-         </div>
-    </div>
+    <span>Last Login</span>
+    <label for="login_start_dt">from:</label>
+    <input type="text" class="datepicker" name="login_start_dt" value="" />
+    <label for="login_end_dt">to:</label>
+    <input type="text" class="datepicker" name="login_end_dt" value="" />
 </fieldset>
 
 <fieldset>
-    <legend>Number of Contributions (Enter an integer)</legend>
-    <div class="form-field clearfix">
-        <div class="id_contribution_start">
-                <div class="label">
-                    <label for="contribution_start">From:</label>
-                </div>
-                <div class="field">
-                    <input type="text" pattern="\d*" name="contribution_start" value="" />
-                </div>
-         </div>
-    </div>
-
-    <div class="form-field clearfix">
-        <div class="id_contribution_end">
-                <div class="label">
-                    <label for="contribution_end">To:</label>
-                </div>
-                <div class="field">
-                    <input type="text" pattern="\d*" name="contribution_end" value="" />
-                </div>
-         </div>
-    </div>
+    <span>Number of Contributions (Enter an integer)</span>
+    <label for="contribution_start">from:</label>
+    <input type="text" pattern="\d*" name="contribution_start" value="" />
+    <label for="contribution_end">to:</label>
+    <input type="text" pattern="\d*" name="contribution_end" value="" />
 </fieldset>
 
 <fieldset>
-    <legend>Number of Invoices Associated (Enter an integer)</legend>
-    <div class="form-field clearfix">
-        <div class="id_invoices_start">
-                <div class="label">
-                    <label for="invoices_start">From:</label>
-                </div>
-                <div class="field">
-                    <input type="text" pattern="\d*" name="invoices_start" value="" />
-                </div>
-         </div>
-    </div>
-
-    <div class="form-field clearfix">
-        <div class="id_invoices_end">
-                <div class="label">
-                    <label for="invoices_end">To:</label>
-                </div>
-                <div class="field">
-                    <input type="text" pattern="\d*" name="invoices_end" value="" />
-                </div>
-         </div>
-    </div>
+    <span>Total Amount of Invoices Associated</span>
+    <label for="invoices_start">from: {{ SITE_GLOBAL_CURRENCYSYMBOL }}</label>
+    <input type="text" pattern="\d*(?:\.\d{1,2})?\b" name="invoices_start" value="" />
+    <label for="invoices_end">to: {{ SITE_GLOBAL_CURRENCYSYMBOL }}</label>
+    <input type="text" pattern="\d*(?:\.\d{1,2})?\b" name="invoices_end" value="" />
 </fieldset>
 <div class="clear"></div>
 

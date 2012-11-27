@@ -252,13 +252,9 @@
 }
 
 /* Smart Groups */
-.smart-group-form .search-form fieldset, .search-form fieldset div.form-field{
-    float: left;
-    width: 50%;
+.smart-group-form form fieldset input{
+    width: 75px;
 }
-.smart-group-form .search-form fieldset div.form-field input{
-    width: 100px;
-}
-.smart-group-form .search-form fieldset legend{
+.smart-group-form form fieldset span{
     font-weight: bold;
 }

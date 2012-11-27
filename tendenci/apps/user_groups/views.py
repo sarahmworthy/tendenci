@@ -10,7 +10,7 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models import Count
+from django.db.models import Count, Sum, Q
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.sites.models import Site
 from django.contrib import messages
@@ -31,6 +31,7 @@ from tendenci.apps.user_groups.importer.forms import UploadForm
 from tendenci.apps.user_groups.importer.tasks import ImportSubscribersTask
 from tendenci.apps.user_groups.tasks import ExportSmartGroupsTask
 from tendenci.apps.notifications import models as notification
+from tendenci.apps.invoices.models import Invoice
 
 
 def search(request, template_name="user_groups/search.html"):
@@ -96,9 +97,15 @@ def smart_groups(request, template_name="user_groups/smart_groups.html"):
     if contributions_end:
         users = users.annotate(c_count=Count('user__contributions_contribution_owner')).filter(c_count__lte=contributions_end)
     if invoices_start:
-        users = users.annotate(i_count=Count('user__invoice_owner')).filter(i_count__gte=invoices_start)
+        for profile in users:
+            invoices = Invoice.objects.filter(Q(creator=profile.user) | Q(owner=profile.user) | Q(bill_to_email=profile.user.email)).aggregate(Sum('total'))
+            if invoices['total__sum'] is None or invoices['total__sum'] <= float(invoices_start):
+                users = users.exclude(user=profile.user)
     if invoices_end:
-        users = users.annotate(i_count=Count('user__invoice_owner')).filter(i_count__lte=invoices_end)      
+        for profile in users:
+            invoices = Invoice.objects.filter(Q(creator=profile.user) | Q(owner=profile.user) | Q(bill_to_email=profile.user.email)).aggregate(Sum('total'))
+            if invoices['total__sum'] is None or invoices['total__sum'] >= float(invoices_end):
+                users = users.exclude(user=profile.user)
 
     sid = str(int(time.time()))
     request.session[sid] = {'users': users}
