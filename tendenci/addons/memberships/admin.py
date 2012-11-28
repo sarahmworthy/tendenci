@@ -314,7 +314,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
-        m.approve()
+        m.approve(request_user=request.user)
         m.send_email(request, 'approve')
 
         return redirect(reverse(
@@ -328,7 +328,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
-        m.renew()
+        m.renew(request_user=request.user)
         m.send_email(request, 'renewal')
 
         return redirect(reverse(
@@ -342,7 +342,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
-        m.renew()
+        m.disapprove(request_user=request.user)
         m.send_email(request, 'disapprove')
 
         return redirect(reverse(
@@ -356,7 +356,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         membershipdefault change page.
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
-        m.expire()
+        m.expire(request_user=request.user)
 
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
