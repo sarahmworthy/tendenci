@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
 from django.core.files.storage import default_storage
+from django.core.validators import email_re
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.payments.models import PaymentMethod
@@ -63,7 +64,10 @@ class FormForForm(forms.ModelForm):
             if "max_length" in arg_names:
                 field_args["max_length"] = FIELD_MAX_LENGTH
             if "choices" in arg_names:
-                choices = field.choices.split(",")
+                if field.field_function == 'Recipients':
+                    choices = field.function_email_recipients.split(",")
+                else:
+                    choices = field.choices.split(",")
                 field_args["choices"] = zip(choices, choices)
             if "initial" in arg_names:
                 default = field.default.lower()
@@ -368,11 +372,19 @@ class FormForField(forms.ModelForm):
         for val in function_params.split(','):
             clean_params = val.strip() + ',' + clean_params
         return clean_params[0:len(clean_params)-1]
+
+    def clean_function_email_recipients(self):
+        function_params = self.cleaned_data['function_email_recipients']
+        clean_params = ''
+        for val in function_params.split(','):
+            clean_params = val.strip() + ',' + clean_params
+        return clean_params[0:len(clean_params)-1]
         
     def clean(self):
         cleaned_data = self.cleaned_data
         field_function = cleaned_data.get("field_function")
         function_params = cleaned_data.get("function_params")
+        function_email_recipients = cleaned_data.get("function_email_recipients")
         field_type = cleaned_data.get("field_type")
         required = cleaned_data.get("required")
         
@@ -387,6 +399,18 @@ class FormForField(forms.ModelForm):
                         Group.objects.get(name=val)
                     except Group.DoesNotExist:
                         raise forms.ValidationError("The group \"%s\" does not exist" % (val))
+
+        if field_function == "Recipients":
+            if field_type != "MultipleChoiceField/django.forms.CheckboxSelectMultiple" and field_type != "MultipleChoiceField":
+                raise forms.ValidationError("This field's function requires Multi-select - Checkboxes "
+                                            + "or Multi-select - Select Many as field type")
+            if not function_email_recipients:
+                raise forms.ValidationError("This field's function requires at least 1 email specified.")
+            else:
+                for val in function_email_recipients.split(','):
+                    if not email_re.match(val):
+                        raise forms.ValidationError("\"%s\" is not a valid email address" % (val))      
+                
                     
         if field_function != None and field_function.startswith("Email"):
             if field_type != "CharField":

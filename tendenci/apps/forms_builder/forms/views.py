@@ -438,6 +438,18 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                     msg.attach(f.name, f.read())
                 msg.send()
 
+            # Email copies to recipient list indicated in the form
+            email_recipients = [e.strip() for e in entry.get_function_email_recipients().split(",")
+                if e.strip()]
+            if email_recipients:
+                # Send message to the email addresses selected in the form.
+                msg = EmailMessage(subject, admin_body, sender, email_recipients, headers=email_headers)
+                msg.content_subtype = 'html'
+                for f in form_for_form.files.values():
+                    f.seek(0)
+                    msg.attach(f.name, f.read())
+                msg.send()
+
             # payment redirect
             if (form.custom_payment or form.recurring_payment) and entry.pricing:
                 # get the pricing's price, custom or otherwise

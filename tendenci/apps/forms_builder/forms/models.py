@@ -43,6 +43,7 @@ FIELD_FUNCTIONS = (
     ("EmailLastName", _("Last Name")),
     ("EmailFullName", _("Full Name")),
     ("EmailPhoneNumber", _("Phone Number")),
+    ("Recipients", _("Email to Recipients")),
 )
 
 BILLING_PERIOD_CHOICES = (
@@ -160,6 +161,8 @@ class Field(models.Model):
         choices=FIELD_FUNCTIONS, max_length=64, null=True, blank=True)
     function_params = models.CharField(_("Group Name or Names"),
         max_length=100, null=True, blank=True, help_text="Comma separated if more than one")
+    function_email_recipients = models.CharField(_("Email Recipients"),
+        max_length=200, null=True, blank=True, help_text="Comma separated if more than one")
     required = models.BooleanField(_("Required"), default=True)
     visible = models.BooleanField(_("Visible"), default=True)
     choices = models.CharField(_("Choices"), max_length=1000, blank=True,
@@ -336,6 +339,9 @@ class FormEntry(models.Model):
 
     def get_phone_number(self):
         return self.get_value_of("EmailPhoneNumber")
+
+    def get_function_email_recipients(self):
+        return self.get_value_of("Recipients")
 
     def get_email_address(self):
         return self.get_type_of("emailfield")
