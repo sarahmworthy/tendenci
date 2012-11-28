@@ -230,6 +230,89 @@ class Profile(Person):
         self.save()
         return self.member_number
 
+    @classmethod
+    def spawn_username(*args):
+        """
+        Join arguments to create username [string].
+        Find similiar usernames; auto-increment newest username.
+        Return new username [string].
+        """
+        if not args:
+            raise Exception('spawn_username() requires atleast 1 argument; 0 were given')
+
+        import re
+
+        max_length = 8
+
+        un = ' '.join(args)             # concat args into one string
+        un = re.sub('\s+', '_', un)       # replace spaces w/ underscores
+        un = re.sub('[^\w.-]+', '', un)   # remove non-word-characters
+        un = un.strip('_.- ')           # strip funny-characters from sides
+        un = un[:max_length].lower()    # keep max length and lowercase username
+
+        others = []  # find similiar usernames
+        for u in User.objects.filter(username__startswith=un):
+            if u.username.replace(un, '0').isdigit():
+                others.append(int(u.username.replace(un, '0')))
+
+        if others and 0 in others:
+            # the appended digit will compromise the username length
+            # there would have to be more than 99,999 duplicate usernames
+            # to kill the database username max field length
+            un = '%s%s' % (un, str(max(others) + 1))
+
+        return un.lower()
+
+    @classmethod
+    def get_or_create_user(cls, **kwargs):
+        """
+        Return a user that's newly created or already existed.
+        Return new or existing user.
+
+        If username is passed.  It uses the username to return
+        an existing user record or creates a new user record.
+
+        If an email is passed.  It uses the email to return
+        an existing user record or create a new user record.
+
+        If a password is passed; it is only used in order to
+        create a new user account.
+        """
+
+        un = kwargs.get('username', u'')
+        pw = kwargs.get('password', u'')
+        fn = kwargs.get('first_name', u'')
+        ln = kwargs.get('last_name', u'')
+        em = kwargs.get('email', u'')
+
+        user = None
+        created = False
+
+        if un:
+            # created = False
+            [user] = User.objects.filter(
+                username=un)[:1] or [None]
+        elif em:
+            [user] = User.objects.filter(
+                email=em).order_by('-pk')[:1] or [None]
+
+        if not user:
+            created = True
+            user = User.objects.create_user(**{
+                'username': un or Profile.spawn_username(fn[:1], ln),
+                'email': em,
+                'password': pw or uuid.uuid1().get_hex()[:6],
+            })
+
+        user.first_name = fn
+        user.last_name = ln
+        user.save()
+
+        if created:
+            Profile.objects.create_profile(user)
+
+        return user, created
+
     def roles(self):
         role_set = []
 
@@ -255,4 +338,3 @@ class Profile(Person):
         for role in roles:
             if role in self.roles():
                 return role
-
