@@ -74,7 +74,8 @@ class Profile(Person):
         verbose_name_plural = "Users"
 
     def __unicode__(self):
-        return self.user.username
+        if hasattr(self, 'user'):
+            return self.user.username
 
     @models.permalink
     def get_absolute_url(self):
