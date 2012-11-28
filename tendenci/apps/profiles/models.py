@@ -276,6 +276,9 @@ class Profile(Person):
         If an email is passed.  It uses the email to return
         an existing user record or create a new user record.
 
+        User is updated with first name, last name, and email
+        address passed.
+
         If a password is passed; it is only used in order to
         create a new user account.
         """
@@ -307,6 +310,7 @@ class Profile(Person):
 
         user.first_name = fn
         user.last_name = ln
+        user.email = em
         user.save()
 
         if created:
