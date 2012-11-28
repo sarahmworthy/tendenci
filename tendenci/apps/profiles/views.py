@@ -91,8 +91,12 @@ def index(request, username='', template_name="profiles/index.html"):
     # group list
     group_memberships = user_this.group_member.all()
 
-    memberships = user_this.membershipdefault_set.filter(
-        status=True, status_detail__in=['active', 'expired'])
+    if request.user == user_this or request.user.profile.is_superuser:
+        memberships = user_this.membershipdefault_set.filter(
+            status=True, status_detail__in=['active', 'pending', 'expired'])
+    else:
+        memberships = user_this.membershipdefault_set.filter(
+            status=True, status_detail__in=['active', 'expired'])
 
     log_defaults = {
         'event_id': 125000,
