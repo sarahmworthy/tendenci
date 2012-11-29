@@ -758,35 +758,32 @@ class MembershipDefault2Form(forms.ModelForm):
         membership.entity = Entity.objects.first()
         membership.user = user
 
-        if membership.pk:
-            # changing membership record
-            membership.set_member_number()
-            membership.save()
+        # adding membership record
+        membership.renewal = membership.user.profile.can_renew()
 
-        else:
-            # adding membership record
-            membership.renewal = membership.user.profile.can_renew()
+        # assign member number
+        membership.set_member_number()
 
-            # create record in database
-            # helps with associating invoice record
-            membership.save()
+        # create record in database
+        # helps with associating invoice record
+        membership.save()
 
-            NOW = datetime.now()
+        NOW = datetime.now()
 
-            if not membership.approval_required():  # approval not required
-                membership.approve(request_user=request_user)
-                membership.send_email(request, 'approve')
+        if not membership.approval_required():  # approval not required
+            membership.approve(request_user=request_user)
+            membership.send_email(request, 'approve')
 
-            else:  # approval required
-                membership.pend()  # handles group and invoice
+        else:  # approval required
+            membership.pend()  # handles group and invoice
 
-            # application complete
-            membership.application_complete_dt = NOW
-            membership.application_complete_user = membership.user
+        # application complete
+        membership.application_complete_dt = NOW
+        membership.application_complete_user = membership.user
 
-            # save application fields
-            # save join, renew, and expire dt
-            membership.save()
+        # save application fields
+        # save join, renew, and expire dt
+        membership.save()
 
         # [un]subscribe to group
         membership.group_refresh()
