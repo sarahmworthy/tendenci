@@ -150,7 +150,7 @@ def search(request, template_name="profiles/search.html"):
     profiles = Profile.objects.filter(Q(status=True), Q(status_detail="active"), Q(filters)).distinct()
 
     if query:
-        profiles = profiles.filter(Q(status=True), Q(status_detail="active"), Q(user__first_name__icontains=query) | Q(user__last_name__icontains=query) | Q(user__email__icontains=query) | Q(user__username__icontains=query))
+        profiles = profiles.filter(Q(status=True), Q(status_detail="active"), Q(user__first_name__icontains=query) | Q(user__last_name__icontains=query) | Q(user__email__icontains=query) | Q(user__username__icontains=query) | Q(display_name__icontains=query))
 
     is_not_member_filter = (Q(member_number="") | Q(user__is_active=False))
     if members:
@@ -913,13 +913,14 @@ def export_check(request, task_id):
     else:
         return HttpResponse("DNE")
 
+
 def export_download(request, task_id):
     try:
         task = TaskMeta.objects.get(task_id=task_id)
     except TaskMeta.DoesNotExist:
         task = None
-        
+
     if task and task.status == "SUCCESS":
         return task.result
     else:
-        return Http404
+        raise Http404

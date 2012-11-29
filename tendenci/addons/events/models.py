@@ -383,8 +383,8 @@ class Registration(models.Model):
                                           default=0)
     canceled = models.BooleanField(_('Canceled'), default=False)
 
-    creator = models.ForeignKey(User, related_name='created_registrations', null=True)
-    owner = models.ForeignKey(User, related_name='owned_registrations', null=True)
+    creator = models.ForeignKey(User, related_name='created_registrations', null=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(User, related_name='owned_registrations', null=True, on_delete=models.SET_NULL)
     create_dt = models.DateTimeField(auto_now_add=True)
     update_dt = models.DateTimeField(auto_now=True)
 
@@ -525,7 +525,6 @@ class Registration(models.Model):
         
         return registrant
 
-
     def save(self, *args, **kwargs):
         if not self.pk:
             self.guid = str(uuid.uuid1())
@@ -601,7 +600,7 @@ class Registrant(models.Model):
     This is the information that was used while registering
     """
     registration = models.ForeignKey('Registration')
-    user = models.ForeignKey(User, blank=True, null=True)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     amount = models.DecimalField(_('Amount'), max_digits=21, decimal_places=2, blank=True, default=0)
     # this is a field used for dynamic pricing registrations only
     pricing = models.ForeignKey('RegConfPricing', null=True)
@@ -864,7 +863,7 @@ class Event(TendenciBaseModel):
     Calendar Event
     """
     guid = models.CharField(max_length=40, editable=False)
-    type = models.ForeignKey(Type, blank=True, null=True)
+    type = models.ForeignKey(Type, blank=True, null=True, on_delete=models.SET_NULL)
     title = models.CharField(max_length=150, blank=True)
     description = models.TextField(blank=True)
     all_day = models.BooleanField()
@@ -881,6 +880,7 @@ class Event(TendenciBaseModel):
         help_text=_('Photo that represents this event.'), null=True, blank=True)
     group = models.ForeignKey(Group, null=True, on_delete=models.SET_NULL, default=get_default_group)
     tags = TagField(blank=True)
+    priority = models.BooleanField(default=False, help_text=_("Priority events will show up at the top of the events list. They will be featured with a star icon on the monthly calendar."))
 
     # additional permissions
     display_event_registrants = models.BooleanField(_('Display Attendees'), default=False)
@@ -1098,9 +1098,9 @@ class CustomRegForm(models.Model):
     
     create_dt = models.DateTimeField(auto_now_add=True)
     update_dt = models.DateTimeField(auto_now=True)
-    creator = models.ForeignKey(User, related_name="custom_reg_creator", null=True)
+    creator = models.ForeignKey(User, related_name="custom_reg_creator", null=True, on_delete=models.SET_NULL)
     creator_username = models.CharField(max_length=50)
-    owner = models.ForeignKey(User, related_name="custom_reg_owner", null=True)    
+    owner = models.ForeignKey(User, related_name="custom_reg_owner", null=True, on_delete=models.SET_NULL)    
     owner_username = models.CharField(max_length=50)
     status = models.CharField(max_length=50, default='active')
     

@@ -25,7 +25,7 @@ from tendenci.addons.events.models import Event, Place, RegistrationConfiguratio
 from tendenci.core.payments.models import PaymentMethod
 from tendenci.core.perms.forms import TendenciBaseForm
 from tinymce.widgets import TinyMCE
-from tendenci.core.base.fields import SplitDateTimeField
+from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
 from tendenci.core.emails.models import Email
 from form_utils.forms import BetterModelForm
 from tendenci.apps.user_groups.models import Group
@@ -115,8 +115,12 @@ class FormForCustomRegForm(forms.ModelForm):
                 field_class, field_widget = field.field_type.split("/")
             else:
                 field_class, field_widget = field.field_type, None
-            field_class = getattr(forms, field_class)
-            field_args = {"label": field.label, "required": field.required}
+
+            if field.field_type == 'EmailVerificationField':
+                field_class = EmailVerificationField
+            else:
+                field_class = getattr(forms, field_class)
+            field_args = {"label": mark_safe(field.label), "required": field.required}
             arg_names = field_class.__init__.im_func.func_code.co_varnames
             if "max_length" in arg_names:
                 field_args["max_length"] = FIELD_MAX_LENGTH
@@ -426,6 +430,7 @@ class EventForm(TendenciBaseForm):
             'end_dt',
             'on_weekend',
             'timezone',
+            'priority',
             'type',
             'group',
             'external_url',
@@ -445,6 +450,7 @@ class EventForm(TendenciBaseForm):
                                  'end_dt',
                                  'on_weekend',
                                  'timezone',
+                                 'priority',
                                  'type',
                                  'group',
                                  'external_url',
@@ -924,7 +930,7 @@ class Reg8nForm(forms.Form):
     company_name = forms.CharField(max_length=100, required=False)
     username = forms.CharField(max_length=50, required=False)
     phone = forms.CharField(max_length=20, required=False)
-    email = forms.EmailField()
+    email = EmailVerificationField(label=_("Email"))
     captcha = CaptchaField(label=_('Type the code below'))
 
     def __init__(self, event_id=None, *args, **kwargs):
@@ -1084,7 +1090,7 @@ class RegistrantForm(forms.Form):
     company_name = forms.CharField(max_length=100, required=False)
     #username = forms.CharField(max_length=50, required=False)
     phone = forms.CharField(max_length=20, required=False)
-    email = forms.EmailField()
+    email = EmailVerificationField(label=_("Email"))
     comments = forms.CharField(max_length=300, 
                                widget=forms.Textarea,
                                required=False)
@@ -1127,6 +1133,13 @@ class RegistrantForm(forms.Form):
             self.fields['pricing'].label_from_instance = _get_price_labels
             self.fields['pricing'].empty_label = None
             self.fields['pricing'].required=True
+            self.fields['pricing'].choices = [(p.pk,  
+                mark_safe(
+                '<div>' + 
+                unicode(p) + 
+                    '<br/>(ends ' + unicode(p.end_dt.date()) + ')' + 
+                '</div>'))
+                for p in self.pricings]
             
         # member id
         if hasattr(self.event, 'has_member_price') and \
