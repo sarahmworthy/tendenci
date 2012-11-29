@@ -1066,6 +1066,18 @@ class MembershipDefault(TendenciBaseModel):
         """
         User MembershipType to set expiration dt
         """
+
+        approved = (
+            self.application_approved,
+            self.application_approved_dt,
+        )
+
+        # if not approved
+        # set expire_dt and get out
+        if not approved:
+            self.expire_dt = None
+            return None
+
         if self.renew_dt:
             self.expire_dt = self.membership_type.get_expiration_dt(
                 renewal=self.renewal, renew_dt=self.renew_dt
