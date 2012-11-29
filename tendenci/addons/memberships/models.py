@@ -611,6 +611,47 @@ class MembershipDefault(TendenciBaseModel):
 
         return True
 
+    def pend(self):
+        """
+        Set the membership to pending.
+        This should not be a method available
+        to the end-user.  Used within membership process.
+        """
+        if self.status_detail == 'archived':
+            return False
+
+        self.status = True,
+        self.status_detail = 'pending'
+
+        # application approved ---------------
+        self.application_approved = False
+        self.application_approved_dt = None
+        self.application_approved_user = None
+
+        # application approved/denied ---------------
+        self.application_approved_denied_dt = None
+        self.application_approved_denied_user = None
+
+        # action_taken ------------------------------
+        self.action_taken = False
+        self.action_taken_dt = None
+        self.action_taken_user = None
+
+        self.set_join_dt()
+        self.set_renew_dt()
+        self.set_expire_dt()
+
+        # add to [membership] group
+        self.group_refresh()
+
+        # new invoice; bound via ct and object_id
+        self.save_invoice(status_detail='estimate')
+
+        # remove member number on profile
+        self.user.profile.refresh_member_number()
+
+        return True
+
     def is_forever(self):
         """
         status=True, status_detail='active' and has
