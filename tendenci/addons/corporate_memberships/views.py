@@ -19,6 +19,7 @@ from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
+from django.http import Http404
 
 from tendenci.core.imports.utils import render_excel
 
@@ -29,6 +30,8 @@ from tendenci.core.event_logs.models import EventLog
 
 from tendenci.addons.corporate_memberships.models import (
                                             CorpMembershipApp,
+                                            CorpMembershipRep,
+                                            CorpMembership,
                                             CorpApp, CorpField,
                                             CorporateMembership,
                                           CorporateMembershipType,
@@ -84,6 +87,181 @@ def get_app_fields_json(request):
 
     return HttpResponse(simplejson.dumps(simplejson.loads(app_fields)))
 
+
+def app_preview(request, app_id,
+                           template='corporate_memberships/applications/preview.html'):
+    """
+    Corporate membership application preview.
+    """
+    app = get_object_or_404(CorpMembershipApp, pk=app_id)
+    is_superuser = request.user.profile.is_superuser
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.order_by('order')
+
+    corpmembership_form = CorpMembershipForm(app_fields,
+                                             request_user=request.user,
+                                             corpmembership_app=app)
+    context = {'app': app,
+               "app_fields": app_fields,
+               'corpmembership_form': corpmembership_form}
+    return render_to_response(template, context, RequestContext(request))
+
+
+def corpmembership_add_pre(request,
+                template='corporate_memberships/applications/add_pre.html'):
+    [app] = CorpMembershipApp.objects.filter(
+                               status=True,
+                               status_detail__in=['active', 'published']
+                               ).order_by('id')[:1] or [None]
+    if not app:
+        raise Http404
+    form = CreatorForm(request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            creator = form.save()
+            hash = md5('%d.%s' % (creator.id, creator.email)
+                       ).hexdigest()
+            creator.hash = hash
+            creator.save()
+
+            # redirect to add
+            return HttpResponseRedirect('%s%s' % (reverse('corpmembership.add'),
+                                              '?hash=%s' % hash))
+
+    context = {"form": form,
+               'corp_app': app}
+    return render_to_response(template, context, RequestContext(request))
+
+
+def corpmembership_add(request,
+                       template='corporate_memberships/applications/add.html'):
+    """
+    Corporate membership add.
+    """
+    [app] = CorpMembershipApp.objects.filter(
+                               status=True,
+                               status_detail__in=['active', 'published']
+                               ).order_by('id')[:1] or [None]
+    if not app:
+        raise Http404
+    is_superuser = request.user.profile.is_superuser
+    creator = None
+    hash = request.GET.get('hash', '')
+    if not request.user.is_authenticated():
+        if hash:
+            [creator] = Creator.objects.filter(hash=hash)[:1] or [None]
+        if not creator:
+            # anonymous user - redirect them to enter their
+            # contact email before processing
+            return HttpResponseRedirect(reverse('corpmembership.add_pre'))
+
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.order_by('order')
+
+    corpmembership_form = CorpMembershipForm(app_fields,
+                                             request.POST or None,
+                                             request_user=request.user,
+                                             corpmembership_app=app)
+    if request.method == 'POST':
+        if corpmembership_form.is_valid():
+            corp_membership = corpmembership_form.save(request.user,
+                                                       creator=creator)
+            # calculate the expiration
+            corp_memb_type = corp_membership.corporate_membership_type
+            corp_membership.expiration_dt = corp_memb_type.get_expiration_dt(
+                                        join_dt=corp_membership.join_dt)
+            # assign a secret code for this corporate
+            # secret code is a unique 6 characters long string
+            corp_membership.assign_secret_code()
+            corp_membership.save()
+
+            # add invoice
+            inv = corp_memb_inv_add(request.user, corp_membership)
+            # update corp_memb with inv
+            corp_membership.invoice = inv
+            corp_membership.save(log=False)
+
+            if request.user.is_authenticated():
+                # set the user as representative of the corp. membership
+                CorpMembershipRep.objects.create(
+                    corp_membership=corp_membership,
+                    user=request.user,
+                    is_dues_rep=True)
+
+            # assign object permissions
+            corp_memb_update_perms(corp_membership)
+
+            # email to user who created the corporate membership
+            # include the secret code in the email
+            # if authentication_method == 'secret_code'
+
+            # send notification to user
+            if creator:
+                recipients = [creator.email]
+            else:
+                recipients = [request.user.email]
+            extra_context = {
+                'object': corp_membership,
+                'request': request,
+                'invoice': inv,
+            }
+            send_email_notification('corp_memb_added_user',
+                                    recipients, extra_context)
+
+            # send notification to administrators
+            recipients = get_notice_recipients(
+                                       'module', 'corporate_memberships',
+                                       'corporatemembershiprecipients')
+            extra_context = {
+                'object': corp_membership,
+                'request': request,
+                'creator': creator
+            }
+            send_email_notification('corp_memb_added', recipients,
+                                    extra_context)
+
+            # handle online payment
+            if corp_membership.payment_method.is_online:
+                if corp_membership.invoice and \
+                    corp_membership.invoice.balance > 0:
+                    return HttpResponseRedirect(
+                                    reverse('payment.pay_online',
+                                    args=[corp_membership.invoice.id,
+                                          corp_membership.invoice.guid]))
+
+            return HttpResponseRedirect(reverse('corpmembership.add_conf',
+                                                args=[corp_membership.id]))
+
+    context = {'app': app,
+               "app_fields": app_fields,
+               'corpmembership_form': corpmembership_form}
+    return render_to_response(template, context, RequestContext(request))
+
+
+def corpmembership_add_conf(request, id,
+            template="corporate_memberships/applications/add_conf.html"):
+    """
+        Corporate membership add conf
+    """
+    corp_membership = get_object_or_404(CorpMembership, id=id)
+    [app] = CorpMembershipApp.objects.filter(
+                               status=True,
+                               status_detail__in=['active', 'published']
+                               ).order_by('id')[:1] or [None]
+    if not app:
+        raise Http404
+
+    EventLog.objects.log(instance=corp_membership)
+    context = {"corporate_membership": corp_membership,
+               'app': app}
+    return render_to_response(template, context, RequestContext(request))
+
+
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     corp_app = get_object_or_404(CorpApp, slug=slug)
     form = CreatorForm(request.POST or None)
@@ -101,30 +279,6 @@ def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     context = {"form": form,
                'corp_app': corp_app}
     return render_to_response(template, context, RequestContext(request))
-
-
-def app_preview(request, app_id,
-                           template='corporate_memberships/applications/preview.html'):
-    """
-    Membership default preview.
-    """
-    app = get_object_or_404(CorpMembershipApp, pk=app_id)
-    is_superuser = request.user.profile.is_superuser
-    app_fields = app.fields.filter(display=True)
-    if not is_superuser:
-        app_fields = app_fields.filter(admin_only=False)
-    app_fields = app_fields.order_by('order')
-
-    corpmembership_form = CorpMembershipForm(app_fields,
-                                             request_user=request.user,
-                                             corpmembership_app=app)
-    #print membership_form.field_names
-
-    context = {'app': app,
-               "app_fields": app_fields,
-               'corpmembership_form': corpmembership_form}
-    return render_to_response(template, context, RequestContext(request))
-
 
 def add(request, slug=None, hash=None, template="corporate_memberships/add.html"):
     """

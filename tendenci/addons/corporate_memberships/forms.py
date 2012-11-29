@@ -27,6 +27,7 @@ from tendenci.addons.corporate_memberships.models import (
                     CorpMembRenewEntry)
 from tendenci.addons.corporate_memberships.utils import (
                  get_corpmembership_type_choices,
+                 update_authorized_domains,
                  get_corpapp_default_fields_list,
                  update_auth_domains,
                  get_payment_method_choices,
@@ -180,9 +181,9 @@ def assign_fields(form, app_field_objs):
                 label_type.append('inline-block')
                 if len(obj.label) < 16:
                     label_type.append('short-label')
-                    if obj.field_stype == 'textarea':
-                        label_type.append('float-left')
-                        obj.field_div_class = 'float-left'
+                    #if obj.field_stype == 'textarea':
+                label_type.append('float-left')
+                obj.field_div_class = 'float-left'
             obj.label_type = ' '.join(label_type)
 
 
@@ -205,14 +206,14 @@ class CorpMembershipForm(forms.ModelForm):
 
     def __init__(self, app_field_objs, *args, **kwargs):
         request_user = kwargs.pop('request_user')
-        corpmembership_app = kwargs.pop('corpmembership_app')
+        self.corpmembership_app = kwargs.pop('corpmembership_app')
         super(CorpMembershipForm, self).__init__(*args, **kwargs)
         self.fields['corporate_membership_type'].widget = forms.widgets.RadioSelect(
                     choices=get_corpmembership_type_choices(request_user,
-                                                        corpmembership_app),
+                                                        self.corpmembership_app),
                     attrs=self.fields['corporate_membership_type'].widget.attrs)
         # if all membership types are free, no need to display payment method
-        require_payment = corpmembership_app.corp_memb_type.filter(
+        require_payment = self.corpmembership_app.corp_memb_type.filter(
                                 price__gt=0).exists()
         if not require_payment:
             del self.fields['payment_method']
@@ -228,9 +229,43 @@ class CorpMembershipForm(forms.ModelForm):
         if 'status' in self_fields_keys:
             self.fields['status'].widget = forms.widgets.Select(
                         choices=self.STATUS_CHOICES)
+        if self.corpmembership_app.authentication_method == 'email':
+            self.fields['authorized_domain'] = forms.CharField(help_text="""
+            <span style="color: #990000;">comma separated (ex: mydomain.com,
+            mydomain.net).</span><br />The
+            authorized e-mail  domain will authenticate prospective<br />
+            members as they apply for membership under this company.
+            """)
 
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
+
+    def save(self, request_user, **kwargs):
+        corpmembership = super(CorpMembershipForm, self).save(commit=False)
+        anonymous_creator = kwargs.get('creator', None)
+        creator_owner = request_user
+        if not self.instance.pk:
+            if anonymous_creator:
+                corpmembership.anonymous_creator = anonymous_creator
+            if not isinstance(request_user, User):
+                [creator_owner] = User.objects.filter(is_staff=1,
+                                                is_active=1)[:1] or [None]
+            if not request_user.profile.is_superuser:
+                corpmembership.status = 1
+                corpmembership.status_detail = 'pending'
+            if not corpmembership.join_dt:
+                corpmembership.join_dt = datetime.now()
+            corpmembership.creator = creator_owner
+            corpmembership.creator_username = creator_owner.username
+        corpmembership.owner = creator_owner
+        corpmembership.owner_username = creator_owner.username
+        corpmembership.save()
+
+        # update authorized domain if needed
+        if self.corpmembership_app.authentication_method == 'email':
+            update_authorized_domains(corpmembership,
+                            self.cleaned_data['authorized_domain'])
+        return corpmembership
 
 
 class CorpAppForm(forms.ModelForm):

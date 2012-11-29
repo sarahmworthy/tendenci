@@ -15,26 +15,11 @@ from django.template.defaultfilters import slugify
 from django.core.files.storage import default_storage
 
 from tendenci.core.site_settings.utils import get_setting
-from tendenci.addons.memberships.models import AppField, Membership
+from tendenci.addons.memberships.models import (AppField,
+                                                Membership)
 from tendenci.apps.invoices.models import Invoice
 from tendenci.core.payments.models import Payment
 from tendenci.core.base.utils import normalize_newline
-
-
-# get the corpapp default fields list from json
-def get_corpapp_default_fields_list():
-#    json_fields_path = os.path.join(settings.PROJECT_ROOT, 
-#                                    "templates/corporate_memberships/regular_fields.json")
-#    fd = open(json_fields_path, 'r')
-#    data = ''.join(fd.read())
-#    fd.close()
-    
-    data = render_to_string('corporate_memberships/regular_fields.json', 
-                               {}, context_instance=None)
-    
-    if data:
-        return simplejson.loads(data)
-    return None
 
 
 def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
@@ -69,6 +54,79 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
         cmt_list.append((cmt.id, price_display))
 
     return cmt_list
+
+
+def update_authorized_domains(corp_memb, domain_names):
+    """
+    Update the authorized domains for this corporate membership.
+    """
+    from tendenci.addons.corporate_memberships.models import CorpMembershipAuthDomain
+    if domain_names:
+        dname_list = domain_names.split(',')
+        dname_list = [name.strip() for name in dname_list]
+
+        # if domain is not in the list domain_names, delete it from db
+        # otherwise, remove it from list
+        if corp_memb.authorized_domains:
+            for auth_domain in list(corp_memb.authorized_domains.all()):
+                if auth_domain.name in dname_list:
+                    dname_list.remove(auth_domain.name)
+                else:
+                    auth_domain.delete()
+
+        # add the rest of the domain
+        for name in dname_list:
+            auth_domain = CorpMembershipAuthDomain(corp_membership=corp_memb,
+                                                   name=name)
+            auth_domain.save()
+
+
+def corp_membership_update_perms(corp_memb, **kwargs):
+    """
+    update object permissions to creator, owner and representatives.
+    view and change permissions only - no delete permission assigned 
+    because we don't want them to delete corporate membership records.
+    """
+    from tendenci.core.perms.object_perms import ObjectPermission
+    from tendenci.addons.corporate_memberships.models import CorpMembershipRep
+
+    ObjectPermission.objects.remove_all(corp_memb)
+
+    perms = ['view', 'change']
+
+    # creator and owner
+    if corp_memb.creator:
+        ObjectPermission.objects.assign(corp_memb.creator,
+                                        corp_memb,
+                                        perms=perms)
+
+    if corp_memb.owner:
+        ObjectPermission.objects.assign(corp_memb.owner,
+                                        corp_memb,
+                                        perms=perms)
+
+    # dues and members reps
+    reps = CorpMembershipRep.objects.filter(corp_membership=corp_memb)
+    for rep in reps:
+        ObjectPermission.objects.assign(rep.user, corp_memb, perms=perms)
+
+    return corp_memb
+
+
+# get the corpapp default fields list from json
+def get_corpapp_default_fields_list():
+#    json_fields_path = os.path.join(settings.PROJECT_ROOT, 
+#                                    "templates/corporate_memberships/regular_fields.json")
+#    fd = open(json_fields_path, 'r')
+#    data = ''.join(fd.read())
+#    fd.close()
+    
+    data = render_to_string('corporate_memberships/regular_fields.json', 
+                               {}, context_instance=None)
+    
+    if data:
+        return simplejson.loads(data)
+    return None
 
 
 def get_corporate_membership_type_choices(user, corpapp, renew=False):

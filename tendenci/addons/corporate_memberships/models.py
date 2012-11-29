@@ -306,6 +306,7 @@ class CorpMembership(TendenciBaseModel):
     objects = CorpMembershipManager()
 
     class Meta:
+        permissions = (("view_corpmembership", "Can view corporate membership"),)
         if get_setting('module', 'corporate_memberships', 'label'):
             verbose_name = get_setting('module',
                                        'corporate_memberships',
@@ -328,6 +329,354 @@ class CorpMembership(TendenciBaseModel):
     @property
     def module_name(self):
         return self._meta.module_name
+
+    @staticmethod
+    def get_search_filter(user):
+        if user.profile.is_superuser:
+            return None, None
+
+        filter_and, filter_or = None, None
+
+        allow_anonymous_search = get_setting('module',
+                                     'corporate_memberships',
+                                     'anonymoussearchcorporatemembers')
+        allow_member_search = get_setting('module',
+                                  'corporate_memberships',
+                                  'membersearchcorporatemembers')
+
+        if allow_anonymous_search or \
+            (allow_member_search and user.profile.is_member):
+            filter_and = {'status': 1,
+                          'status_detail': 'active'}
+        else:
+            if user.is_authenticated():
+                filter_or = {'creator': user,
+                             'owner': user}
+                if use_search_index:
+                    filter_or.update({'reps': user})
+                else:
+                    filter_or.update({'reps__user': user})
+            else:
+                filter_and = {'allow_anonymous_view': True}
+
+        return filter_and, filter_or
+
+    def assign_secret_code(self):
+        if not self.secret_code:
+            # use the make_random_password in the User object
+            length = 6
+            allowed_chars = 'abcdefghjkmnpqrstuvwxyzABCDEF' + \
+                            'GHJKLMNPQRSTUVWXYZ23456789'
+            secret_code = User.objects.make_random_password(
+                                                length=length,
+                                                allowed_chars=allowed_chars)
+            # check if this one is unique
+            corp_membs = CorpMembership.objects.filter(
+                                            secret_code=secret_code)
+
+            while corp_membs:
+                secret_code = User.objects.make_random_password(
+                                            length=length,
+                                            allowed_chars=allowed_chars)
+                corp_membs = CorpMembership.objects.filter(
+                                                secret_code=secret_code)
+                if not corp_membs:
+                    break
+            self.secret_code = secret_code
+
+    # Called by payments_pop_by_invoice_user in Payment model.
+    def get_payment_description(self, inv):
+        """
+        The description will be sent to payment gateway and displayed
+        on invoice.
+        If not supplied, the default description will be generated.
+        """
+        return 'Tendenci Invoice %d for Corp. Memb. (%d): %s. ' % (
+            inv.id,
+            inv.object_id,
+            self.name,
+        )
+
+    def make_acct_entries(self, user, inv, amount, **kwargs):
+        """
+        Make the accounting entries for the corporate membership sale
+        """
+        from tendenci.apps.accountings.models import Acct, AcctEntry, AcctTran
+        from tendenci.apps.accountings.utils import (make_acct_entries_initial,
+                                                     make_acct_entries_closing)
+
+        ae = AcctEntry.objects.create_acct_entry(user, 'invoice', inv.id)
+        if not inv.is_tendered:
+            make_acct_entries_initial(user, ae, amount)
+        else:
+            # payment has now been received
+            make_acct_entries_closing(user, ae, amount)
+
+            # #CREDIT corporate membership SALES
+            acct_number = self.get_acct_number()
+            acct = Acct.objects.get(account_number=acct_number)
+            AcctTran.objects.create_acct_tran(user, ae, acct, amount*(-1))
+
+    def get_acct_number(self, discount=False):
+        if discount:
+            return 466800
+        else:
+            return 406800
+
+    def auto_update_paid_object(self, request, payment):
+        """
+        Update the object after online payment is received.
+        """
+        try:
+            from tendenci.apps.notifications import models as notification
+        except:
+            notification = None
+        from tendenci.core.perms.utils import get_notice_recipients
+
+        # approve it
+        # TODO: renewal
+#        if self.renew_entry_id:
+#            self.approve_renewal(request)
+#        else:
+        self.approve_join(request)
+
+        # send notification to administrators
+        recipients = get_notice_recipients('module',
+                                           'corporate_memberships',
+                                           'corporatemembershiprecipients')
+        if recipients:
+            if notification:
+                extra_context = {
+                    'object': self,
+                    'request': request,
+                }
+                notification.send_emails(recipients,
+                                         'corp_memb_paid',
+                                         extra_context)
+
+    def get_payment_method(self):
+        # return payment method if defined
+        if self.payment_method:
+            return self.payment_method
+
+        # first method is credit card (online)
+        # will raise exception if payment method does not exist
+        self.payment_method = PaymentMethod.objects.get(
+                                        machine_name='credit-card')
+        return self.payment_method
+
+    def approve_join(self, request, **kwargs):
+        self.approved = True
+        self.approved_denied_dt = datetime.now()
+        if not request.user.is_anonymous():
+            self.approved_denied_user = request.user
+        self.status = 1
+        self.status_detail = 'active'
+        self.save()
+
+        created, username, password = self.handle_anonymous_creator(**kwargs)
+
+        # send an email to dues reps
+        recipients = dues_rep_emails_list(self)
+        recipients.append(self.creator.email)
+        extra_context = {
+            'object': self,
+            'request': request,
+            'invoice': self.invoice,
+            'created': created,
+            'username': username,
+            'password': password
+        }
+        send_email_notification('corp_memb_join_approved',
+                                recipients, extra_context)
+
+    def disapprove_join(self, request, **kwargs):
+        self.approved = False
+        self.approved_denied_dt = datetime.now()
+        self.approved_denied_user = request.user
+        self.status = 1
+        self.status_detail = 'disapproved'
+        self.save()
+
+    def handle_anonymous_creator(self, **kwargs):
+        """
+        Handle the anonymous creator on approval and disapproval.
+        """
+        if self.anonymous_creator:
+            create_new = kwargs.get('create_new', False)
+            assign_to_user = kwargs.get('assign_to_user', None)
+
+            params = {'first_name': self.anonymous_creator.first_name,
+                      'last_name': self.anonymous_creator.last_name,
+                      'email': self.anonymous_creator.email}
+
+            if assign_to_user and not isinstance(assign_to_user, User):
+                create_new = True
+
+            if not create_new and not assign_to_user:
+
+                [my_user] = User.objects.filter(**params).order_by(
+                                        '-is_active')[:1] or [None]
+                if my_user:
+                    assign_to_user = my_user
+                else:
+                    create_new = True
+            if create_new:
+                params.update({
+                   'password': User.objects.make_random_password(length=8),
+                   'is_active': True})
+                assign_to_user = User(**params)
+                assign_to_user.username = get_unique_username(assign_to_user)
+                assign_to_user.set_password(assign_to_user.password)
+                assign_to_user.save()
+
+                # create a profile for this new user
+                Profile.objects.create_profile(assign_to_user)
+
+            self.creator = assign_to_user
+            self.creator_username = assign_to_user.username
+            self.owner = assign_to_user
+            self.owner_username = assign_to_user.username
+            self.save()
+
+            # TODO:
+            # assign object permissions
+#            corp_memb_update_perms(self)
+
+            # update invoice creator/owner
+            if self.invoice:
+                self.invoice.creator = assign_to_user
+                self.invoice.creator_username = assign_to_user.username
+                self.invoice.owner = assign_to_user
+                self.invoice.owner_username = assign_to_user.username
+                self.invoice.save()
+
+            return create_new, assign_to_user.username, params.get('password',
+                                                                   '')
+
+        return False, None, None
+
+    def is_rep(self, this_user):
+        """
+        Check if this user is one of the representatives of
+        # this corporate membership.
+        """
+        if this_user.is_anonymous():
+            return False
+        reps = self.reps.all()
+        for rep in reps:
+            if rep.user.id == this_user.id:
+                return True
+        return False
+
+    def allow_view_by(self, this_user):
+        if this_user.profile.is_superuser:
+            return True
+
+        if get_setting('module',
+                     'corporate_memberships',
+                     'anonymoussearchcorporatemembers'):
+            return True
+
+        if not this_user.is_anonymous():
+            if self.is_rep(this_user):
+                return True
+            if self.creator:
+                if this_user.id == self.creator.id:
+                    return True
+            if self.owner:
+                if this_user.id == self.owner.id:
+                    return True
+
+        return False
+
+    def allow_edit_by(self, this_user):
+        if this_user.profile.is_superuser:
+            return True
+
+        if not this_user.is_anonymous():
+            if self.status and (self.status_detail not in [
+                                               'inactive',
+                                               'archive',
+                                               'archived',
+                                               'admin hold']):
+                if self.is_rep(this_user):
+                    return True
+                if self.creator:
+                    if this_user.id == self.creator.id:
+                        return True
+                if self.owner:
+                    if this_user.id == self.owner.id:
+                        return True
+
+        return False
+
+    def get_renewal_period_dt(self):
+        """
+        calculate and return a tuple of renewal period dt:
+         (renewal_period_start_dt, renewal_period_end_dt)
+        """
+        if not self.expiration_dt or not isinstance(self.expiration_dt, datetime):
+            return (None, None)
+        membership_type = self.corporate_membership_type.membership_type
+        start_dt = self.expiration_dt - timedelta(
+                            days=membership_type.renewal_period_start)
+        end_dt = self.expiration_dt + timedelta(
+                            days=membership_type.renewal_period_end)
+
+        return (start_dt, end_dt)
+
+    def can_renew(self):
+        if not self.expiration_dt or not isinstance(self.expiration_dt,
+                                                    datetime):
+            return False
+
+        (renewal_period_start_dt,
+         renewal_period_end_dt) = self.get_renewal_period_dt()
+
+        now = datetime.now()
+        return (now >= renewal_period_start_dt and now <= renewal_period_end_dt)
+
+    @property
+    def is_join_pending(self):
+        return self.status_detail in ['pending', 
+                                      'paid - pending approval']
+
+#    @property
+#    def is_renewal_pending(self):
+#        renew_entry = self.get_pending_renewal_entry()
+#        return renew_entry <> None
+
+#    @property
+#    def is_pending(self):
+#        return self.is_join_pending or self.is_renewal_pending
+
+
+    @property
+    def is_expired(self):
+        if not self.expiration_dt or not isinstance(self.expiration_dt,
+                                                    datetime):
+            return False
+        return datetime.now() >= self.expiration_dt
+
+    @property
+    def is_in_grace_period(self):
+        if self.is_expired:
+            grace_period_end_dt = self.expiration_dt + timedelta(
+                days=self.corporate_membership_type.membership_type.expiration_grace_period)
+
+            return datetime.now() < grace_period_end_dt
+        return False
+
+    @property
+    def real_time_status_detail(self):
+        if self.is_expired:
+            if self.is_in_grace_period:
+                return "expired - in grace period"
+            else:
+                return "expired"
+        else:
+            return self.status_detail
 
 
 class CorpMembershipApp(TendenciBaseModel):
@@ -419,6 +768,23 @@ class CorpMembershipAppField(models.Model):
         if self.field_name:
             return '%s (field name: %s)' % (self.label, self.field_name)
         return '%s' % self.label
+
+
+class CorpMembershipAuthDomain(models.Model):
+    corp_membership = models.ForeignKey("CorpMembership",
+                                        related_name="authorized_domains")
+    name = models.CharField(max_length=100)
+
+
+class CorpMembershipRep(models.Model):
+    corp_membership = models.ForeignKey("CorpMembership",
+                                        related_name="reps")
+    user = models.ForeignKey(User, verbose_name=_("Representative"),)
+    is_dues_rep = models.BooleanField(_('is dues rep?'), default=0, blank=True)
+    is_member_rep = models.BooleanField(_('is member rep?'), default=0, blank=True)
+
+    class Meta:
+        unique_together = (("corp_membership", "user"),)
 
 
 class CorporateMembership(TendenciBaseModel):

@@ -157,7 +157,7 @@
     "label": "Authorized Domain",
     "field_name": "authorized_domain",
     "display": "true",
-    "required": "false",
+    "required": "true",
     "admin_only": "false"
     },
     {

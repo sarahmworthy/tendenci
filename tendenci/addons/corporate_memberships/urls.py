@@ -2,6 +2,24 @@ from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
     url(r'^$', 'search', name="corp_memb"),
+    url(r"^get_app_fields/$",
+        "get_app_fields_json",
+        name="corpmemberships.get_app_fields"),
+
+    url(r"^applications/(?P<app_id>\d+)/preview/$",
+        "app_preview",
+        name="corpmembership_app.preview"),
+    url(r"^applications/add_pre/$",
+        "corpmembership_add_pre",
+        name="corpmembership.add_pre"),
+    url(r"^applications/add/$",
+        "corpmembership_add",
+        name="corpmembership.add"),
+    url(r"^applications/add_conf/(?P<id>\d+)/$",
+        "corpmembership_add_conf",
+        name="corpmembership.add_conf"),
+
+
     url(r"^(?P<slug>.*)/add_pre/$", "add_pre", name="corp_memb.add_pre"),
     url(r"^(?P<slug>.*)/add/$", "add", name="corp_memb.add"),
     url(r"^(?P<slug>.*)/add/(?P<hash>[\d\w]+)$", "add",
@@ -42,14 +60,6 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
     url(r'^import/download-invalid_records/$',
         'corp_import_invalid_records_download',
         name="corp_memb_import_download_invalid"),
-
-    url(r"^get_app_fields/$",
-        "get_app_fields_json",
-        name="corpmemberships.get_app_fields"),
-
-    url(r"^applications/(?P<app_id>\d+)/preview/$",
-        "app_preview",
-        name="corpmembership_app.preview"),
 
     # export
     url(r"^export/$", "corp_export", name="corp_export"),
