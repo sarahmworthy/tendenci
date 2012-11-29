@@ -728,6 +728,75 @@ class MembershipDefault2Form(forms.ModelForm):
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
 
+    def save(self, *args, **kwargs):
+        """
+        Create membership record.
+        Handle all objects:
+            Membership
+            Membership.user
+            Membership.user.profile
+            Membership.invoice
+            Membership.user.group_set()
+        """
+        user = kwargs.pop('user')
+        request = kwargs.pop('request')
+
+        request_user = None
+        if hasattr(request, 'user'):
+            if isinstance(request.user, User):
+                request_user = request.user
+
+        kwargs['commit'] = False
+        membership = super(MembershipDefault2Form, self).save(*args, **kwargs)
+
+        if request_user:
+            membership.creator = request_user
+            membership.creator_username = request_user.username
+            membership.owner = request_user
+            membership.owner_username = request_user.username
+
+        membership.entity = Entity.objects.first()
+        membership.user = user
+
+        if membership.pk:
+            # changing membership record
+            membership.set_member_number()
+            membership.save()
+
+        else:
+            # adding membership record
+            membership.renewal = membership.user.profile.can_renew()
+
+            # create record in database
+            # helps with associating invoice record
+            membership.save()
+
+            NOW = datetime.now()
+
+            if not membership.approval_required():  # approval not required
+                membership.approve(request_user=request_user)
+                membership.send_email(request, 'approve')
+
+            else:  # approval required
+                membership.pend()  # handles group and invoice
+
+            # application complete
+            membership.application_complete_dt = NOW
+            membership.application_complete_user = membership.user
+
+            # save application fields
+            # save join, renew, and expire dt
+            membership.save()
+
+        # [un]subscribe to group
+        membership.group_refresh()
+
+        if membership.application_approved:
+            membership.archive_old_memberships()
+            membership.save_invoice(status_detail='tendered')
+
+        return membership
+
 
 class NoticeForm(forms.ModelForm):
     notice_time_type = NoticeTimeTypeField(label='When to Send',
