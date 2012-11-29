@@ -24,7 +24,8 @@ from tendenci.addons.memberships.models import (MembershipType, App,
 from tendenci.apps.forms_builder.forms.settings import FIELD_MAX_LENGTH, LABEL_MAX_LENGTH
 from tendenci.addons.corporate_memberships.managers import (
                                                 CorporateMembershipManager,
-                                                CorpMembershipManager)
+                                                CorpMembershipManager,
+                                                CorpMembershipAppManager)
 #from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.core.payments.models import PaymentMethod
@@ -329,6 +330,13 @@ class CorpMembership(TendenciBaseModel):
     @property
     def module_name(self):
         return self._meta.module_name
+
+    @property
+    def authentication_method(self):
+        app = CorpMembershipApp.objects.current_app()
+        if app:
+            return app.authentication_method
+        return None
 
     @staticmethod
     def get_search_filter(user):
@@ -707,6 +715,8 @@ class CorpMembershipApp(TendenciBaseModel):
                             verbose_name=_("Membership Application"))
     payment_methods = models.ManyToManyField(PaymentMethod,
                                              verbose_name="Payment Methods")
+
+    objects = CorpMembershipAppManager()
 
     class Meta:
         verbose_name = _("Corporate Membership Application")
