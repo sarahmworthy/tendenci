@@ -1270,41 +1270,81 @@ def membership_default_preview(request, app_id,
     return render_to_response(template, context, RequestContext(request))
 
 
-def membership_default_add(request,
-                           template='memberships/applications/add.html'):
+def membership_default_add(request, template='memberships/applications/add.html'):
     """
-    Membership default add.
+    Default membership application form.
     """
     [app] = MembershipApp.objects.filter(status=True,
-                                       status_detail__in=['active', 'published']
-                                       ).order_by('id')[:1] or [None]
+        status_detail__in=['active', 'published']).order_by('id')[:1] or [None]
+
     if not app:
         raise Http404
+
     is_superuser = request.user.profile.is_superuser
     app_fields = app.fields.filter(display=True)
+
     if not is_superuser:
         app_fields = app_fields.filter(admin_only=False)
+
     app_fields = app_fields.order_by('order')
 
     user_form = UserForm(app_fields, request.POST or None)
     profile_form = ProfileForm(app_fields, request.POST or None)
     membership_form = MembershipDefault2Form(app_fields,
-                                             request.POST or None,
-                                             request_user=request.user,
-                                             membership_app=app)
-    if request.method == 'POST':
-        if all([user_form.is_valid(),
-                profile_form.is_valid(),
-                membership_form.is_valid()]):
-            pass
-    
-    
+        request.POST or None, request_user=request.user, membership_app=app)
 
-    context = {'app': app,
-               "app_fields": app_fields,
-               'user_form': user_form,
-               'profile_form': profile_form,
-               'membership_form': membership_form}
+    if request.method == 'POST':
+
+        # tuple with boolean items
+        good = (
+            user_form.is_valid(),
+            profile_form.is_valid(),
+            membership_form.is_valid(),
+        )
+
+        # form is valid
+        if all(good):
+
+            user = user_form.save()
+
+            profile_form.instance = user.profile
+            profile_form.save(
+                request_user=request.user
+            )
+
+            membership = membership_form.save(
+                request=request,
+                user=user,
+            )
+
+            # redirect: payment gateway
+            if membership.is_paid_online():
+                return HttpResponseRedirect(reverse(
+                    'payment.pay_online',
+                    args=[membership.get_invoice().pk,
+                        membership.get_invoice().guid]
+                ))
+
+            # redirect: membership edit page
+            if is_superuser:
+                return HttpResponseRedirect(reverse(
+                    'admin:memberships_membershipdefault_change',
+                    args=[membership.pk],
+                ))
+
+            # redirect: confirmation page
+            return HttpResponseRedirect(reverse(
+                'membership.application_confirmation_default',
+                args=[membership.guid]
+            ))
+
+    context = {
+        'app': app,
+        'app_fields': app_fields,
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'membership_form': membership_form
+    }
     return render_to_response(template, context, RequestContext(request))
 
 
