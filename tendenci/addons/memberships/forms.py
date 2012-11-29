@@ -646,6 +646,28 @@ class ProfileForm(forms.ModelForm):
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
 
+    def save(self, *args, **kwargs):
+        """
+        Save the profile record. Populate owner and creator fields.
+        """
+        request_user = kwargs.pop('request_user')
+
+        kwargs['commit'] = False
+        profile = super(ProfileForm, self).save(*args, **kwargs)
+
+        for k, v in self.cleaned_data.items():
+            if v:
+                setattr(profile, k, v)
+
+        profile.owner = request_user
+        profile.owner_username = request_user.username
+
+        profile.save()
+
+        return profile
+
+
+
 
 class MembershipDefault2Form(forms.ModelForm):
     STATUS_DETAIL_CHOICES = (
