@@ -749,6 +749,7 @@ class MembershipDefault2Form(forms.ModelForm):
         kwargs['commit'] = False
         membership = super(MembershipDefault2Form, self).save(*args, **kwargs)
 
+        # set owner & creator
         if request_user:
             membership.creator = request_user
             membership.creator_username = request_user.username
@@ -768,25 +769,18 @@ class MembershipDefault2Form(forms.ModelForm):
         # helps with associating invoice record
         membership.save()
 
-        NOW = datetime.now()
-
-        if not membership.approval_required():  # approval not required
+        if membership.approval_required():
+            membership.pend()
+        else:
             membership.approve(request_user=request_user)
             membership.send_email(request, 'approve')
 
-        else:  # approval required
-            membership.pend()  # handles group and invoice
-
         # application complete
-        membership.application_complete_dt = NOW
+        membership.application_complete_dt = datetime.now()
         membership.application_complete_user = membership.user
 
         # save application fields
-        # save join, renew, and expire dt
         membership.save()
-
-        # [un]subscribe to group
-        membership.group_refresh()
 
         if membership.application_approved:
             membership.archive_old_memberships()
