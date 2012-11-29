@@ -1041,9 +1041,15 @@ class MembershipDefault(TendenciBaseModel):
         Membership.renew_dt = Membership.application_approved_dt
         """
 
-        # cannot set renew dt if approved dt
-        # does not exist (DNE)
-        if not self.application_approved_dt:
+        approved = (
+            self.application_approved,
+            self.application_approved_dt,
+        )
+
+        # if not approved
+        # set renew_dt and get out
+        if not approved:
+            self.renew_dt = None
             return None
 
         memberships = self.qs_memberships(
