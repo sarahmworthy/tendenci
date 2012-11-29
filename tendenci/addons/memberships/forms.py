@@ -564,6 +564,78 @@ class UserForm(forms.ModelForm):
             self.fields['username'].help_text = 'Letters, numbers and @/./+/-/_ characters'
         self.field_names = [name for name in self.fields.keys()]
 
+    def clean(self):
+        """
+        Validating username and password fields.
+
+        Neither username or password is required.
+        If the field(s) are submitted, those fields
+        are tested and exceptions are raised if they fail.
+
+        Possible exceptions:
+            Passwords do not match
+            Username and password did not match
+            This username exists. If it's yours,
+                please provide a password.
+        """
+        # super(UserForm, self).clean()
+
+        data = self.cleaned_data
+
+        un = data.get('username', u'').strip()
+        pw = data.get('password', u'').strip()
+        pw_confirm = data.get('confirm_password', u'').strip()
+
+        if un and pw:
+            # assert passwords match
+            if pw != pw_confirm:
+                raise forms.ValidationError(
+                    _('Passwords do not match.')
+                )
+
+            [u] = User.objects.filter(username=un)[:1] or [None]
+
+            if u:
+                # assert password;
+                if not u.check_password(pw):
+                    raise forms.ValidationError(
+                        _('Username and password did not match.')
+                    )
+            else:
+                pass
+                # username does not exist;
+                # create account with username and password
+
+        elif un:
+            [u] = User.objects.filter(username=un)[:1] or [None]
+            # assert username
+            if u:
+                raise forms.ValidationError(
+                    _('This username exists. If it\'s yours, please provide your password.')
+                )
+
+        return data
+
+    def save(self, **kwargs):
+        """
+        Get or create (user and profile) object
+        """
+        kwargs['commit'] = False
+        super(UserForm, self).save(**kwargs)
+
+        user, created = Profile.get_or_create_user(**{
+            'username': self.cleaned_data.get('username'),
+            'password': self.cleaned_data.get('password'),
+            'email': self.cleaned_data.get('email'),
+            'first_name': self.cleaned_data.get('first_name'),
+            'last_name': self.cleaned_data.get('last_name'),
+        })
+
+        if created:
+            send_welcome_email(user)
+
+        return user
+
 
 class ProfileForm(forms.ModelForm):
     class Meta:
