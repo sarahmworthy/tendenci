@@ -1582,7 +1582,7 @@ class CSVForm(forms.Form):
                         continue  # skip membership type
 
                     self.fields[app_field.label] = ChoiceField(**{
-                        'label':app_field.label,
+                        'label': app_field.label,
                         'choices': choice_tuples,
                         'required': False,
                     })
@@ -1591,7 +1591,6 @@ class CSVForm(forms.Form):
                     # if label matches choice; set initial
                     if app_field.label in choices:
                         self.fields[app_field.label].initial = app_field.label
-   
 
 
     def save(self, *args, **kwargs):
