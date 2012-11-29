@@ -141,10 +141,7 @@ def corpmembership_add(request,
     """
     Corporate membership add.
     """
-    [app] = CorpMembershipApp.objects.filter(
-                               status=True,
-                               status_detail__in=['active', 'published']
-                               ).order_by('id')[:1] or [None]
+    app = CorpMembershipApp.objects.current_app()
     if not app:
         raise Http404
     is_superuser = request.user.profile.is_superuser
@@ -168,6 +165,21 @@ def corpmembership_add(request,
                                              request_user=request.user,
                                              corpmembership_app=app)
     if request.method == 'POST':
+        # for free membership type, make payment method not required
+        corp_memb_type_id = request.POST.get('corporate_membership_type')
+        try:
+            corp_memb_type_id = int(corp_memb_type_id)
+        except:
+            corp_memb_type_id = 0
+        if corp_memb_type_id:
+            try:
+                corp_memb_type = CorporateMembershipType.objects.get(
+                                            pk=corp_memb_type_id)
+                if corp_memb_type.price <= 0:
+                    corpmembership_form.fields['payment_method'].required = False
+            except CorporateMembershipType.DoesNotExist:
+                pass
+
         if corpmembership_form.is_valid():
             corp_membership = corpmembership_form.save(request.user,
                                                        creator=creator)
@@ -249,10 +261,8 @@ def corpmembership_add_conf(request, id,
         Corporate membership add conf
     """
     corp_membership = get_object_or_404(CorpMembership, id=id)
-    [app] = CorpMembershipApp.objects.filter(
-                               status=True,
-                               status_detail__in=['active', 'published']
-                               ).order_by('id')[:1] or [None]
+    app = CorpMembershipApp.objects.current_app()
+
     if not app:
         raise Http404
 
