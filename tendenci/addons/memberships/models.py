@@ -967,7 +967,7 @@ class MembershipDefault(TendenciBaseModel):
         if self.user.profile.can_renew2():
             return self.membership_type.renewal_price or 0
         else:
-            return (self.membership_type.price + self.membership_type.admin_fee) or 0
+            return self.membership_type.price + (self.membership_type.admin_fee or 0)
 
     def qs_memberships(self, **kwargs):
         """
