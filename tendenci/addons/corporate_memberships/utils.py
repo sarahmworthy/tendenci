@@ -29,7 +29,7 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
     if not user.profile.is_superuser:
         corporate_membership_types = corporate_membership_types.filter(
                                                         admin_only=False)
-    corporate_membership_types = corporate_membership_types.order_by('order')
+    corporate_membership_types = corporate_membership_types.order_by('order', 'id')
     currency_symbol = get_setting("site", "global", "currencysymbol")
 
     for cmt in corporate_membership_types:
