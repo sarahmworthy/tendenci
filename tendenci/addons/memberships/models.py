@@ -1101,6 +1101,19 @@ class MembershipDefault(TendenciBaseModel):
         if not self.member_number:
             self.member_number = self.create_member_number()
 
+    def is_paid_online(self):
+        """
+        Returns a boolean value.  Checks whether the payment
+        method is online and the membership is not free.
+        """
+        good = (
+            self.get_invoice().total > 0,
+            self.payment_method,
+            self.payment_method.is_online,
+        )
+
+        return all(good)
+
     def auto_update_paid_object(self, request, payment):
         """
         Update membership status and dates. Created archives if
@@ -2378,7 +2391,7 @@ class AppEntry(TendenciBaseModel):
                 # 'last_name': self.last_name,
                 'email': self.email
             }
-            
+
         users = {}
         lst = []
         for i in kwargs.items():
