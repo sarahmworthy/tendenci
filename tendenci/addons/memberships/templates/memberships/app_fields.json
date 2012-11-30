@@ -513,85 +513,85 @@
     {
     "label": "Section 8. Admin Only",
     "field_name": "",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Admin Notes",
     "field_name": "admin_notes",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Member Number",
     "field_name": "member_number",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Status",
     "field_name": "status",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Status Detail",
     "field_name": "status_detail",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Join Date",
     "field_name": "join_dt",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Expiration Date",
     "field_name": "expire_dt",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Renew Date",
     "field_name": "renew_dt",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "application_approved",
     "field_name": "application_approved",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Application Approved Date",
     "field_name": "application_approved_dt",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Application Denied",
     "field_name": "application_denied",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     },
     {
     "label": "Application Approved Denied Date",
     "field_name": "application_approved_denied_dt",
-    "display": "true",
+    "display": "false",
     "required": "false",
-    "admin_only": "true"
+    "admin_only": "false"
     }
 ]
