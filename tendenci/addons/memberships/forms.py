@@ -551,17 +551,31 @@ class UserForm(forms.ModelForm):
 
     def __init__(self, app_field_objs, *args, **kwargs):
         super(UserForm, self).__init__(*args, **kwargs)
+
         del self.fields['groups']
+
         assign_fields(self, app_field_objs)
         self_fields_keys = self.fields.keys()
+
         if 'password' in self_fields_keys:
+
+            self.fields['password'] = forms.CharField(
+                initial=u'',
+                widget=forms.PasswordInput,
+                required=False,
+            )
+            self.fields['password'].widget.attrs.update({'size': 28})
+
             self.fields['confirm_password'] = forms.CharField(
-                                                  initial=u'',
-                                                  widget=forms.PasswordInput,
-                                                  required=False)
+                initial=u'',
+                widget=forms.PasswordInput,
+                required=False,
+            )
             self.fields['confirm_password'].widget.attrs.update({'size': 28})
+
         if 'username' in self_fields_keys:
             self.fields['username'].help_text = 'Letters, numbers and @/./+/-/_ characters'
+
         self.field_names = [name for name in self.fields.keys()]
 
     def clean(self):
