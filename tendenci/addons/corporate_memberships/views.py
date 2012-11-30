@@ -272,6 +272,35 @@ def corpmembership_add_conf(request, id,
     return render_to_response(template, context, RequestContext(request))
 
 
+def corpmembership_edit(request, id,
+                       template='corporate_memberships/applications/edit.html'):
+    """
+    Corporate membership edit.
+    """
+    app = CorpMembershipApp.objects.current_app()
+    if not app:
+        raise Http404
+    is_superuser = request.user.profile.is_superuser
+
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.order_by('order')
+
+    corpmembership_form = CorpMembershipForm(app_fields,
+                                             request.POST or None,
+                                             request_user=request.user,
+                                             corpmembership_app=app)
+    if request.method == 'POST':
+        if corpmembership_form.is_valid():
+            pass
+
+    context = {'app': app,
+               "app_fields": app_fields,
+               'corpmembership_form': corpmembership_form}
+    return render_to_response(template, context, RequestContext(request))
+
+
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     corp_app = get_object_or_404(CorpApp, slug=slug)
     form = CreatorForm(request.POST or None)
