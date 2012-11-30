@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
 from django.core.files.storage import default_storage
+from django.contrib.admin.widgets import AdminTextInputWidget
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.payments.models import PaymentMethod
@@ -203,6 +204,9 @@ class FormAdminForm(TendenciBaseForm):
         widget=TinyMCE(attrs={'style':'width:100%'}, 
         mce_attrs={'storme_app_label':Form._meta.app_label, 
         'storme_model':Form._meta.module_name.lower()}))
+
+    email_copies = forms.CharField(required=False, label="Send copies to",
+        widget=AdminTextInputWidget(), help_text="One or more email addresses, separated by commas")
 
     template = forms.ChoiceField(choices=template_choices)
 

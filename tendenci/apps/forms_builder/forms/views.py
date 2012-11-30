@@ -408,8 +408,8 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             # Email
             subject = generate_email_subject(form, entry)
             email_headers = {}  # content type specified below
-            if form.email_from:
-                email_headers.update({'Reply-To':form.email_from})
+            if entry.get_email_address() or form.email_from:
+                email_headers.update({'Reply-To':entry.get_email_address() or form.email_from})
 
             # Email to submitter
             # fields aren't included in submitter body to prevent spam
