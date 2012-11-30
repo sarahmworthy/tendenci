@@ -299,7 +299,12 @@ def edit(request, id, form_class=ProfileForm, template_name="profiles/edit.html"
             profile = form.save(request, user_edit)
            
             if request.user.profile.is_superuser:
-                security_level = form.cleaned_data['security_level']
+                # superusers cannot demote themselves
+                if user_edit == request.user:
+                    security_level = 'superuser'
+                    messages.add_message(request, messages.INFO, _("You cannot convert yourself to \"%(role)s\" role.") % {'role' : form.cleaned_data['security_level']})
+                else:
+                    security_level = form.cleaned_data['security_level']
                 
                 if security_level == 'superuser':
                     user_edit.is_superuser = 1
@@ -432,7 +437,11 @@ def edit_user_perms(request, id, form_class=UserPermissionForm, template_name="p
     else:
         form = form_class(instance=user_edit)
     if form.is_valid():
-        user_edit.is_superuser = form.cleaned_data['is_superuser']
+        if request.user == user_edit:
+            user_edit.is_superuser = True
+            messages.add_message(request, messages.INFO, _("You cannot remove your admin role."))
+        else:
+            user_edit.is_superuser = form.cleaned_data['is_superuser']
         user_edit.user_permissions = form.cleaned_data['user_permissions']
         user_edit.save()
         EventLog.objects.log(instance=profile)
