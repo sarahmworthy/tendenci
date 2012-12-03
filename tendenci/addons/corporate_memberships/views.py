@@ -272,6 +272,7 @@ def corpmembership_add_conf(request, id,
     return render_to_response(template, context, RequestContext(request))
 
 
+@login_required
 def corpmembership_edit(request, id,
                        template='corporate_memberships/applications/edit.html'):
     """
@@ -280,6 +281,7 @@ def corpmembership_edit(request, id,
     app = CorpMembershipApp.objects.current_app()
     if not app:
         raise Http404
+    corp_membership = get_object_or_404(CorpMembership, id=id)
     is_superuser = request.user.profile.is_superuser
 
     app_fields = app.fields.filter(display=True)
@@ -289,11 +291,37 @@ def corpmembership_edit(request, id,
 
     corpmembership_form = CorpMembershipForm(app_fields,
                                              request.POST or None,
+                                             instance=corp_membership,
                                              request_user=request.user,
                                              corpmembership_app=app)
+
     if request.method == 'POST':
         if corpmembership_form.is_valid():
-            pass
+            corp_membership = corpmembership_form.save(request.user)
+
+            # assign a secret code for this corporate
+            # secret code is a unique 6 characters long string
+            if not corp_membership.secret_code:
+                corp_membership.assign_secret_code()
+                corp_membership.save()
+
+            # assign object permissions
+            corp_memb_update_perms(corp_membership)
+
+            # send notification to administrators
+            if not is_superuser:
+                recipients = get_notice_recipients('module',
+                                                   'corporate_membership',
+                                                   'corporatemembershiprecipients')
+                extra_context = {
+                    'object': corp_membership,
+                    'request': request,
+                }
+                send_email_notification('corp_memb_edited',
+                                        recipients,
+                                        extra_context)
+
+            # redirect to view
 
     context = {'app': app,
                "app_fields": app_fields,

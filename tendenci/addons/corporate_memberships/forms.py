@@ -151,7 +151,7 @@ def get_field_size(app_field_obj):
     return field_size_dict.get(app_field_obj.field_name, '') or 28
 
 
-def assign_fields(form, app_field_objs):
+def assign_fields(form, app_field_objs, instance=None):
     form_field_keys = form.fields.keys()
     # a list of names of app fields
     field_names = [field.field_name for field in app_field_objs \
@@ -162,6 +162,24 @@ def assign_fields(form, app_field_objs):
             del form.fields[name]
     # update the field attrs - label, required...
     for obj in app_field_objs:
+        obj.display_only = False
+
+        if instance.pk and obj.field_name in ['corporate_membership_type',
+                              'payment_method']:
+            obj.display_only = True
+            if obj.field_name == 'corporate_membership_type':
+                obj.display_content = instance.corporate_membership_type.name
+                del form.fields['corporate_membership_type']
+                continue
+            if obj.field_name == 'payment_method':
+                del form.fields['payment_method']
+                obj.display_content = instance.payment_method
+                if instance.invoice:
+                    obj.display_content = """%s - <a href="%s">View Invoice</a>
+                                        """ % (obj.display_content,
+                                        instance.invoice.get_absolute_url())
+                continue
+
         if obj.field_name in field_names:
             field = form.fields[obj.field_name]
             field.label = obj.label
@@ -236,8 +254,12 @@ class CorpMembershipForm(forms.ModelForm):
             authorized e-mail  domain will authenticate prospective<br />
             members as they apply for membership under this company.
             """)
+            if self.instance.pk:
+                auth_domains = ', '.join([domain.name for domain
+                             in self.instance.authorized_domains.all()])
+                self.fields['authorized_domain'].initial = auth_domains
 
-        assign_fields(self, app_field_objs)
+        assign_fields(self, app_field_objs, instance=self.instance)
         self.field_names = [name for name in self.fields.keys()]
 
     def save(self, request_user, **kwargs):

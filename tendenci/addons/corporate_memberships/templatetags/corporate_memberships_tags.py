@@ -11,7 +11,8 @@ def render_corpmembership_field(request, field_obj,
         field = None
     else:
         field_name = field_obj.field_name
-        if field_name in corpmembership_form.field_names:
+        if field_name in corpmembership_form.field_names \
+                and not field_obj.display_only:
             field = corpmembership_form[field_name]
         else:
             field = None
