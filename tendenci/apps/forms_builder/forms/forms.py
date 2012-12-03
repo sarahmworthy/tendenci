@@ -205,9 +205,6 @@ class FormAdminForm(TendenciBaseForm):
         mce_attrs={'storme_app_label':Form._meta.app_label, 
         'storme_model':Form._meta.module_name.lower()}))
 
-    email_copies = forms.CharField(required=False, label="Send copies to",
-        widget=AdminTextInputWidget(), help_text="One or more email addresses, separated by commas")
-
     template = forms.ChoiceField(choices=template_choices)
 
     class Meta:
