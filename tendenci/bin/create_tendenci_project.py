@@ -4,7 +4,8 @@ from __future__ import with_statement
 from distutils.dir_util import copy_tree
 from optparse import OptionParser
 import os
-from shutil import copy
+from shutil import move
+from uuid import uuid4
 
 from django.utils.importlib import import_module
 
@@ -13,6 +14,9 @@ def create_project():
     """
     Copies the contents of the project_template directory to the
     current directory.
+
+    The logic for this type of project build out came from Mezzanine
+    https://github.com/stephenmcd/mezzanine/blob/master/mezzanine/bin/mezzanine_project.py
     """
     parser = OptionParser(usage="usage: %prog")
     project_path = os.path.join(os.getcwd())
@@ -32,8 +36,20 @@ def create_project():
     for package_name in packages:
         package_path = os.path.dirname(os.path.abspath(import_module(package_name).__file__))
         copy_tree(os.path.join(package_path, "project_template"), project_path)
-        copy(os.path.join(project_path, ".env_example"),
+        move(os.path.join(project_path, ".env_example"),
              os.path.join(project_path, ".env"))
+
+    # Update the local environment file with custom KEYs
+    env_path = os.path.join(os.getcwd(), ".env")
+    with open(env_path, "r") as f:
+        data = f.read()
+    with open(env_path, "w") as f:
+        # Generate a unique SECREY_KEY for the project's setttings module.
+        secret_key = "%s%s%s" % (uuid4(), uuid4(), uuid4())
+        f.write(data.replace("%(your_unique_secret_key)s", secret_key))
+        # Generate a unique SITE_SETTINGS_KEY for the project's setttings module.
+        setting_key = "%s%s%s" % (uuid4(), uuid4(), uuid4())
+        f.write(data.replace("%(your_tendenci_sites_settings_key)s", setting_key[32:]))
 
     # Clean up pyc files.
     for (root, dirs, files) in os.walk(project_path, False):
