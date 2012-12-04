@@ -41,15 +41,20 @@ def create_project():
 
     # Update the local environment file with custom KEYs
     env_path = os.path.join(os.getcwd(), ".env")
+
+    # Generate a unique SECREY_KEY for the project's setttings module.
     with open(env_path, "r") as f:
         data = f.read()
     with open(env_path, "w") as f:
-        # Generate a unique SECREY_KEY for the project's setttings module.
-        secret_key = "%s%s%s" % (uuid4(), uuid4(), uuid4())
-        f.write(data.replace("%(your_unique_secret_key)s", secret_key))
-        # Generate a unique SITE_SETTINGS_KEY for the project's setttings module.
-        setting_key = "%s%s%s" % (uuid4(), uuid4(), uuid4())
-        f.write(data.replace("%(your_tendenci_sites_settings_key)s", setting_key[32:]))
+        secret_key = "%s%s" % (uuid4(), uuid4())
+        f.write(data.replace("your_unique_secret_key", secret_key))
+
+    # Generate a unique SITE_SETTINGS_KEY for the project's setttings module.
+    with open(env_path, "r") as f:
+        data = f.read()
+    with open(env_path, "w") as f:
+        setting_key = "%s%s" % (uuid4(), uuid4())
+        f.write(data.replace("your_tendenci_sites_settings_key", setting_key[:32]))
 
     # Clean up pyc files.
     for (root, dirs, files) in os.walk(project_path, False):
