@@ -13,7 +13,7 @@ def read(*path):
 
 # Provided as an attribute, so you can append to these instead
 # of replicating them:
-standard_exclude = ["*.py", "*.pyc", "*~", ".*", "*.bak"]
+standard_exclude = ["*.pyc", "*~", "*.bak"]
 standard_exclude_directories = [
     ".*", "CVS", "_darcs", "./build",
     "./dist", "EGG-INFO", "*.egg-info"
@@ -143,7 +143,7 @@ setup(
         "Django==1.4.2",
         "Reportlab==2.5",
         "PIL==1.1.7",
-        "South==0.7.3",
+        "South==0.7.5",
         "anyjson>=0.2.4",
         "django-authority>=0.4",
         "django-avatar>=1.0.4",
@@ -173,7 +173,7 @@ setup(
         "django-celery==2.3.0",
         "django-kombu>=0.9.4",
         "mimeparse>=0.1.3",
-        "python-dateutil>=1.5",
+        "python-dateutil==1.5",
         "pdfminer==20110515",
         "slate==0.3",
         "stripe==1.7.2",
