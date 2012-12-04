@@ -126,6 +126,10 @@ setup(
     long_description=LONG_DESCRIPTION,
     platforms=['any'],
     classifiers=CLASSIFIERS,
+    entry_points="""
+            [console_scripts]
+            create-tendenci-project=tendenci.bin.create_tendenci_project:create_project
+        """,
     include_package_data=True,
     dependency_links=[
 #         "http://github.com/tendenci/geraldo/tarball/master#egg=Geraldo-0.4.14",
