@@ -19,7 +19,7 @@
         display: inline-block;
     }
     div.short-label{
-        width: 125px;
+        width: 130px;
     }
     div.float-left{
         float: left;
@@ -28,8 +28,8 @@
     div.clear{
         clear: both;
     }
-    div.form-field{
-        margin: 3px 0;
+    div.field-row{
+        margin: 5px 0;
     }
     div.admin-only-header{
         color: #CC0000;
@@ -37,10 +37,7 @@
     div.section-break{
         margin: 2em 0 1em 0;
     }
-    div.form-field ul{
-        list-style-type: none;
-    }
-    div.form-field{
+    div.field-row{
         margin-left: 2em;
     }
     
@@ -63,7 +60,7 @@
                 </div>
             {% endif %}
         {% else %}
-                <div class="form-field{% if field_obj.admin_only %} admin-only{% endif %}{% if field_obj.css_class %} {{ field_obj.css_class  }}{% endif %}">
+                <div class="field-row{% if field_obj.admin_only %} admin-only{% endif %}{% if field_obj.css_class %} {{ field_obj.css_class  }}{% endif %}">
   
                         {% if field_obj.field_name == 'reps' %}
                             {% if field_obj.value %}
@@ -101,7 +98,7 @@
                             {% endif %} 
                             
                         {% else %}
-
+                            {% if field_obj.value != '' %}
                             <div class="label{% if field_obj.short_label %} short-label{% endif %}{% if field_obj.required %} required{% endif %} {{ field_obj.field_div_class }}">
                                 {{ field_obj.label }}:
                             </div>
@@ -115,8 +112,9 @@
                             </div>
                     
                             <div class="clear"></div>
+                            {% endif %}
                         
-                         {% endif %}
+                      {% endif %}
                                   
                      </div>       
         {% endif %}
