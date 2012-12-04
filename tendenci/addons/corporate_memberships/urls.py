@@ -24,6 +24,9 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
     url(r"^applications/view/(?P<id>\d+)/$",
         "corpmembership_view",
         name="corpmembership.view"),
+    url(r"^applications/search/$",
+        "corpmembership_search",
+        name="corpmembership.search"),
 
 
     url(r"^(?P<slug>.*)/add_pre/$", "add_pre", name="corp_memb.add_pre"),

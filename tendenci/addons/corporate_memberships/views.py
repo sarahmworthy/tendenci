@@ -374,13 +374,13 @@ def corpmembership_view(request, id,
 
     if can_edit:
         app_field = CorpMembershipAppField(label='Representatives',
-                                    field_type='section_break', admin_only=False)
+                                    field_type='section_break',
+                                    admin_only=False)
         app_fields.append(app_field)
         app_field = CorpMembershipAppField(label='Reps',
                                                 field_name='reps',
                                                 admin_only=False)
         app_field.value = corp_membership.reps
-        print app_field.value
         app_fields.append(app_field)
 
     for app_field in app_fields:
@@ -407,6 +407,60 @@ def corpmembership_view(request, id,
                'app_fields': app_fields,
                'app': app}
     return render_to_response(template, context, RequestContext(request))
+
+
+def corpmembership_search(request,
+            template_name="corporate_memberships/applications/search.html"):
+    allow_anonymous_search = get_setting('module',
+                                     'corporate_memberships',
+                                     'anonymoussearchcorporatemembers')
+
+    if not request.user.is_authenticated() and not allow_anonymous_search:
+        raise Http403
+
+    query = request.GET.get('q', None)
+
+    if query == 'is_pending:true' and request.user.profile.is_superuser:
+        # pending list only for admins
+        pending_rew_entry_ids = CorpMembRenewEntry.objects.filter(
+                            status_detail__in=['pending',
+                                               'paid - pending approval']
+                            ).values_list('id', flat=True)
+        q_obj = Q(status_detail__in=['pending', 'paid - pending approval'])
+        if pending_rew_entry_ids:
+            q_obj = q_obj | Q(renew_entry_id__in=pending_rew_entry_ids)
+        corp_members = CorpMembership.objects.filter(q_obj)
+    else:
+        filter_and, filter_or = CorpMembership.get_search_filter(request.user)
+        q_obj = None
+        if filter_and:
+            q_obj = Q(**filter_and)
+        if filter_or:
+            q_obj_or = reduce(operator.or_, [Q(**{key: value}
+                        ) for key, value in filter_or.items()])
+            if q_obj:
+                q_obj = reduce(operator.and_, [q_obj, q_obj_or])
+            else:
+                q_obj = q_obj_or
+
+        if get_setting('site', 'global', 'searchindex') and query:
+            corp_members = CorpMembership.objects.search(query,
+                                                         user=request.user)
+            if q_obj:
+                corp_members = corp_members.filter(q_obj)
+            corp_members = corp_members.order_by('name_exact')
+        else:
+            if q_obj:
+                corp_members = CorpMembership.objects.filter(q_obj)
+            else:
+                corp_members = CorpMembership.objects.all()
+
+    corp_members = corp_members.order_by('name')
+
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {'corp_members': corp_members},
+        context_instance=RequestContext(request))
 
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
