@@ -395,6 +395,9 @@ def corpmembership_view(request, id,
             app_field.is_date = True
         else:
             app_field.is_date = False
+            if app_field.value is None:
+                app_field.value = ''
+            
         if len(app_field.label) < 28:
             app_field.field_div_class = 'inline-block'
             app_field.short_label = True

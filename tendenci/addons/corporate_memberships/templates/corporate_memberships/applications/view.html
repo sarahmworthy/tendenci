@@ -107,7 +107,11 @@
                             </div>
                             
                             <div class="field-value {{ field_obj.field_div_class }}">
+                            {% if  field_obj.is_date %}
+                                {{ field_obj.value|date:'long' }}
+                            {% else %}
                                 {{ field_obj.value }}
+                            {% endif %}
                             </div>
                     
                             <div class="clear"></div>
