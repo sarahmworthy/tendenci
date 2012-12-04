@@ -463,6 +463,39 @@ def corpmembership_search(request,
         context_instance=RequestContext(request))
 
 
+@login_required
+def corpmembership_delete(request, id,
+            template_name="corporate_memberships/applications/delete.html"):
+    corp_memb = get_object_or_404(CorpMembership, pk=id)
+
+    if has_perm(request.user,
+                'corporate_memberships.delete_corporatemembership'):
+        if request.method == "POST":
+            messages.add_message(request, messages.SUCCESS, 
+                                 'Successfully deleted %s' % corp_memb)
+
+            # send email notification to admin
+#            if  request.user.profile.is_superuser:
+#                recipients = get_notice_recipients(
+#                                       'module', 'corporate_memberships',
+#                                       'corporatemembershiprecipients')
+#                extra_context = {
+#                    'object': corp_memb,
+#                    'request': request
+#                }
+#                send_email_notification('corp_memb_deleted', recipients,
+#                                        extra_context)
+            EventLog.objects.log()
+            corp_memb.delete()
+
+            return HttpResponseRedirect(reverse('corpmembership.search'))
+
+        return render_to_response(template_name, {'corp_memb': corp_memb},
+            context_instance=RequestContext(request))
+    else:
+        raise Http403
+
+
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     corp_app = get_object_or_404(CorpApp, slug=slug)
     form = CreatorForm(request.POST or None)
