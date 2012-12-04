@@ -338,6 +338,11 @@ class CorpMembership(TendenciBaseModel):
             return app.authentication_method
         return None
 
+    def get_field_value(self, field_name):
+        if field_name and hasattr(self, field_name):
+            return getattr(self, field_name)
+        return ''
+
     @staticmethod
     def get_search_filter(user):
         if user.profile.is_superuser:

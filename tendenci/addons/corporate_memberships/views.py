@@ -32,6 +32,7 @@ from tendenci.addons.corporate_memberships.models import (
                                             CorpMembershipApp,
                                             CorpMembershipRep,
                                             CorpMembership,
+                                            CorpMembershipAppField,
                                             CorpApp, CorpField,
                                             CorporateMembership,
                                           CorporateMembershipType,
@@ -321,11 +322,90 @@ def corpmembership_edit(request, id,
                                         recipients,
                                         extra_context)
 
-            # redirect to view
+            # redirect to view 
+            return HttpResponseRedirect(reverse('corpmembership.view',
+                                                args=[corp_membership.id]))
 
     context = {'app': app,
                "app_fields": app_fields,
                'corpmembership_form': corpmembership_form}
+    return render_to_response(template, context, RequestContext(request))
+
+
+def corpmembership_view(request, id,
+                template="corporate_memberships/applications/view.html"):
+    """
+        view a corporate membership
+    """
+    app = CorpMembershipApp.objects.current_app()
+    if not app:
+        raise Http404
+    corp_membership = get_object_or_404(CorpMembership, id=id)
+    corp_membership.status_detail = corp_membership.real_time_status_detail
+
+    if not has_perm(request.user,
+                    'corporate_memberships.view_corpmembership',
+                    corp_membership):
+        if not corp_membership.allow_view_by(request.user):
+            raise Http403
+
+    can_edit = False
+    if has_perm(request.user,
+                'corporate_memberships.change_corpmembership',
+                corp_membership):
+        can_edit = True
+
+    is_superuser = request.user.profile.is_superuser
+
+    app_fields = app.fields.filter(display=True)
+    if not is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+    if not can_edit:
+        app_fields = app_fields.exclude(field_name__in=[
+                                'corporate_membership_type',
+                                'payment_method',
+                                'join_dt',
+                                'expiration_dt',
+                                'renew_dt',
+                                'status',
+                                'status_detail'
+                                        ])
+    app_fields = list(app_fields.order_by('order'))
+
+    if can_edit:
+        app_field = CorpMembershipAppField(label='Representatives',
+                                    field_type='section_break', admin_only=False)
+        app_fields.append(app_field)
+        app_field = CorpMembershipAppField(label='Reps',
+                                                field_name='reps',
+                                                admin_only=False)
+        app_field.value = corp_membership.reps
+        print app_field.value
+        app_fields.append(app_field)
+
+    for app_field in app_fields:
+        app_field.value = corp_membership.get_field_value(app_field.field_name)
+        if app_field.field_name == 'status':
+            if app_field.value:
+                app_field.value = 'Active'
+            else:
+                app_field.value = 'Inactive'
+        if isinstance(app_field.value, datetime) or \
+                isinstance(app_field.value, date):
+            app_field.is_date = True
+        else:
+            app_field.is_date = False
+        if len(app_field.label) < 28:
+            app_field.field_div_class = 'inline-block'
+            app_field.short_label = True
+        else:
+            app_field.field_div_class = 'block'
+            app_field.short_label = False
+
+    EventLog.objects.log(instance=corp_membership)
+    context = {"corporate_membership": corp_membership,
+               'app_fields': app_fields,
+               'app': app}
     return render_to_response(template, context, RequestContext(request))
 
 
