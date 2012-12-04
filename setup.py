@@ -132,13 +132,12 @@ setup(
         """,
     include_package_data=True,
     dependency_links=[
-#         "http://github.com/tendenci/geraldo/tarball/master#egg=Geraldo-0.4.14",
         "http://a.pypi.python.org/",
         "http://g.pypi.python.org/",
     ],
-    setup_requires=[
-        "Reportlab==2.5",
-    ],
+    # setup_requires=[
+    #     "Reportlab==2.5",
+    # ],
     install_requires=[
         "Django==1.4.2",
         "Reportlab==2.5",
@@ -181,9 +180,16 @@ setup(
         "boto==2.5.2",
         "django-timezones==0.2",
         "django-ses==0.4.1",
-#         "Geraldo==0.4.14",
+        "Geraldo==0.4.16",
         "django-tastypie",
         "johnny-cache==1.4",
         "docutils==0.9.1",
+        "dj-database-url==0.2.1",
+        "psycopg2==2.4.5",
+        "gunicorn==0.16.1",
+        "gevent==0.13.8",
+        "django-s3-folder-storage==0.1",
+        "django-storages==1.1.5",
+        "python-memcached==1.48",
     ],
 )
