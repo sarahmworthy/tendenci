@@ -660,9 +660,10 @@ class CorpMembership(TendenciBaseModel):
 #        renew_entry = self.get_pending_renewal_entry()
 #        return renew_entry <> None
 
-#    @property
-#    def is_pending(self):
-#        return self.is_join_pending or self.is_renewal_pending
+    @property
+    def is_pending(self):
+        #return self.is_join_pending or self.is_renewal_pending
+        return self.is_join_pending
 
 
     @property

@@ -387,9 +387,9 @@ def corpmembership_view(request, id,
         app_field.value = corp_membership.get_field_value(app_field.field_name)
         if app_field.field_name == 'status':
             if app_field.value:
-                app_field.value = 'Active'
+                app_field.value = 'active'
             else:
-                app_field.value = 'Inactive'
+                app_field.value = 'inactive'
         if isinstance(app_field.value, datetime) or \
                 isinstance(app_field.value, date):
             app_field.is_date = True
@@ -397,7 +397,7 @@ def corpmembership_view(request, id,
             app_field.is_date = False
             if app_field.value is None:
                 app_field.value = ''
-            
+
         if len(app_field.label) < 28:
             app_field.field_div_class = 'inline-block'
             app_field.short_label = True
@@ -497,6 +497,100 @@ def corpmembership_delete(request, id,
             context_instance=RequestContext(request))
     else:
         raise Http403
+
+
+@login_required
+def corpmembership_approve(request, id,
+                template="corporate_memberships/applications/approve.html"):
+    corporate_membership = get_object_or_404(CorpMembership, id=id)
+
+    user_is_superuser = request.user.profile.is_superuser
+    if not user_is_superuser:
+        raise Http403
+
+    # if not in pending, go to view page
+    if not (corporate_membership.is_pending):
+        return HttpResponseRedirect(reverse('corpmembership.view',
+                                            args=[corporate_membership.id]))
+
+#    try:
+#        renew_entry = CorpMembRenewEntry.objects.get(pk=corporate_membership.renew_entry_id)
+#    except CorpMembRenewEntry.DoesNotExist:
+    renew_entry = None
+
+    if renew_entry:
+        indiv_renew_entries = renew_entry.indiv_memb_renew_entries()
+        corp_membership_type = renew_entry.corporate_membership_type
+        new_expiration_dt = corp_membership_type.get_expiration_dt(
+                                        renewal=True,
+                                        join_dt=corporate_membership.join_dt,
+                                        renew_dt=renew_entry.create_dt)
+    else:
+        indiv_renew_entries = None
+        corp_membership_type = corporate_membership.corporate_membership_type
+        new_expiration_dt = corp_membership_type.get_expiration_dt(
+                                    renewal=False,
+                                    join_dt=corporate_membership.join_dt,
+                                    renew_dt=corporate_membership.create_dt)
+
+    approve_form = CorpApproveForm(request.POST or None,
+                                   corporate_membership=corporate_membership)
+    if request.method == "POST":
+        if approve_form.is_valid():
+            msg = ''
+            if 'approve' in request.POST:
+                if renew_entry:
+                    # approve the renewal
+                    corporate_membership.approve_renewal(request)
+                    msg = """Corporate membership "%s" renewal has been APPROVED.
+                        """ % corporate_membership.name
+                else:
+                    # approve join
+                    params = {'create_new': True,
+                              'assign_to_user': None}
+                    if approve_form.fields and \
+                    corporate_membership.anonymous_creator:
+                        user_pk = int(approve_form.cleaned_data['users'])
+                        if user_pk:
+                            try:
+                                params['assign_to_user'] = User.objects.get(
+                                                            pk=user_pk)
+                                params['create_new'] = False
+                            except User.DoesNotExist:
+                                pass
+
+                    corporate_membership.approve_join(request, **params)
+
+                    msg = """Corporate membership "%s" has been APPROVED.
+                        """ % corporate_membership.name
+            else:
+                if 'disapprove' in request.POST:
+                    if renew_entry:
+                        # deny the renewal
+                        corporate_membership.disapprove_renewal(request)
+
+                        msg = """Corporate membership "%s" renewal has been DENIED.
+                            """ % corporate_membership.name
+                    else:
+                        # deny join
+                        corporate_membership.disapprove_join(request)
+                        msg = """Corporate membership "%s" has been DENIED.
+                            """ % corporate_membership.name
+            if msg:
+                messages.add_message(request, messages.SUCCESS, msg)
+
+            EventLog.objects.log(instance=corporate_membership)
+
+            return HttpResponseRedirect(reverse('corpmembership.view',
+                                                args=[corporate_membership.id]))
+
+    context = {"corporate_membership": corporate_membership,
+               'renew_entry': renew_entry,
+               'indiv_renew_entries': indiv_renew_entries,
+               'new_expiration_dt': new_expiration_dt,
+               'approve_form': approve_form,
+               }
+    return render_to_response(template, context, RequestContext(request))
 
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):

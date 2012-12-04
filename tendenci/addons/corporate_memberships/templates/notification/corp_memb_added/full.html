@@ -72,7 +72,7 @@
                 </tr>
               </table>              <p>                  <br>
                 {% trans "To view the complete application, go to:" %}
-                <strong>{{ SITE_GLOBAL_SITEURL }}{% url corp_memb.view object.pk %}</strong>
+                <strong>{{ SITE_GLOBAL_SITEURL }}{% url corpmembership_view object.pk %}</strong>
                 {% if object.status_detail == 'pending' and object.payment_method != 'cc' %}
                 	<p>{% trans "To approve the application, go to:" %}
                 	<strong>{{ SITE_GLOBAL_SITEURL }}{% url corp_memb.approve object.pk %}</strong></p>
