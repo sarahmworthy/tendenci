@@ -803,6 +803,29 @@ class CorpMembershipRep(models.Model):
         unique_together = (("corp_membership", "user"),)
 
 
+class IndivEmailVerification(models.Model):
+    guid = models.CharField(max_length=50)
+    corp_membership = models.ForeignKey("CorpMembership")
+    verified_email = models.CharField(_('email'), max_length=200)
+    verified = models.BooleanField(default=0)
+    verified_dt = models.DateTimeField(null=True)
+    creator = models.ForeignKey(User,
+                                related_name="corp_email_veri8n_creator",
+                                null=True,
+                                on_delete=models.SET_NULL)
+    create_dt = models.DateTimeField(auto_now_add=True)
+    update_dt = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(User,
+                                   related_name="corp_email_veri8n_updator",
+                                   null=True,
+                                   on_delete=models.SET_NULL)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.guid = str(uuid.uuid1())
+        super(IndivEmailVerification, self).save(*args, **kwargs)
+
+
 class CorporateMembership(TendenciBaseModel):
     guid = models.CharField(max_length=50)
     name = models.CharField(max_length=250, unique=True)
