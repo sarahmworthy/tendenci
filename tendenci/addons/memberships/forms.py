@@ -715,11 +715,17 @@ class MembershipDefault2Form(forms.ModelForm):
         super(MembershipDefault2Form, self).__init__(*args, **kwargs)
         self.fields['membership_type'].widget = forms.widgets.RadioSelect(
                     choices=get_membership_type_choices(request_user,
-                                                        membership_app),
+                                        membership_app,
+                                        corp_membership=self.corp_membership),
                     attrs=self.fields['membership_type'].widget.attrs)
-        # if all membership types are free, no need to display payment method
-        require_payment = membership_app.membership_types.filter(
-                                Q(price__gt=0) | Q(admin_fee__gt=0)).exists()
+        if self.corp_membership:
+            memb_type = self.corp_membership.corporate_membership_type.membership_type
+            self.fields['membership_type'].initial = memb_type
+            require_payment = (memb_type.price > 0 or memb_type.admin_fee > 0)
+        else:
+            # if all membership types are free, no need to display payment method
+            require_payment = membership_app.membership_types.filter(
+                                    Q(price__gt=0) | Q(admin_fee__gt=0)).exists()
         if not require_payment:
             del self.fields['payment_method']
         else:

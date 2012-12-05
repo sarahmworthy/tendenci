@@ -109,13 +109,19 @@ def get_corporate_membership_choices():
     return cm_list
 
 
-def get_membership_type_choices(user, membership_app, renew=False):
+def get_membership_type_choices(user, membership_app, renew=False,
+                                corp_membership=None):
     mt_list = []
-    membership_types = membership_app.membership_types.all()
+    # only show membership type assiciated with this corp_membership
+    # when joining under a corporation.
+    if corp_membership:
+        membership_types = [corp_membership.corporate_membership_type.membership_type]
+    else:
+        membership_types = membership_app.membership_types.all()
+        if not user or not user.profile.is_superuser:
+            membership_types = membership_types.filter(admin_only=False)
+        membership_types = membership_types.order_by('order')
 
-    if not user or not user.profile.is_superuser:
-        membership_types = membership_types.filter(admin_only=False)
-    membership_types = membership_types.order_by('order')
     currency_symbol = get_setting("site", "global", "currencysymbol")
 
     for mt in membership_types:
