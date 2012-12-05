@@ -1,10 +1,10 @@
 {% load corporate_memberships_tags %}
 {% load i18n %}
-{% load url from future %}
+
 <div class="wrap-search-item{% if corporate_membership.status_detail == 'disapproved' %} disapproved{% endif %}">
     {% if corporate_membership %}
     <div class="corpmember-box">
-        <div class="corpmember-box-header"><a href="{% url "corpmembership.view" corporate_membership.pk %}">{{ corporate_membership.name }}</a></div>
+        <div class="corpmember-box-header"><a href="{% url corpmembership.view corporate_membership.pk %}">{{ corporate_membership.name }}</a></div>
         <div class="corpmember-box-body">
             <div class="float-left label">{% trans "Address: " %}</div>
             <div class="float-left">
@@ -32,7 +32,7 @@
                 {% endif %}
                 </div>
                 {% if corporate_membership.status and corporate_membership.status_detail == "active" %}
-                <div><a href="{% url "membership_default.add_under_corp" corporate_membership.id %}">{% trans "Join under this corporation" %}</a></div>
+                <div><a href="{% url membership_default.add_under_corp corporate_membership.id %}">{% trans "Join under this corporation" %}</a></div>
                 {% endif %}
             </div>
             
@@ -45,17 +45,21 @@
                                     {% endif %}
                 </div>
                 
-                
+                 {% if request.user.is_superuser and corporate_membership.is_join_pending %}
+                        <div class="pending-info-box">
+                        <b>{% trans "Admin" %}</b>: <a href="{% url corpmembership.approve corporate_membership.pk %}">{% trans "Approve / Disapprove" %}</a>
+                        </div>
+                 {% endif %}
                 
             </div>
             <div class="clear-left"></div>
         </div>
         
         <!-- delete-corp_memb form -->
-        <form name="corp-memb-delete" method="POST" action="{% url "corpmembership.delete" corporate_membership.pk %}">{% csrf_token %}
+        <form name="corp-memb-delete" method="POST" action="{% url corpmembership.delete corporate_membership.pk %}">{% csrf_token %}
             <input type="hidden" name="action" value="delete">
         </form>
     </div>
-    {% include 'corporate_memberships/meta.html' %}
+    {% include 'corporate_memberships/applications/meta.html' %}
     {% endif %}
 </div>

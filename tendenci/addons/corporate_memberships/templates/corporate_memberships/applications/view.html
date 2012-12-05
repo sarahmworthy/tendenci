@@ -13,7 +13,7 @@
 {{ block.super }}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-ui/jquery-ui-1.8.2.custom.css">
 <link rel="stylesheet" href="{{ STATIC_URL }}css/timepicker.css" />
-<link rel="stylesheet" href="{{ STATIC_URL }}css/memberships.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}css/corporate_memberships.css">
 <style>
     .inline-block{
         display: inline-block;
@@ -40,7 +40,10 @@
     div.field-row{
         margin-left: 2em;
     }
-    
+    div.float-right{
+        float: right;
+        margin-right: 1em;
+    }
 </style>
 {% endblock %}
 
@@ -50,9 +53,18 @@
 
    <h1>{% trans "View Corporate Membership Information" %}</h1>
    
+   <div class="float-right">
     {% if corporate_membership.status and corporate_membership.status_detail == "active" %}
     <div><a href="{% url membership_default.add_under_corp corporate_membership.id %}">{% trans "Join under this corporation" %}</a></div>
     {% endif %}
+     {% if request.user.is_superuser and corporate_membership.is_join_pending %}
+        <div class="pending-info-box">
+        <b>{% trans "Admin" %}</b>: <a href="{% url corp_memb.approve corporate_membership.pk %}">{% trans "Approve / Disapprove" %}</a>
+        </div>
+    {% endif %}
+    </div>
+    <div class="clear"></div>
+                    
    {% for field_obj in app_fields %}
         {% load styled_forms %}
 

@@ -273,7 +273,7 @@ class CorpMembershipForm(forms.ModelForm):
                 [creator_owner] = User.objects.filter(is_staff=1,
                                                 is_active=1)[:1] or [None]
             if not request_user.profile.is_superuser:
-                corpmembership.status = False
+                corpmembership.status = True
                 corpmembership.status_detail = 'pending'
             if not corpmembership.join_dt:
                 corpmembership.join_dt = datetime.now()

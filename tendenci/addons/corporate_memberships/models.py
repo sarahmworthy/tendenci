@@ -692,6 +692,19 @@ class CorpMembership(TendenciBaseModel):
         else:
             return self.status_detail
 
+    @property
+    def obj_perms(self):
+        t = '<span class="perm-%s">%s</span>'
+
+        if get_setting('module',
+                     'corporate_memberships',
+                     'anonymoussearchcorporatemembers'):
+            value = t % ('public', 'Public')
+        else:
+            value = t % ('private', 'Private')
+
+        return mark_safe(value)
+
 
 class CorpMembershipApp(TendenciBaseModel):
     guid = models.CharField(max_length=50)
