@@ -98,7 +98,7 @@ def get_corporate_membership_choices():
     cursor = connection.cursor()
     cursor.execute(
         """SELECT id, name
-        FROM corporate_memberships_corporatemembership
+        FROM corporate_memberships_corpmembership
         WHERE status=True AND status_detail='active'
         ORDER BY name"""
     )

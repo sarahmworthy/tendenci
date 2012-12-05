@@ -20,7 +20,7 @@ from django.core.files.storage import FileSystemStorage
 
 from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
 from tendenci.addons.corporate_memberships.models import (CorporateMembership,
-    AuthorizedDomain)
+    CorpMembership, CorpMembershipAuthDomain, AuthorizedDomain)
 from tendenci.apps.user_groups.models import Group
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.perms.forms import TendenciBaseForm
@@ -703,6 +703,15 @@ class MembershipDefault2Form(forms.ModelForm):
     def __init__(self, app_field_objs, *args, **kwargs):
         request_user = kwargs.pop('request_user')
         membership_app = kwargs.pop('membership_app')
+        if 'join_under_corporate' in kwargs.keys():
+            self.join_under_corporate = kwargs.pop('join_under_corporate')
+        else:
+            self.join_under_corporate = False
+        if 'corp_membership' in kwargs.keys():
+            self.corp_membership = kwargs.pop('corp_membership')
+        else:
+            self.corp_membership = None
+
         super(MembershipDefault2Form, self).__init__(*args, **kwargs)
         self.fields['membership_type'].widget = forms.widgets.RadioSelect(
                     choices=get_membership_type_choices(request_user,
@@ -719,6 +728,7 @@ class MembershipDefault2Form(forms.ModelForm):
                         choices=self.fields['payment_method'].widget.choices,
                         attrs=self.fields['payment_method'].widget.attrs)
         self_fields_keys = self.fields.keys()
+
         if 'status_detail' in self_fields_keys:
             self.fields['status_detail'].widget = forms.widgets.Select(
                         choices=self.STATUS_DETAIL_CHOICES)
@@ -732,12 +742,17 @@ class MembershipDefault2Form(forms.ModelForm):
                                                 status=True,
                                                 status_detail='active')
             self.fields['groups'].help_text = ''
+
         if 'corporate_membership_id' in self_fields_keys:
-            self.fields['corporate_membership_id'].widget = forms.widgets.Select(
-                                    choices=get_corporate_membership_choices())
-            self.fields['corporate_membership_id'].queryset = CorporateMembership.objects.filter(
-                                            status=True).exclude(
-                                            status_detail__in=['archive', 'inactive'])
+            if self.join_under_corporate and self.corp_membership:
+                self.fields['corporate_membership_id'].widget = forms.widgets.Select(
+                                        choices=((self.corp_membership.id, self.corp_membership.name),))
+            else:
+                self.fields['corporate_membership_id'].widget = forms.widgets.Select(
+                                        choices=get_corporate_membership_choices())
+                self.fields['corporate_membership_id'].queryset = CorporateMembership.objects.filter(
+                                                status=True).exclude(
+                                                status_detail__in=['archive', 'inactive'])
 
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
@@ -852,44 +867,53 @@ class NoticeForm(forms.ModelForm):
         except:
             raise forms.ValidationError(_("Num days must be a numeric number."))
         return value
-            
-    
+
+
 class AppCorpPreForm(forms.Form):
-    corporate_membership_id = forms.ChoiceField(label=_('Join Under the Corporation:'))
-    secret_code = forms.CharField(label=_('Enter the Secret Code'), max_length=50)
-    email = EmailVerificationField(label=_('Verify Your Email Address'),
-                             help_text="""Your email address will help us to identify your corporate.
-                                         You will receive an email to the address you entered for us
-                                         to verify your email address. 
-                                         Please follow the instruction
-                                         in the email to continue signing up for the membership.
-                                          """)
-    
+    corporate_membership_id = forms.ChoiceField(
+                            label=_('Join Under the Corporation:'))
+    secret_code = forms.CharField(
+                        label=_('Enter the Secret Code'),
+                        max_length=50)
+    email = EmailVerificationField(
+                    label=_('Verify Your Email Address'),
+                    help_text="""Your email address will help us to identify
+                                 your corporate. You will receive an email to
+                                 the address you entered for us to verify
+                                 your email address. Please follow the
+                                 instruction in the email to continue signing
+                                 up for the membership.
+                                  """)
+
     def __init__(self, *args, **kwargs):
         super(AppCorpPreForm, self).__init__(*args, **kwargs)
         self.auth_method = ''
         self.corporate_membership_id = 0
-    
+
     def clean_secret_code(self):
         secret_code = self.cleaned_data['secret_code']
-        corporate_memberships = CorporateMembership.objects.filter(secret_code=secret_code, 
-                                                                   status=1,
-                                                                   status_detail='active')
-        if not corporate_memberships:
+        [corp_membership] = CorpMembership.objects.filter(
+                                   secret_code=secret_code,
+                                   status=True,
+                                   status_detail='active')[:1] or [None]
+        if not corp_membership:
             raise forms.ValidationError(_("Invalid Secret Code."))
-        
-        self.corporate_membership_id = corporate_memberships[0].id
+
+        self.corporate_membership_id = corp_membership.id
         return secret_code
-        
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if email:
             email_domain = (email.split('@')[1]).strip()
-            auth_domains = AuthorizedDomain.objects.filter(name=email_domain)
-            if not auth_domains:
-                raise forms.ValidationError(_("Sorry but we're not able to find your corporation."))
-            self.corporate_membership_id = auth_domains[0].corporate_membership.id 
-        return email 
+            [auth_domain] = CorpMembershipAuthDomain.objects.filter(
+                                    name=email_domain)[:1] or [None]
+            if not auth_domain:
+                raise forms.ValidationError(
+                    _("Sorry but we're not able to find your corporation."))
+            self.corporate_membership_id = auth_domain.corp_membership.id
+        return email
+
 
 class AppForm(TendenciBaseForm):
 

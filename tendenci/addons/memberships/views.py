@@ -23,6 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
 from django.db.models import ForeignKey, OneToOneField
 from django.template.loader import render_to_string
+from django.db.models.query_utils import Q
 
 from johnny.cache import invalidate
 from djcelery.models import TaskMeta
@@ -35,7 +36,10 @@ from tendenci.core.base.http import Http403
 from tendenci.core.base.decorators import password_required
 from tendenci.core.base.utils import send_email_notification
 from tendenci.core.perms.utils import has_perm, update_perms_and_save, get_query_filters
-from tendenci.addons.corporate_memberships.models import CorporateMembership, IndivMembEmailVeri8n
+from tendenci.addons.corporate_memberships.models import (CorpMembership,
+                                                          IndivEmailVerification,
+                                                          CorporateMembership,
+                                                          IndivMembEmailVeri8n)
 from reports import ReportNewMems
 from tendenci.core.files.models import File
 from tendenci.core.exports.utils import render_csv, run_export_task
@@ -510,28 +514,6 @@ def application_details_corp_pre(request, slug, cmb_id=None, template_name="memb
     c = {'app': app, "form": form}
     return render_to_response(template_name, c,
         context_instance=RequestContext(request))
-
-
-def email_to_verify_conf(request, template_name="memberships/applications/email_to_verify_conf.html"):
-    return render_to_response(template_name,
-        context_instance=RequestContext(request))
-
-
-def verify_email(request, id=0, guid=None, template_name="memberships/applications/verify_email.html"):
-    indiv_veri = get_object_or_404(IndivMembEmailVeri8n, id=id, guid=guid)
-    if not indiv_veri.verified:
-        indiv_veri.verified = True
-        indiv_veri.verified_dt = datetime.now()
-        if request.user and not request.user.is_anonymous():
-            indiv_veri.updated_by = request.user
-            indiv_veri.save()
-
-    # let them continue to sign up for membership
-    return redirect(reverse('membership.application_details_via_corp_domain',
-                            args=[indiv_veri.corporate_membership.corp_app.memb_app.slug,
-                                  indiv_veri.corporate_membership.id,
-                                  indiv_veri.pk,
-                                  indiv_veri.guid]))
 
 
 def application_confirmation_default(request, hash):
@@ -1270,28 +1252,83 @@ def membership_default_preview(request, app_id,
     return render_to_response(template, context, RequestContext(request))
 
 
-def membership_default_add(request, template='memberships/applications/add.html'):
+def membership_default_add(request,
+                    template='memberships/applications/add.html',
+                    **kwargs):
     """
     Default membership application form.
     """
-    [app] = MembershipApp.objects.filter(status=True,
-        status_detail__in=['active', 'published']).order_by('id')[:1] or [None]
+    is_super_user = request.user.profile.is_superuser
+    join_under_corporate = kwargs.get('join_under_corporate', False)
+    corp_membership = None
+    if join_under_corporate:
+        from tendenci.addons.corporate_memberships.models import CorpMembershipApp
+        corp_app = CorpMembershipApp.objects.current_app()
+        if not corp_app:
+            raise Http404
+        app = corp_app.memb_app
+
+        cm_id = kwargs.get('cm_id')
+        if not cm_id:
+            # redirect them to the corp_pre page
+            return redirect(reverse('membership_default.corp_pre_add'))
+        # check if they have verified their email or entered the secret code
+        corp_membership = get_object_or_404(CorpMembership, id=cm_id)
+        imv_id = kwargs.get('imv_id', 0)
+        imv_guid = kwargs.get('imv_guid')
+        secret_hash = kwargs.get('secret_hash', '')
+
+        is_verified = False
+        authentication_method = corp_app.authentication_method
+        if is_super_user or authentication_method == 'admin':
+            is_verified = True
+        elif authentication_method == 'email':
+            try:
+                indiv_veri = IndivEmailVerification.objects.get(pk=imv_id,
+                                                              guid=imv_guid)
+                if indiv_veri.verified:
+                    is_verified = True
+            except IndivEmailVerification.DoesNotExist:
+                pass
+        elif authentication_method == 'secret_code':
+            tmp_secret_hash = md5('%s%s' % (corp_membership.secret_code,
+                        request.session.get('corp_hash_random_string', ''))
+                                  ).hexdigest()
+            if secret_hash == tmp_secret_hash:
+                is_verified = True
+
+        if not is_verified:
+            return redirect(reverse('membership_default.corp_pre_add'))
+
+    else:
+        [app] = MembershipApp.objects.filter(status=True,
+            status_detail__in=['active', 'published']
+                                ).order_by('id')[:1] or [None]
 
     if not app:
         raise Http404
 
     is_superuser = request.user.profile.is_superuser
-    app_fields = app.fields.filter(display=True)
+    if join_under_corporate:
+        app_fields = app.fields.filter(Q(display=True) | Q(
+                            field_name='corporate_membership_id'))
+    else:
+        app_fields = app.fields.filter(display=True)
 
     if not is_superuser:
         app_fields = app_fields.filter(admin_only=False)
 
     app_fields = app_fields.order_by('order')
+    if not join_under_corporate:
+        # exclude the corp memb field if not join under corporate
+        app_fields = app_fields.exclude(field_name='corporate_membership_id')
 
     user_form = UserForm(app_fields, request.POST or None)
     profile_form = ProfileForm(app_fields, request.POST or None)
     membership_form = MembershipDefault2Form(app_fields,
-        request.POST or None, request_user=request.user, membership_app=app)
+        request.POST or None, request_user=request.user, membership_app=app,
+        join_under_corporate=join_under_corporate,
+        corp_membership=corp_membership)
 
     if request.method == 'POST':
 
@@ -1346,6 +1383,146 @@ def membership_default_add(request, template='memberships/applications/add.html'
         'membership_form': membership_form
     }
     return render_to_response(template, context, RequestContext(request))
+
+
+def membership_default_corp_pre_add(request, cm_id=None,
+                    template_name="memberships/applications/corp_pre_add.html"):
+
+    [app] = MembershipApp.objects.filter(status=True,
+        status_detail__in=['active', 'published']).order_by('id')[:1] or [None]
+
+    if not app:
+        raise Http404
+
+    if not hasattr(app, 'corp_app'):
+        raise Http404
+
+    if not app.corp_app:
+        raise Http404
+
+    form = AppCorpPreForm(request.POST or None)
+    if request.user.profile.is_superuser or \
+        app.corp_app.authentication_method == 'admin':
+        del form.fields['secret_code']
+        del form.fields['email']
+
+        from utils import get_corporate_membership_choices
+        cm_choices = get_corporate_membership_choices()
+        form.fields['corporate_membership_id'].choices = cm_choices
+        if cm_id:
+            form.fields['corporate_membership_id'].initial = cm_id
+        form.auth_method = 'corporate_membership_id'
+
+    elif app.corp_app.authentication_method == 'email':
+        del form.fields['corporate_membership_id']
+        del form.fields['secret_code']
+        form.auth_method = 'email'
+    else:  # secret_code
+        del form.fields['corporate_membership_id']
+        del form.fields['email']
+        form.auth_method = 'secret_code'
+
+    if request.method == "POST":
+        if form.is_valid():
+            # find the corporate_membership_id and redirect to membership add
+            if form.auth_method == 'corporate_membership_id':
+                corporate_membership_id = form.cleaned_data[
+                                                'corporate_membership_id']
+            else:
+                corporate_membership_id = form.corporate_membership_id
+
+                if form.auth_method == 'email':
+                    corp_memb = CorpMembership.objects.get(pk=corporate_membership_id)
+                    try:
+                        indiv_veri = IndivEmailVerification.objects.get(
+                                    corp_membership=corp_memb,
+                                    verified_email=form.cleaned_data['email'])
+                        if indiv_veri.verified:
+                            is_verified = True
+                        else:
+                            is_verified = False
+                    except IndivEmailVerification.DoesNotExist:
+                        is_verified = False
+                        indiv_veri = IndivEmailVerification()
+                        indiv_veri.corp_membership = corp_memb
+                        indiv_veri.verified_email = form.cleaned_data['email']
+                        if request.user and not request.user.is_anonymous():
+                            indiv_veri.creator = request.user
+                        indiv_veri.save()
+
+                    # send an email to the user to verify the email address
+                    # then redirect them to the verification conf page
+                    # they'll need to follow the instruction in the email
+                    # to continue to sign up.
+                    if not is_verified:
+                        recipients = [indiv_veri.verified_email]
+                        extra_context = {
+                            'object': indiv_veri,
+                            'app': app,
+                            'corp_memb': corp_memb,
+                            'request': request,
+                        }
+                        send_email_notification(
+                            'membership_corp_indiv_verify_email',
+                            recipients,
+                            extra_context)
+
+                        return redirect(reverse('membership.email__to_verify_conf'))
+                    else:
+                        # the email address is verified
+                        return redirect(reverse('membership_default.add_via_corp_domain',
+                                                args=[
+                                                indiv_veri.corp_membership.id,
+                                                indiv_veri.pk,
+                                                indiv_veri.guid]))
+                if form.auth_method == 'secret_code':
+                    # secret code hash
+                    random_string = User.objects.make_random_password(
+                                    length=4,
+                                    allowed_chars='abcdefghjkmnpqrstuvwxyz')
+                    request.session['corp_hash_random_string'] = random_string
+                    secret_code = form.cleaned_data['secret_code']
+                    secret_hash = md5('%s%s' % (secret_code, random_string)).hexdigest()
+                    return redirect(reverse('membership.add_via_corp_secret_code',
+                                            args=[
+                                                corporate_membership_id,
+                                                secret_hash]))
+
+            return redirect(reverse('membership_default.add_under_corp',
+                                    args=[corporate_membership_id]))
+
+    c = {'app': app, "form": form}
+
+    return render_to_response(template_name, c,
+        context_instance=RequestContext(request))
+
+
+def email_to_verify_conf(request,
+        template_name="memberships/applications/email_to_verify_conf.html"):
+    return render_to_response(template_name,
+        context_instance=RequestContext(request))
+
+
+def verify_email(request,
+                 id=0,
+                 guid=None,
+                 template_name="memberships/applications/verify_email.html"):
+    indiv_veri = get_object_or_404(IndivEmailVerification, id=id, guid=guid)
+    if not indiv_veri.verified:
+        indiv_veri.verified = True
+        indiv_veri.verified_dt = datetime.now()
+        if request.user and not request.user.is_anonymous():
+            indiv_veri.updated_by = request.user
+        indiv_veri.save()
+    print reverse('membership_default.add_via_corp_domain',
+                            args=[indiv_veri.corp_membership.id,
+                                  indiv_veri.pk,
+                                  indiv_veri.guid])
+    # let them continue to sign up for membership
+    return redirect(reverse('membership_default.add_via_corp_domain',
+                            args=[indiv_veri.corp_membership.id,
+                                  indiv_veri.pk,
+                                  indiv_veri.guid]))
 
 
 @staff_member_required
