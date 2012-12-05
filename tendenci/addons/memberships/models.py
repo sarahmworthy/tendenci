@@ -1108,8 +1108,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         good = (
             self.get_invoice().total > 0,
-            self.payment_method,
-            self.payment_method.is_online,
+            self.payment_method and self.payment_method.is_online,
         )
 
         return all(good)
