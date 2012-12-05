@@ -49,7 +49,10 @@
 <div class="application-form-wrap">
 
    <h1>{% trans "View Corporate Membership Information" %}</h1>
-
+   
+    {% if corporate_membership.status and corporate_membership.status_detail == "active" %}
+    <div><a href="{% url membership_default.add_under_corp corporate_membership.id %}">{% trans "Join under this corporation" %}</a></div>
+    {% endif %}
    {% for field_obj in app_fields %}
         {% load styled_forms %}
 
