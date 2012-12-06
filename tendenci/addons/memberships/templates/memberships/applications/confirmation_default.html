@@ -26,7 +26,11 @@
             <div class="approved_dt">
                 {% blocktrans with membership.application_approved_dt|date_short as decision_date %}
                 Approved on {{ decision_date }} by:{% endblocktrans %}
-                <a href="{% url profile membership.application_approved_user.username %}">{{ membership.application_approved_denied_user.profile.get_name }}</a>
+                {% if membership.application_approved_user %}
+                <a href="{# url profile membership.application_approved_user.username #}">{{ membership.application_approved_denied_user.profile.get_name }}</a>
+                {% else %}
+                Anonymous
+                {% endif %}
             </div>
         {% elif membership.application_denied %}
             <div class="denied_dt">
