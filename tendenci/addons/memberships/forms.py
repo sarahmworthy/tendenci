@@ -681,8 +681,6 @@ class ProfileForm(forms.ModelForm):
         return profile
 
 
-
-
 class MembershipDefault2Form(forms.ModelForm):
     STATUS_DETAIL_CHOICES = (
             ('active', 'Active'),

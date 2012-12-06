@@ -54,7 +54,7 @@
         {{ app.description|safe }}
 
        {% for field_obj in app_fields %}
-            {% render_corpmembership_field request field_obj corpmembership_form %} 
+            {% render_corpmembership_field request field_obj corpprofile_form corpmembership_form %} 
         {% endfor %}
         
         <input class="btn" type="submit" name="submit" value="Submit" disabled="true" />

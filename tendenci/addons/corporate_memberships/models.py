@@ -808,25 +808,25 @@ class CorpMembershipAppField(models.Model):
 
 
 class CorpMembershipAuthDomain(models.Model):
-    corp_membership = models.ForeignKey("CorpMembership",
+    corp_profile = models.ForeignKey("CorpProfile",
                                         related_name="authorized_domains")
     name = models.CharField(max_length=100)
 
 
 class CorpMembershipRep(models.Model):
-    corp_membership = models.ForeignKey("CorpMembership",
+    corp_profile = models.ForeignKey("CorpProfile",
                                         related_name="reps")
     user = models.ForeignKey(User, verbose_name=_("Representative"),)
     is_dues_rep = models.BooleanField(_('is dues rep?'), default=0, blank=True)
     is_member_rep = models.BooleanField(_('is member rep?'), default=0, blank=True)
 
     class Meta:
-        unique_together = (("corp_membership", "user"),)
+        unique_together = (("corp_profile", "user"),)
 
 
 class IndivEmailVerification(models.Model):
     guid = models.CharField(max_length=50)
-    corp_membership = models.ForeignKey("CorpMembership")
+    corp_profile = models.ForeignKey("CorpProfile")
     verified_email = models.CharField(_('email'), max_length=200)
     verified = models.BooleanField(default=0)
     verified_dt = models.DateTimeField(null=True)

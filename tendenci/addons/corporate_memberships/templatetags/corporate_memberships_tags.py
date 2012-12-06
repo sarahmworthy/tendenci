@@ -6,12 +6,16 @@ register = Library()
 @register.inclusion_tag(
         "corporate_memberships/applications/render_corpmembership_field.html")
 def render_corpmembership_field(request, field_obj,
+                                corpprofile_form,
                             corpmembership_form):
     if field_obj.field_type == "section_break":
         field = None
     else:
         field_name = field_obj.field_name
-        if field_name in corpmembership_form.field_names \
+        if field_name in corpprofile_form.field_names \
+                and not field_obj.display_only:
+            field = corpprofile_form[field_name]
+        elif field_name in corpmembership_form.field_names \
                 and not field_obj.display_only:
             field = corpmembership_form[field_name]
         else:

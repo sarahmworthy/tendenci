@@ -31,7 +31,7 @@ class Migration(SchemaMigration):
         # Adding model 'CorpMembershipAuthDomain'
         db.create_table('corporate_memberships_corpmembershipauthdomain', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(related_name='authorized_domains', to=orm['corporate_memberships.CorpMembership'])),
+            ('corp_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='authorized_domains', to=orm['corporate_memberships.CorpProfile'])),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=100)),
         ))
         db.send_create_signal('corporate_memberships', ['CorpMembershipAuthDomain'])
@@ -73,15 +73,15 @@ class Migration(SchemaMigration):
         # Adding model 'CorpMembershipRep'
         db.create_table('corporate_memberships_corpmembershiprep', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(related_name='reps', to=orm['corporate_memberships.CorpMembership'])),
+            ('corp_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='reps', to=orm['corporate_memberships.CorpProfile'])),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
             ('is_dues_rep', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('is_member_rep', self.gf('django.db.models.fields.BooleanField')(default=False)),
         ))
         db.send_create_signal('corporate_memberships', ['CorpMembershipRep'])
 
-        # Adding unique constraint on 'CorpMembershipRep', fields ['corp_membership', 'user']
-        db.create_unique('corporate_memberships_corpmembershiprep', ['corp_membership_id', 'user_id'])
+        # Adding unique constraint on 'CorpMembershipRep', fields ['corp_profile', 'user']
+        db.create_unique('corporate_memberships_corpmembershiprep', ['corp_profile_id', 'user_id'])
 
         # Adding model 'CorpMembershipApp'
         db.create_table('corporate_memberships_corpmembershipapp', (
@@ -131,7 +131,7 @@ class Migration(SchemaMigration):
         db.create_table('corporate_memberships_indivemailverification', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.CorpMembership'])),
+            ('corp_profile', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.CorpProfile'])),
             ('verified_email', self.gf('django.db.models.fields.CharField')(max_length=200)),
             ('verified', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('verified_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
@@ -196,8 +196,8 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         
-        # Removing unique constraint on 'CorpMembershipRep', fields ['corp_membership', 'user']
-        db.delete_unique('corporate_memberships_corpmembershiprep', ['corp_membership_id', 'user_id'])
+        # Removing unique constraint on 'CorpMembershipRep', fields ['corp_profile', 'user']
+        db.delete_unique('corporate_memberships_corpmembershiprep', ['corp_profile_id', 'user_id'])
 
         # Deleting model 'CorpMembershipAppField'
         db.delete_table('corporate_memberships_corpmembershipappfield')
@@ -243,7 +243,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 9, 45, 41, 655821)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 56, 24, 993209)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -251,7 +251,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 9, 45, 41, 655705)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 10, 56, 24, 993065)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -405,13 +405,13 @@ class Migration(SchemaMigration):
         },
         'corporate_memberships.corpmembershipauthdomain': {
             'Meta': {'object_name': 'CorpMembershipAuthDomain'},
-            'corp_membership': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'authorized_domains'", 'to': "orm['corporate_memberships.CorpMembership']"}),
+            'corp_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'authorized_domains'", 'to': "orm['corporate_memberships.CorpProfile']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
         'corporate_memberships.corpmembershiprep': {
-            'Meta': {'unique_together': "(('corp_membership', 'user'),)", 'object_name': 'CorpMembershipRep'},
-            'corp_membership': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'reps'", 'to': "orm['corporate_memberships.CorpMembership']"}),
+            'Meta': {'unique_together': "(('corp_profile', 'user'),)", 'object_name': 'CorpMembershipRep'},
+            'corp_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'reps'", 'to': "orm['corporate_memberships.CorpProfile']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'is_dues_rep': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_member_rep': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -612,7 +612,7 @@ class Migration(SchemaMigration):
         },
         'corporate_memberships.indivemailverification': {
             'Meta': {'object_name': 'IndivEmailVerification'},
-            'corp_membership': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.CorpMembership']"}),
+            'corp_profile': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.CorpProfile']"}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'corp_email_veri8n_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
             'guid': ('django.db.models.fields.CharField', [], {'max_length': '50'}),

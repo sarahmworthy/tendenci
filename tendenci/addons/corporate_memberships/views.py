@@ -44,6 +44,7 @@ from tendenci.addons.corporate_memberships.models import (
                                           AuthorizedDomain)
 from tendenci.addons.corporate_memberships.forms import (
                                          CorpMembershipForm,
+                                         CorpProfileForm,
                                          CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
@@ -90,7 +91,7 @@ def get_app_fields_json(request):
 
 
 def app_preview(request, app_id,
-                           template='corporate_memberships/applications/preview.html'):
+                    template='corporate_memberships/applications/preview.html'):
     """
     Corporate membership application preview.
     """
@@ -101,11 +102,15 @@ def app_preview(request, app_id,
         app_fields = app_fields.filter(admin_only=False)
     app_fields = app_fields.order_by('order')
 
+    corpprofile_form = CorpProfileForm(app_fields,
+                                     request_user=request.user,
+                                     corpmembership_app=app)
     corpmembership_form = CorpMembershipForm(app_fields,
-                                             request_user=request.user,
-                                             corpmembership_app=app)
+                                     request_user=request.user,
+                                     corpmembership_app=app)
     context = {'app': app,
                "app_fields": app_fields,
+               'corpprofile_form': corpprofile_form,
                'corpmembership_form': corpmembership_form}
     return render_to_response(template, context, RequestContext(request))
 
@@ -182,8 +187,7 @@ def corpmembership_add(request,
                 pass
 
         if corpmembership_form.is_valid():
-            corp_membership = corpmembership_form.save(request.user,
-                                                       creator=creator)
+            corp_membership = corpmembership_form.save(creator=creator)
             # calculate the expiration
             corp_memb_type = corp_membership.corporate_membership_type
             corp_membership.expiration_dt = corp_memb_type.get_expiration_dt(
