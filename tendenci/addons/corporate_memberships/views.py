@@ -390,8 +390,19 @@ def corpmembership_view(request, id,
                                 'expiration_dt',
                                 'renew_dt',
                                 'status',
-                                'status_detail'
+                                'status_detail',
+                                'secret_code',
+                                'authorized_domain'
                                         ])
+    else:
+        if app.authentication_method == 'admin':
+            fields_to_exclude = ['secret_code', 'authorized_domain']
+        elif app.authentication_method == 'email':
+            fields_to_exclude = ['secret_code']
+        else:
+            fields_to_exclude = ['authorized_domain']
+        app_fields = app_fields.exclude(field_name__in=fields_to_exclude)
+
     app_fields = list(app_fields.order_by('order'))
 
     if can_edit:
@@ -402,7 +413,7 @@ def corpmembership_view(request, id,
         app_field = CorpMembershipAppField(label='Reps',
                                                 field_name='reps',
                                                 admin_only=False)
-        app_field.value = corp_membership.reps
+        app_field.value = corp_membership.corp_profile.reps
         app_fields.append(app_field)
 
     for app_field in app_fields:

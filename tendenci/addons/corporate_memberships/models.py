@@ -370,8 +370,14 @@ class CorpMembership(TendenciBaseModel):
         return None
 
     def get_field_value(self, field_name):
-        if field_name and hasattr(self, field_name):
-            return getattr(self, field_name)
+        if field_name:
+            if hasattr(self, field_name):
+                return getattr(self, field_name)
+            if hasattr(self.corp_profile, field_name):
+                return getattr(self.corp_profile, field_name)
+            if field_name == 'authorized_domain':
+                auth_domains = self.corp_profile.authorized_domains.all()
+                return ', '.join([domain.name for domain in auth_domains])
         return ''
 
     @staticmethod
