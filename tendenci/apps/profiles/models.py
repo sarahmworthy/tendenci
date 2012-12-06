@@ -244,8 +244,8 @@ class Profile(Person):
         import re
 
         max_length = 8
-
-        un = ' '.join(args)             # concat args into one string
+        # the first argument is the class, exclude it
+        un = ' '.join(args[1:])             # concat args into one string
         un = re.sub('\s+', '_', un)       # replace spaces w/ underscores
         un = re.sub('[^\w.-]+', '', un)   # remove non-word-characters
         un = un.strip('_.- ')           # strip funny-characters from sides
