@@ -238,7 +238,6 @@ class CorpProfileForm(forms.ModelForm):
         self.field_names = [name for name in self.fields.keys()]
 
     def save(self, *args, **kwargs):
-        anonymous_creator = kwargs.pop('creator', None)
         if not self.instance.id:
             if not self.request_user.is_anonymous():
                 self.instance.creator = self.request_user
@@ -326,7 +325,8 @@ class CorpMembershipForm(forms.ModelForm):
         if not creator_owner.is_anonymous():
             self.instance.owner = creator_owner
             self.instance.owner_username = creator_owner.username
-        self.instance.corp_profile = corp_profile
+        if corp_profile:
+            self.instance.corp_profile = corp_profile
         self.instance.save()
 
         return self.instance
