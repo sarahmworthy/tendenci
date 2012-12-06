@@ -221,11 +221,9 @@ class CorporateMembershipType(TendenciBaseModel):
                 return expiration_dt
 
 
-class CorpMembership(TendenciBaseModel):
+class CorpProfile(TendenciBaseModel):
     guid = models.CharField(max_length=50)
     name = models.CharField(max_length=250, unique=True)
-    corporate_membership_type = models.ForeignKey("CorporateMembershipType",
-                                    verbose_name=_("MembershipType")) 
     address = models.CharField(_('Address'), max_length=150,
                                blank=True, default='')
     address2 = models.CharField(_('Address2'), max_length=100, default='',
@@ -277,8 +275,39 @@ class CorpMembership(TendenciBaseModel):
     ud4 = models.CharField(max_length=100, blank=True, default='')
     ud5 = models.CharField(max_length=100, blank=True, default='')
 
-    admin_notes = models.TextField(_('Admin notes'),
-                               blank=True, null=True)
+    perms = generic.GenericRelation(ObjectPermission,
+                                      object_id_field="object_id",
+                                      content_type_field="content_type")
+
+    def assign_secret_code(self):
+        if not self.secret_code:
+            # use the make_random_password in the User object
+            length = 6
+            allowed_chars = 'abcdefghjkmnpqrstuvwxyzABCDEF' + \
+                            'GHJKLMNPQRSTUVWXYZ23456789'
+            secret_code = User.objects.make_random_password(
+                                                length=length,
+                                                allowed_chars=allowed_chars)
+            # check if this one is unique
+            corp_profiles = CorpProfile.objects.filter(
+                                            secret_code=secret_code)
+
+            while corp_profiles:
+                secret_code = User.objects.make_random_password(
+                                            length=length,
+                                            allowed_chars=allowed_chars)
+                corp_profiles = CorpProfile.objects.filter(
+                                                secret_code=secret_code)
+                if not corp_profiles:
+                    break
+            self.secret_code = secret_code
+
+
+class CorpMembership(TendenciBaseModel):
+    guid = models.CharField(max_length=50)
+    corp_profile = models.ForeignKey("CorpProfile")
+    corporate_membership_type = models.ForeignKey("CorporateMembershipType",
+                                    verbose_name=_("MembershipType"))
     renewal = models.BooleanField(default=0)
     renew_dt = models.DateTimeField(_("Renew Date Time"), null=True)
     invoice = models.ForeignKey(Invoice, blank=True, null=True)
@@ -299,6 +328,8 @@ class CorpMembership(TendenciBaseModel):
     invoice = models.ForeignKey(Invoice, blank=True, null=True)
 
     anonymous_creator = models.ForeignKey('Creator', null=True)
+    admin_notes = models.TextField(_('Admin notes'),
+                               blank=True, null=True)
 
     perms = generic.GenericRelation(ObjectPermission,
                                       object_id_field="object_id",
@@ -373,29 +404,6 @@ class CorpMembership(TendenciBaseModel):
                 filter_and = {'allow_anonymous_view': True}
 
         return filter_and, filter_or
-
-    def assign_secret_code(self):
-        if not self.secret_code:
-            # use the make_random_password in the User object
-            length = 6
-            allowed_chars = 'abcdefghjkmnpqrstuvwxyzABCDEF' + \
-                            'GHJKLMNPQRSTUVWXYZ23456789'
-            secret_code = User.objects.make_random_password(
-                                                length=length,
-                                                allowed_chars=allowed_chars)
-            # check if this one is unique
-            corp_membs = CorpMembership.objects.filter(
-                                            secret_code=secret_code)
-
-            while corp_membs:
-                secret_code = User.objects.make_random_password(
-                                            length=length,
-                                            allowed_chars=allowed_chars)
-                corp_membs = CorpMembership.objects.filter(
-                                                secret_code=secret_code)
-                if not corp_membs:
-                    break
-            self.secret_code = secret_code
 
     # Called by payments_pop_by_invoice_user in Payment model.
     def get_payment_description(self, inv):
@@ -837,6 +845,50 @@ class IndivEmailVerification(models.Model):
         if not self.id:
             self.guid = str(uuid.uuid1())
         super(IndivEmailVerification, self).save(*args, **kwargs)
+
+
+#class CorpMembershipRenewEntry(models.Model):
+#    corp_membership = models.ForeignKey("CorpMembership")
+#    corporate_membership_type = models.ForeignKey("CorporateMembershipType")
+#    payment_method = models.CharField(_("Payment Method"),
+#                                      max_length=50,
+#                                      null=True)
+#    invoice = models.ForeignKey(Invoice, blank=True, null=True)
+#    create_dt = models.DateTimeField(auto_now_add=True)
+#    creator = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+#    status_detail = models.CharField(max_length=50)   # pending, approved and disapproved
+#
+#    @property
+#    def module_name(self):
+#        return self._meta.module_name.lower()
+#    
+#    def indiv_memb_renew_entries(self):
+#        return self.indivmembrenewentry_set.all()
+#    
+#    def get_payment_description(self, inv):
+#        return self.corporate_membership.get_payment_description(inv)
+#    
+#    def make_acct_entries(self, user, inv, amount, **kwargs):
+#        return self.corporate_membership.make_acct_entries(user, inv, amount, **kwargs)
+#    
+#    def auto_update_paid_object(self, request, payment):
+#        return self.corporate_membership.auto_update_paid_object(request, payment)
+#
+#    def get_payment_method(self):
+#        from tendenci.core.payments.models import PaymentMethod
+#
+#        # return payment method if defined
+#        if self.payment_method and self.payment_method.isdigit():
+#            return PaymentMethod.objects.get(pk=int(self.payment_method))
+#
+#        # first method is credit card (online)
+#        # will raise exception if payment method does not exist
+#        return PaymentMethod.objects.get(machine_name='credit-card') 
+#
+#
+#class IndivMembershipRenewEntry(models.Model):
+#    corp_memb_renew_entry = models.ForeignKey("CorpMembershipRenewEntry")
+#    membership = models.ForeignKey(Membership)
 
 
 class CorporateMembership(TendenciBaseModel):

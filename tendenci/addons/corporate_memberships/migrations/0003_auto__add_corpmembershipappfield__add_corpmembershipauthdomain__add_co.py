@@ -8,13 +8,67 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
+        # Adding model 'CorpMembershipAppField'
+        db.create_table('corporate_memberships_corpmembershipappfield', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('corp_app', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fields', to=orm['corporate_memberships.CorpMembershipApp'])),
+            ('label', self.gf('django.db.models.fields.CharField')(max_length=2000)),
+            ('field_name', self.gf('django.db.models.fields.CharField')(default='', max_length=30, blank=True)),
+            ('field_type', self.gf('django.db.models.fields.CharField')(default='CharField', max_length=80, null=True, blank=True)),
+            ('required', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('display', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('admin_only', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('help_text', self.gf('django.db.models.fields.CharField')(default='', max_length=2000, blank=True)),
+            ('choices', self.gf('django.db.models.fields.CharField')(max_length=1000, null=True, blank=True)),
+            ('field_layout', self.gf('django.db.models.fields.CharField')(default='1', max_length=50, null=True, blank=True)),
+            ('size', self.gf('django.db.models.fields.CharField')(default='m', max_length=1, null=True, blank=True)),
+            ('default_value', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('css_class', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('order', self.gf('django.db.models.fields.IntegerField')(default=0)),
+        ))
+        db.send_create_signal('corporate_memberships', ['CorpMembershipAppField'])
+
         # Adding model 'CorpMembershipAuthDomain'
         db.create_table('corporate_memberships_corpmembershipauthdomain', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(related_name='auth_domains', to=orm['corporate_memberships.CorpMembership'])),
+            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(related_name='authorized_domains', to=orm['corporate_memberships.CorpMembership'])),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=100)),
         ))
         db.send_create_signal('corporate_memberships', ['CorpMembershipAuthDomain'])
+
+        # Adding model 'CorpMembership'
+        db.create_table('corporate_memberships_corpmembership', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('allow_anonymous_view', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('allow_user_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_user_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('entity', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpmembership_entity', null=True, blank=True, to=orm['entities.Entity'])),
+            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('update_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpmembership_creator', null=True, to=orm['auth.User'])),
+            ('creator_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpmembership_owner', null=True, to=orm['auth.User'])),
+            ('owner_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('status', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('status_detail', self.gf('django.db.models.fields.CharField')(default='active', max_length=50)),
+            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('corp_profile', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.CorpProfile'])),
+            ('corporate_membership_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.CorporateMembershipType'])),
+            ('renewal', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('renew_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('join_dt', self.gf('django.db.models.fields.DateTimeField')()),
+            ('expiration_dt', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('approved', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('approved_denied_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('approved_denied_user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True)),
+            ('payment_method', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['payments.PaymentMethod'], null=True)),
+            ('invoice', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['invoices.Invoice'], null=True, blank=True)),
+            ('anonymous_creator', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.Creator'], null=True)),
+            ('admin_notes', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+        ))
+        db.send_create_signal('corporate_memberships', ['CorpMembership'])
 
         # Adding model 'CorpMembershipRep'
         db.create_table('corporate_memberships_corpmembershiprep', (
@@ -29,17 +83,148 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'CorpMembershipRep', fields ['corp_membership', 'user']
         db.create_unique('corporate_memberships_corpmembershiprep', ['corp_membership_id', 'user_id'])
 
+        # Adding model 'CorpMembershipApp'
+        db.create_table('corporate_memberships_corpmembershipapp', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('allow_anonymous_view', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('allow_user_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_user_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('entity', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpmembershipapp_entity', null=True, blank=True, to=orm['entities.Entity'])),
+            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('update_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpmembershipapp_creator', null=True, to=orm['auth.User'])),
+            ('creator_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpmembershipapp_owner', null=True, to=orm['auth.User'])),
+            ('owner_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('status', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('status_detail', self.gf('django.db.models.fields.CharField')(default='active', max_length=50)),
+            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=155)),
+            ('slug', self.gf('django.db.models.fields.SlugField')(unique=True, max_length=155, db_index=True)),
+            ('authentication_method', self.gf('django.db.models.fields.CharField')(default='admin', max_length=50)),
+            ('description', self.gf('tinymce.models.HTMLField')(null=True, blank=True)),
+            ('notes', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('confirmation_text', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('memb_app', self.gf('django.db.models.fields.related.OneToOneField')(related_name='corp_app', unique=True, to=orm['memberships.MembershipApp'])),
+        ))
+        db.send_create_signal('corporate_memberships', ['CorpMembershipApp'])
+
+        # Adding M2M table for field corp_memb_type on 'CorpMembershipApp'
+        db.create_table('corporate_memberships_corpmembershipapp_corp_memb_type', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('corpmembershipapp', models.ForeignKey(orm['corporate_memberships.corpmembershipapp'], null=False)),
+            ('corporatemembershiptype', models.ForeignKey(orm['corporate_memberships.corporatemembershiptype'], null=False))
+        ))
+        db.create_unique('corporate_memberships_corpmembershipapp_corp_memb_type', ['corpmembershipapp_id', 'corporatemembershiptype_id'])
+
+        # Adding M2M table for field payment_methods on 'CorpMembershipApp'
+        db.create_table('corporate_memberships_corpmembershipapp_payment_methods', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('corpmembershipapp', models.ForeignKey(orm['corporate_memberships.corpmembershipapp'], null=False)),
+            ('paymentmethod', models.ForeignKey(orm['payments.paymentmethod'], null=False))
+        ))
+        db.create_unique('corporate_memberships_corpmembershipapp_payment_methods', ['corpmembershipapp_id', 'paymentmethod_id'])
+
+        # Adding model 'IndivEmailVerification'
+        db.create_table('corporate_memberships_indivemailverification', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.CorpMembership'])),
+            ('verified_email', self.gf('django.db.models.fields.CharField')(max_length=200)),
+            ('verified', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('verified_dt', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(related_name='corp_email_veri8n_creator', null=True, to=orm['auth.User'])),
+            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('update_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('updated_by', self.gf('django.db.models.fields.related.ForeignKey')(related_name='corp_email_veri8n_updator', null=True, to=orm['auth.User'])),
+        ))
+        db.send_create_signal('corporate_memberships', ['IndivEmailVerification'])
+
+        # Adding model 'CorpProfile'
+        db.create_table('corporate_memberships_corpprofile', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('allow_anonymous_view', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('allow_user_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_view', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_user_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('allow_member_edit', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('entity', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpprofile_entity', null=True, blank=True, to=orm['entities.Entity'])),
+            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('update_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpprofile_creator', null=True, to=orm['auth.User'])),
+            ('creator_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(default=None, related_name='corporate_memberships_corpprofile_owner', null=True, to=orm['auth.User'])),
+            ('owner_username', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('status', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('status_detail', self.gf('django.db.models.fields.CharField')(default='active', max_length=50)),
+            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=250)),
+            ('address', self.gf('django.db.models.fields.CharField')(default='', max_length=150, blank=True)),
+            ('address2', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('city', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('state', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('zip', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('country', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('phone', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('email', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True)),
+            ('url', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('secret_code', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('industry', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['industries.Industry'], null=True, blank=True)),
+            ('region', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['regions.Region'], null=True, blank=True)),
+            ('number_employees', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('chapter', self.gf('django.db.models.fields.CharField')(default='', max_length=150, blank=True)),
+            ('tax_exempt', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('annual_revenue', self.gf('django.db.models.fields.CharField')(default='', max_length=75, blank=True)),
+            ('annual_ad_expenditure', self.gf('django.db.models.fields.CharField')(default='', max_length=75, blank=True)),
+            ('description', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('expectations', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('notes', self.gf('django.db.models.fields.TextField')(default='', blank=True)),
+            ('referral_source', self.gf('django.db.models.fields.CharField')(default='', max_length=150, blank=True)),
+            ('referral_source_other', self.gf('django.db.models.fields.CharField')(default='', max_length=150, blank=True)),
+            ('referral_source_member_name', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('referral_source_member_number', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True)),
+            ('ud1', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('ud2', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('ud3', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('ud4', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+            ('ud5', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True)),
+        ))
+        db.send_create_signal('corporate_memberships', ['CorpProfile'])
+
 
     def backwards(self, orm):
         
         # Removing unique constraint on 'CorpMembershipRep', fields ['corp_membership', 'user']
         db.delete_unique('corporate_memberships_corpmembershiprep', ['corp_membership_id', 'user_id'])
 
+        # Deleting model 'CorpMembershipAppField'
+        db.delete_table('corporate_memberships_corpmembershipappfield')
+
         # Deleting model 'CorpMembershipAuthDomain'
         db.delete_table('corporate_memberships_corpmembershipauthdomain')
 
+        # Deleting model 'CorpMembership'
+        db.delete_table('corporate_memberships_corpmembership')
+
         # Deleting model 'CorpMembershipRep'
         db.delete_table('corporate_memberships_corpmembershiprep')
+
+        # Deleting model 'CorpMembershipApp'
+        db.delete_table('corporate_memberships_corpmembershipapp')
+
+        # Removing M2M table for field corp_memb_type on 'CorpMembershipApp'
+        db.delete_table('corporate_memberships_corpmembershipapp_corp_memb_type')
+
+        # Removing M2M table for field payment_methods on 'CorpMembershipApp'
+        db.delete_table('corporate_memberships_corpmembershipapp_payment_methods')
+
+        # Deleting model 'IndivEmailVerification'
+        db.delete_table('corporate_memberships_indivemailverification')
+
+        # Deleting model 'CorpProfile'
+        db.delete_table('corporate_memberships_corpprofile')
 
 
     models = {
@@ -58,7 +243,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 28, 9, 46, 54, 175278)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 9, 45, 41, 655821)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -66,7 +251,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 11, 28, 9, 46, 54, 175170)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 6, 9, 45, 41, 655705)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -142,64 +327,35 @@ class Migration(SchemaMigration):
         },
         'corporate_memberships.corpmembership': {
             'Meta': {'object_name': 'CorpMembership'},
-            'address': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
-            'address2': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
             'admin_notes': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'allow_anonymous_view': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'allow_member_edit': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_member_view': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_user_edit': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_user_view': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'annual_ad_expenditure': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
-            'annual_revenue': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
             'anonymous_creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.Creator']", 'null': 'True'}),
             'approved': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'approved_denied_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'approved_denied_user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True'}),
-            'chapter': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
-            'city': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'corp_profile': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.CorpProfile']"}),
             'corporate_membership_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.CorporateMembershipType']"}),
-            'country': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'corporate_memberships_corpmembership_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
             'creator_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'description': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'email': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '200', 'blank': 'True'}),
             'entity': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'corporate_memberships_corpmembership_entity'", 'null': 'True', 'blank': 'True', 'to': "orm['entities.Entity']"}),
-            'expectations': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'expiration_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'guid': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'industry': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['industries.Industry']", 'null': 'True', 'blank': 'True'}),
             'invoice': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['invoices.Invoice']", 'null': 'True', 'blank': 'True'}),
             'join_dt': ('django.db.models.fields.DateTimeField', [], {}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '250'}),
-            'notes': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'number_employees': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'corporate_memberships_corpmembership_owner'", 'null': 'True', 'to': "orm['auth.User']"}),
             'owner_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'payment_method': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': "orm['payments.PaymentMethod']", 'null': 'True'}),
-            'phone': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
-            'referral_source': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
-            'referral_source_member_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
-            'referral_source_member_number': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
-            'referral_source_other': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
-            'region': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['regions.Region']", 'null': 'True', 'blank': 'True'}),
             'renew_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'renewal': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'secret_code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
-            'state': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'status_detail': ('django.db.models.fields.CharField', [], {'default': "'active'", 'max_length': '50'}),
-            'tax_exempt': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'ud1': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
-            'ud2': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
-            'ud3': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
-            'ud4': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
-            'ud5': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
-            'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'url': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
-            'zip': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'})
+            'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
         'corporate_memberships.corpmembershipapp': {
             'Meta': {'ordering': "('name',)", 'object_name': 'CorpMembershipApp'},
@@ -249,7 +405,7 @@ class Migration(SchemaMigration):
         },
         'corporate_memberships.corpmembershipauthdomain': {
             'Meta': {'object_name': 'CorpMembershipAuthDomain'},
-            'corp_membership': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'auth_domains'", 'to': "orm['corporate_memberships.CorpMembership']"}),
+            'corp_membership': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'authorized_domains'", 'to': "orm['corporate_memberships.CorpMembership']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
@@ -397,6 +553,55 @@ class Migration(SchemaMigration):
             'status_detail': ('django.db.models.fields.CharField', [], {'default': "'active'", 'max_length': '50'}),
             'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
+        'corporate_memberships.corpprofile': {
+            'Meta': {'object_name': 'CorpProfile'},
+            'address': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
+            'address2': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'allow_anonymous_view': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'allow_member_edit': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'allow_member_view': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'allow_user_edit': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'allow_user_view': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'annual_ad_expenditure': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
+            'annual_revenue': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
+            'chapter': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
+            'city': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'country': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'creator': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'corporate_memberships_corpprofile_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
+            'creator_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'description': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'email': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '200', 'blank': 'True'}),
+            'entity': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'corporate_memberships_corpprofile_entity'", 'null': 'True', 'blank': 'True', 'to': "orm['entities.Entity']"}),
+            'expectations': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'guid': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'industry': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['industries.Industry']", 'null': 'True', 'blank': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '250'}),
+            'notes': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'number_employees': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'owner': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'corporate_memberships_corpprofile_owner'", 'null': 'True', 'to': "orm['auth.User']"}),
+            'owner_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'phone': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'referral_source': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
+            'referral_source_member_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'referral_source_member_number': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'referral_source_other': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '150', 'blank': 'True'}),
+            'region': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['regions.Region']", 'null': 'True', 'blank': 'True'}),
+            'secret_code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'state': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'}),
+            'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'status_detail': ('django.db.models.fields.CharField', [], {'default': "'active'", 'max_length': '50'}),
+            'tax_exempt': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'ud1': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'ud2': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'ud3': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'ud4': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'ud5': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'url': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'zip': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'blank': 'True'})
+        },
         'corporate_memberships.creator': {
             'Meta': {'object_name': 'Creator'},
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
@@ -404,6 +609,19 @@ class Migration(SchemaMigration):
             'hash': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '32'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'})
+        },
+        'corporate_memberships.indivemailverification': {
+            'Meta': {'object_name': 'IndivEmailVerification'},
+            'corp_membership': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.CorpMembership']"}),
+            'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'creator': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'corp_email_veri8n_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
+            'guid': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'updated_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'corp_email_veri8n_updator'", 'null': 'True', 'to': "orm['auth.User']"}),
+            'verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'verified_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'verified_email': ('django.db.models.fields.CharField', [], {'max_length': '200'})
         },
         'corporate_memberships.indivmembemailveri8n': {
             'Meta': {'object_name': 'IndivMembEmailVeri8n'},
