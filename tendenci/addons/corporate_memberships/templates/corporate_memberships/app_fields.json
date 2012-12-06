@@ -161,6 +161,13 @@
     "admin_only": "false"
     },
     {
+    "label": "Secret Code",
+    "field_name": "secret_code",
+    "display": "true",
+    "required": "true",
+    "admin_only": "false"
+    },
+    {
     "label": "Description",
     "field_name": "description",
     "display": "true",

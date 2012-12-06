@@ -164,7 +164,7 @@
             }     
         }
         
-        var required_fields = ['name', 'corporate_membership_type', 'payment_method', 'authorized_domain'];
+        var required_fields = ['name', 'corporate_membership_type', 'payment_method', 'authorized_domain', 'secret_code'];
         var required_field;
         var disableFields = function(){
              $('.inline-deletelink').hide();
@@ -179,6 +179,10 @@
                         if ($this.find('input').val() == required_field){
                             $this.siblings('td.field-display').find('input').attr('disabled', true);
                             $this.siblings('td.field-required').find('input').attr('disabled', true);
+                            
+                            if (required_field == 'authorized_domain' || required_field == 'secret_code'){
+                                $this.siblings('td.field-label').find('input').attr('disabled', true);
+                            }
                         }
                      });    
                }
@@ -214,6 +218,7 @@
             $('.field-field_name input').removeAttr('disabled');
             $('.field-display input').removeAttr('disabled');
             $('.field-required input').removeAttr('disabled');
+            $('.field-label input').removeAttr('disabled');
         });
          
     });
