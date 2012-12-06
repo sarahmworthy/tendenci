@@ -26,7 +26,8 @@ jQuery(function($) {
     	var selected_text = $dd.find(":selected").text();
     	var fieldset = $dd.parents(".dynamic-fields");
 
-        triggers = ['CharField', 
+        triggers = ['CharField',
+                    'ChoiceField', 
                     'BooleanField',
                     'MultipleChoiceField/django.forms.CheckboxSelectMultiple', 
                     'MultipleChoiceField']
@@ -45,7 +46,6 @@ jQuery(function($) {
                 $select_dd.find('option[value="EmailLastName"]').attr('disabled','disabled');
                 $select_dd.find('option[value="EmailFullName"]').attr('disabled','disabled');
                 $select_dd.find('option[value="EmailPhoneNumber"]').attr('disabled','disabled');
-                $select_dd.find('option[value="Recipients"]').attr('disabled','disabled');
             }else {
                 $select_dd.find('option[value="GroupSubscription"]').attr('disabled','disabled');
                 $select_dd.find('option[value="EmailFirstName"]').attr('disabled','disabled');
@@ -84,8 +84,8 @@ jQuery(function($) {
     	var selected_text = $dd.find(":selected").text();
     	var fieldset = $dd.parents(".dynamic-fields");
 
-        triggers = ['MultipleChoiceField/django.forms.CheckboxSelectMultiple', 
-                    'MultipleChoiceField']
+        triggers = ['BooleanField','MultipleChoiceField/django.forms.CheckboxSelectMultiple', 
+                    'ChoiceField', 'MultipleChoiceField']
 
     	// toggle help text field 
         if (in_list(selected_value, triggers)){

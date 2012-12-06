@@ -401,7 +401,10 @@ class FormForField(forms.ModelForm):
                         raise forms.ValidationError("The group \"%s\" does not exist" % (val))
 
         if field_function == "Recipients":
-            if field_type != "MultipleChoiceField/django.forms.CheckboxSelectMultiple" and field_type != "MultipleChoiceField":
+            if (field_type != "MultipleChoiceField/django.forms.CheckboxSelectMultiple" and 
+                field_type != "MultipleChoiceField" and
+                field_type != "BooleanField" and
+                field_type != "ChoiceField"):
                 raise forms.ValidationError("This field's function requires Multi-select - Checkboxes "
                                             + "or Multi-select - Select Many as field type")
             if not function_email_recipients:

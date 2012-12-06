@@ -162,7 +162,8 @@ class Field(models.Model):
     function_params = models.CharField(_("Group Name or Names"),
         max_length=100, null=True, blank=True, help_text="Comma separated if more than one")
     function_email_recipients = models.CharField(_("Email Recipients"),
-        max_length=200, null=True, blank=True, help_text="Comma separated if more than one")
+        max_length=200, null=True, blank=True, 
+        help_text="List of email addresses that would receive notification if the 'Email To Recipients' functionality is selected")
     required = models.BooleanField(_("Required"), default=True)
     visible = models.BooleanField(_("Visible"), default=True)
     choices = models.CharField(_("Choices"), max_length=1000, blank=True,
@@ -313,9 +314,12 @@ class FormEntry(models.Model):
         Returns the value of the a field entry based
         on the field_function specified
         """
-        for entry in self.fields.all():
+        for entry in self.fields.order_by('field__position'):
             if entry.field.field_function == field_function:
-                return entry.value
+                if field_function=='Recipients' and entry.field.field_type == 'BooleanField' and entry.value:
+                    return entry.field.function_email_recipients
+                else:
+                    return entry.value
         return ''
 
     def get_type_of(self, field_type):
