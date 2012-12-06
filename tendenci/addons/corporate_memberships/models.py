@@ -351,7 +351,7 @@ class CorpMembership(TendenciBaseModel):
             verbose_name_plural = _("Corporate Members")
 
     def __unicode__(self):
-        return "%s" % (self.name)
+        return "%s" % (self.corp_profile.name)
 
     def save(self, *args, **kwargs):
         if not self.guid:

@@ -56,7 +56,7 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
     return cmt_list
 
 
-def update_authorized_domains(corp_memb, domain_names):
+def update_authorized_domains(corp_profile, domain_names):
     """
     Update the authorized domains for this corporate membership.
     """
@@ -67,8 +67,8 @@ def update_authorized_domains(corp_memb, domain_names):
 
         # if domain is not in the list domain_names, delete it from db
         # otherwise, remove it from list
-        if corp_memb.authorized_domains:
-            for auth_domain in list(corp_memb.authorized_domains.all()):
+        if corp_profile.authorized_domains:
+            for auth_domain in list(corp_profile.authorized_domains.all()):
                 if auth_domain.name in dname_list:
                     dname_list.remove(auth_domain.name)
                 else:
@@ -76,7 +76,7 @@ def update_authorized_domains(corp_memb, domain_names):
 
         # add the rest of the domain
         for name in dname_list:
-            auth_domain = CorpMembershipAuthDomain(corp_membership=corp_memb,
+            auth_domain = CorpMembershipAuthDomain(corp_profile=corp_profile,
                                                    name=name)
             auth_domain.save()
 
@@ -194,18 +194,21 @@ def corp_memb_inv_add(user, corp_memb, **kwargs):
     """
     Add an invoice for this corporate membership
     """
+    corp_profile = corp_memb.corp_profile
     renewal = kwargs.get('renewal', False)
     renewal_total = kwargs.get('renewal_total', 0)
     renew_entry = kwargs.get('renew_entry', None)
     if not corp_memb.invoice or renewal:
         inv = Invoice()
         if renew_entry:
-            inv.object_type = ContentType.objects.get(app_label=renew_entry._meta.app_label, 
-                                                      model=renew_entry._meta.module_name)
+            inv.object_type = ContentType.objects.get(
+                                          app_label=renew_entry._meta.app_label,
+                                          model=renew_entry._meta.module_name)
             inv.object_id = renew_entry.id
         else:
-            inv.object_type = ContentType.objects.get(app_label=corp_memb._meta.app_label, 
-                                                      model=corp_memb._meta.module_name)
+            inv.object_type = ContentType.objects.get(
+                                          app_label=corp_memb._meta.app_label,
+                                          model=corp_memb._meta.module_name)
             inv.object_id = corp_memb.id
         inv.title = "Corporate Membership Invoice"
         if not user.is_anonymous():
@@ -221,30 +224,30 @@ def corp_memb_inv_add(user, corp_memb, **kwargs):
                 inv.bill_to_last_name = cmc.last_name
                 inv.bill_to_email = cmc.email
             else:
-                inv.bill_to = corp_memb.name 
-            
-        inv.bill_to_company = corp_memb.name
-        inv.bill_to_address = corp_memb.address
-        inv.bill_to_city = corp_memb.city
-        inv.bill_to_state = corp_memb.state
-        inv.bill_to_zip_code = corp_memb.zip
-        inv.bill_to_country = corp_memb.country
-        inv.bill_to_phone = corp_memb.phone
-        inv.ship_to = corp_memb.name
-        inv.ship_to_company = corp_memb.name
-        inv.ship_to_address = corp_memb.address
-        inv.ship_to_city = corp_memb.city
-        inv.ship_to_state = corp_memb.state
-        inv.ship_to_zip_code = corp_memb.zip
-        inv.ship_to_country = corp_memb.country
-        inv.ship_to_phone = corp_memb.phone
-        inv.ship_to_email =corp_memb.email
+                inv.bill_to = corp_memb.name
+
+        inv.bill_to_company = corp_profile.name
+        inv.bill_to_address = corp_profile.address
+        inv.bill_to_city = corp_profile.city
+        inv.bill_to_state = corp_profile.state
+        inv.bill_to_zip_code = corp_profile.zip
+        inv.bill_to_country = corp_profile.country
+        inv.bill_to_phone = corp_profile.phone
+        inv.ship_to = corp_profile.name
+        inv.ship_to_company = corp_profile.name
+        inv.ship_to_address = corp_profile.address
+        inv.ship_to_city = corp_profile.city
+        inv.ship_to_state = corp_profile.state
+        inv.ship_to_zip_code = corp_profile.zip
+        inv.ship_to_country = corp_profile.country
+        inv.ship_to_phone = corp_profile.phone
+        inv.ship_to_email = corp_profile.email
         inv.terms = "Due on Receipt"
         inv.due_date = datetime.now()
         inv.ship_date = datetime.now()
         inv.message = 'Thank You.'
         inv.status = True
-        
+
         if not renewal:
             inv.total = corp_memb.corporate_membership_type.price
         else:
@@ -254,7 +257,6 @@ def corp_memb_inv_add(user, corp_memb, **kwargs):
         inv.estimate = 1
         inv.status_detail = 'tendered'
         inv.save(user)
-
 
         if user.profile.is_superuser:
             # if offline payment method
@@ -272,7 +274,8 @@ def corp_memb_inv_add(user, corp_memb, **kwargs):
                 inv.make_payment(user, payment.amount)
         return inv
     return None
-        
+
+
 def update_auth_domains(corp_memb, domain_names):
     """
     Update the authorized domains for this corporate membership.

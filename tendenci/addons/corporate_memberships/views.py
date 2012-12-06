@@ -166,6 +166,10 @@ def corpmembership_add(request,
         app_fields = app_fields.filter(admin_only=False)
     app_fields = app_fields.order_by('order')
 
+    corpprofile_form = CorpProfileForm(app_fields,
+                                     request.POST or None,
+                                     request_user=request.user,
+                                     corpmembership_app=app)
     corpmembership_form = CorpMembershipForm(app_fields,
                                              request.POST or None,
                                              request_user=request.user,
@@ -186,16 +190,20 @@ def corpmembership_add(request,
             except CorporateMembershipType.DoesNotExist:
                 pass
 
-        if corpmembership_form.is_valid():
-            corp_membership = corpmembership_form.save(creator=creator)
+        if corpprofile_form.is_valid() and corpmembership_form.is_valid():
+            corp_profile = corpprofile_form.save(creator=creator,)
+            # assign a secret code for this corporate
+            # secret code is a unique 6 characters long string
+            corp_profile.assign_secret_code()
+            corp_profile.save()
+            corp_membership = corpmembership_form.save(
+                                                creator=creator,
+                                                corp_profile=corp_profile)
             # calculate the expiration
             corp_memb_type = corp_membership.corporate_membership_type
             corp_membership.expiration_dt = corp_memb_type.get_expiration_dt(
                                         join_dt=corp_membership.join_dt)
-            # assign a secret code for this corporate
-            # secret code is a unique 6 characters long string
-            corp_membership.assign_secret_code()
-            corp_membership.save()
+            
 
             # add invoice
             inv = corp_memb_inv_add(request.user, corp_membership)
@@ -256,6 +264,7 @@ def corpmembership_add(request,
 
     context = {'app': app,
                "app_fields": app_fields,
+               'corpprofile_form': corpprofile_form,
                'corpmembership_form': corpmembership_form}
     return render_to_response(template, context, RequestContext(request))
 

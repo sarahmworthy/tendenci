@@ -231,15 +231,23 @@ class CorpProfileForm(forms.ModelForm):
         if not self.corpmembership_app.authentication_method == 'secret_code':
             del self.fields['secret_code']
 
+        del self.fields['status']
+        del self.fields['status_detail']
+
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
 
     def save(self, *args, **kwargs):
+        anonymous_creator = kwargs.pop('creator', None)
         if not self.instance.id:
-            self.instance.creator = self.request_user
-            self.instance.creator_username = self.request_user.username
-        self.instance.owner = self.request_user
-        self.instance.owner_username = self.request_user.username
+            if not self.request_user.is_anonymous():
+                self.instance.creator = self.request_user
+                self.instance.creator_username = self.request_user.username
+            self.instance.status = True
+            self.instance.status_detail = 'active'
+        if not self.request_user.is_anonymous():
+            self.instance.owner = self.request_user
+            self.instance.owner_username = self.request_user.username
 
         super(CorpProfileForm, self).save(*args, **kwargs)
 
@@ -297,31 +305,31 @@ class CorpMembershipForm(forms.ModelForm):
         self.field_names = [name for name in self.fields.keys()]
 
     def save(self, **kwargs):
-        corpmembership = super(CorpMembershipForm, self).save(commit=False)
+        super(CorpMembershipForm, self).save(commit=False)
         anonymous_creator = kwargs.get('creator', None)
+        corp_profile = kwargs.get('corp_profile', None)
         creator_owner = self.request_user
         if not self.instance.pk:
             if anonymous_creator:
-                corpmembership.anonymous_creator = anonymous_creator
+                self.instance.anonymous_creator = anonymous_creator
             if not isinstance(self.request_user, User):
                 [creator_owner] = User.objects.filter(is_staff=1,
                                                 is_active=1)[:1] or [None]
             if not self.request_user.profile.is_superuser:
-                corpmembership.status = True
-                corpmembership.status_detail = 'pending'
-            if not corpmembership.join_dt:
-                corpmembership.join_dt = datetime.now()
-            corpmembership.creator = creator_owner
-            corpmembership.creator_username = creator_owner.username
-        corpmembership.owner = creator_owner
-        corpmembership.owner_username = creator_owner.username
-        corpmembership.save()
+                self.instance.status = True
+                self.instance.status_detail = 'pending'
+            if not self.instance.join_dt:
+                self.instance.join_dt = datetime.now()
+            if not creator_owner.is_anonymous():
+                self.instance.creator = creator_owner
+                self.instance.creator_username = creator_owner.username
+        if not creator_owner.is_anonymous():
+            self.instance.owner = creator_owner
+            self.instance.owner_username = creator_owner.username
+        self.instance.corp_profile = corp_profile
+        self.instance.save()
 
-        # update authorized domain if needed
-        if self.corpmembership_app.authentication_method == 'email':
-            update_authorized_domains(corpmembership,
-                            self.cleaned_data['authorized_domain'])
-        return corpmembership
+        return self.instance
 
 
 class CorpAppForm(forms.ModelForm):
