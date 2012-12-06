@@ -302,6 +302,16 @@ class CorpProfile(TendenciBaseModel):
                     break
             self.secret_code = secret_code
 
+    @property
+    def active_corp_membership(self):
+        [corp_membership] = self.corp_memberships.filter(
+                                            status=True,
+                                            status_detail='active'
+                                            ).order_by(
+                                            '-expiration_dt'
+                                            )[:1] or [None]
+        return corp_membership
+
 
 class CorpMembership(TendenciBaseModel):
     guid = models.CharField(max_length=50)

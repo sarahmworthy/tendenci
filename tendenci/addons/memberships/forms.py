@@ -672,9 +672,9 @@ class ProfileForm(forms.ModelForm):
         for k, v in self.cleaned_data.items():
             if v:
                 setattr(profile, k, v)
-
-        profile.owner = request_user
-        profile.owner_username = request_user.username
+        if not request_user.is_anonymous():
+            profile.owner = request_user
+            profile.owner_username = request_user.username
 
         profile.save()
 
@@ -750,7 +750,7 @@ class MembershipDefault2Form(forms.ModelForm):
         if 'corporate_membership_id' in self_fields_keys:
             if self.join_under_corporate and self.corp_membership:
                 self.fields['corporate_membership_id'].widget = forms.widgets.Select(
-                                        choices=((self.corp_membership.id, self.corp_membership.name),))
+                                        choices=((self.corp_membership.id, self.corp_membership),))
             else:
                 self.fields['corporate_membership_id'].widget = forms.widgets.Select(
                                         choices=get_corporate_membership_choices())
@@ -897,7 +897,7 @@ class AppCorpPreForm(forms.Form):
     def clean_secret_code(self):
         secret_code = self.cleaned_data['secret_code']
         [corp_membership] = CorpMembership.objects.filter(
-                                   secret_code=secret_code,
+                                   corp_profile__secret_code=secret_code,
                                    status=True,
                                    status_detail='active')[:1] or [None]
         if not corp_membership:
@@ -912,10 +912,15 @@ class AppCorpPreForm(forms.Form):
             email_domain = (email.split('@')[1]).strip()
             [auth_domain] = CorpMembershipAuthDomain.objects.filter(
                                     name=email_domain)[:1] or [None]
-            if not auth_domain:
+            if auth_domain:
+                corp_membership = auth_domain.corp_profile.active_corp_membership
+            else:
+                corp_membership = None
+
+            if not all([auth_domain, corp_membership]):
                 raise forms.ValidationError(
                     _("Sorry but we're not able to find your corporation."))
-            self.corporate_membership_id = auth_domain.corp_membership.id
+            self.corporate_membership_id = corp_membership.id
         return email
 
 

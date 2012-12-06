@@ -1433,9 +1433,10 @@ def membership_default_corp_pre_add(request, cm_id=None,
 
                 if form.auth_method == 'email':
                     corp_memb = CorpMembership.objects.get(pk=corporate_membership_id)
+                    corp_profile = corp_memb.corp_profile
                     try:
                         indiv_veri = IndivEmailVerification.objects.get(
-                                    corp_membership=corp_memb,
+                                    corp_profile=corp_profile,
                                     verified_email=form.cleaned_data['email'])
                         if indiv_veri.verified:
                             is_verified = True
@@ -1444,7 +1445,7 @@ def membership_default_corp_pre_add(request, cm_id=None,
                     except IndivEmailVerification.DoesNotExist:
                         is_verified = False
                         indiv_veri = IndivEmailVerification()
-                        indiv_veri.corp_membership = corp_memb
+                        indiv_veri.corp_profile = corp_profile
                         indiv_veri.verified_email = form.cleaned_data['email']
                         if request.user and not request.user.is_anonymous():
                             indiv_veri.creator = request.user
@@ -1514,13 +1515,12 @@ def verify_email(request,
         if request.user and not request.user.is_anonymous():
             indiv_veri.updated_by = request.user
         indiv_veri.save()
-    print reverse('membership_default.add_via_corp_domain',
-                            args=[indiv_veri.corp_membership.id,
-                                  indiv_veri.pk,
-                                  indiv_veri.guid])
+    corp_membership = indiv_veri.corp_profile.active_corp_membership
+    if not corp_membership:
+        raise Http404
     # let them continue to sign up for membership
     return redirect(reverse('membership_default.add_via_corp_domain',
-                            args=[indiv_veri.corp_membership.id,
+                            args=[corp_membership.id,
                                   indiv_veri.pk,
                                   indiv_veri.guid]))
 

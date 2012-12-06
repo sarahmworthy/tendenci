@@ -97,10 +97,12 @@ def get_corporate_membership_choices():
     # in the memberships app
     cursor = connection.cursor()
     cursor.execute(
-        """SELECT id, name
-        FROM corporate_memberships_corpmembership
-        WHERE status=True AND status_detail='active'
-        ORDER BY name"""
+        """SELECT cm.id, cp.name
+        FROM corporate_memberships_corpmembership cm
+        INNER JOIN corporate_memberships_corpprofile cp
+        ON cm.corp_profile_id=cp.id
+        WHERE cm.status=True AND cm.status_detail='active'
+        ORDER BY cp.name"""
     )
 
     for row in cursor.fetchall():
