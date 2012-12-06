@@ -3,28 +3,29 @@
 
 <div class="wrap-search-item{% if corporate_membership.status_detail == 'disapproved' %} disapproved{% endif %}">
     {% if corporate_membership %}
+    {% with corporate_membership.corp_profile as corp_profile %}
     <div class="corpmember-box">
-        <div class="corpmember-box-header"><a href="{% url corpmembership.view corporate_membership.pk %}">{{ corporate_membership.name }}</a></div>
+        <div class="corpmember-box-header"><a href="{% url corpmembership.view corporate_membership.pk %}">{{ corp_profile.name }}</a></div>
         <div class="corpmember-box-body">
             <div class="float-left label">{% trans "Address: " %}</div>
             <div class="float-left">
-                {% if corporate_membership.address or corporate_membership.address2 %}
-                    {{ corporate_membership.address }} {{ corporate_membership.address2 }} <br />
+                {% if corp_profile.address or corp_profile.address2 %}
+                    {{ corp_profile.address }} {{ corp_profile.address2 }} <br />
                 {% endif %}
                 
-                {% if corporate_membership.city %}{{ corporate_membership.city }}{% endif %} {% if corporate_membership.state %}{{ corporate_membership.state }}{% endif %} 
-                {% if corporate_membership.zip %}{{ corporate_membership.zip }}{% endif %} {% if corporate_membership.country %}{{ corporate_membership.country }}{% endif %}
+                {% if corp_profile.city %}{{ corp_profile.city }}{% endif %} {% if corp_profile.state %}{{ corp_profile.state }}{% endif %} 
+                {% if corp_profile.zip %}{{ corp_profile.zip }}{% endif %} {% if corp_profile.country %}{{ corp_profile.country }}{% endif %}
                 
                 
             </div>
             <div class="clear-left"></div>
             
             <div class="corpmember-left float-left">
-                {% if corporate_membership.phone %}
-                <div><span class="label">{% trans "Phone:" %}</span> {{ corporate_membership.phone }}</div>
+                {% if corp_profile.phone %}
+                <div><span class="label">{% trans "Phone:" %}</span> {{ corp_profile.phone }}</div>
                 {% endif %}
-                {% if corporate_membership.url %}
-                <div><span class="label">{% trans "Website:" %}</span> {{ corporate_membership.url|safe|urlize }}</div>
+                {% if corp_profile.url %}
+                <div><span class="label">{% trans "Website:" %}</span> {{ corp_profile.url|safe|urlize }}</div>
                 {% endif %}
                 <div><span class="label">{% trans "Member Type:" %}</span> {{ corporate_membership.corporate_membership_type.name }}
                 {% if corporate_membership.invoice %}
@@ -61,5 +62,6 @@
         </form>
     </div>
     {% include 'corporate_memberships/applications/meta.html' %}
+    {% endwith %}
     {% endif %}
 </div>

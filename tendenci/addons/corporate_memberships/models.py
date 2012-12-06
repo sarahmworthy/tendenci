@@ -305,7 +305,8 @@ class CorpProfile(TendenciBaseModel):
 
 class CorpMembership(TendenciBaseModel):
     guid = models.CharField(max_length=50)
-    corp_profile = models.ForeignKey("CorpProfile")
+    corp_profile = models.ForeignKey("CorpProfile",
+                                     related_name='corp_memberships')
     corporate_membership_type = models.ForeignKey("CorporateMembershipType",
                                     verbose_name=_("MembershipType"))
     renewal = models.BooleanField(default=0)

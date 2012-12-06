@@ -491,7 +491,7 @@ def corpmembership_search(request,
             else:
                 corp_members = CorpMembership.objects.all()
 
-    corp_members = corp_members.order_by('name')
+    corp_members = corp_members.order_by('corp_profile__name')
 
     EventLog.objects.log()
 
@@ -522,7 +522,12 @@ def corpmembership_delete(request, id,
 #                send_email_notification('corp_memb_deleted', recipients,
 #                                        extra_context)
             EventLog.objects.log()
+            corp_profile = corp_memb.corp_profile
             corp_memb.delete()
+            # delete the corp profile if none of the corp memberships
+            # associating with it.
+            if not corp_profile.corp_memberships.all():
+                corp_profile.delete()
 
             return HttpResponseRedirect(reverse('corpmembership.search'))
 
