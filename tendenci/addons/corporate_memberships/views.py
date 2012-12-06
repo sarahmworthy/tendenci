@@ -581,7 +581,7 @@ def corpmembership_approve(request, id,
                     # approve the renewal
                     corporate_membership.approve_renewal(request)
                     msg = """Corporate membership "%s" renewal has been APPROVED.
-                        """ % corporate_membership.name
+                        """ % corporate_membership
                 else:
                     # approve join
                     params = {'create_new': True,
@@ -600,7 +600,7 @@ def corpmembership_approve(request, id,
                     corporate_membership.approve_join(request, **params)
 
                     msg = """Corporate membership "%s" has been APPROVED.
-                        """ % corporate_membership.name
+                        """ % corporate_membership
             else:
                 if 'disapprove' in request.POST:
                     if renew_entry:
@@ -608,12 +608,12 @@ def corpmembership_approve(request, id,
                         corporate_membership.disapprove_renewal(request)
 
                         msg = """Corporate membership "%s" renewal has been DENIED.
-                            """ % corporate_membership.name
+                            """ % corporate_membership
                     else:
                         # deny join
                         corporate_membership.disapprove_join(request)
                         msg = """Corporate membership "%s" has been DENIED.
-                            """ % corporate_membership.name
+                            """ % corporate_membership
             if msg:
                 messages.add_message(request, messages.SUCCESS, msg)
 
