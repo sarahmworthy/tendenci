@@ -28,6 +28,7 @@ from tendenci.addons.corporate_memberships.models import (
                     CorpMembRenewEntry)
 from tendenci.addons.corporate_memberships.utils import (
                  get_corpmembership_type_choices,
+                 get_indiv_memberships_choices,
                  update_authorized_domains,
                  get_corpapp_default_fields_list,
                  update_auth_domains,
@@ -330,6 +331,51 @@ class CorpMembershipForm(forms.ModelForm):
         self.instance.save()
 
         return self.instance
+
+
+class CorpMembershipRenewForm(forms.ModelForm):
+    members = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
+                                        choices=[],
+                                        required=False)
+    select_all_members = forms.BooleanField(widget=forms.CheckboxInput(),
+                                            required=False)
+
+    class Meta:
+        model = CorpMembership
+        fields = ('corporate_membership_type',
+                  'payment_method',
+                  )
+
+    def __init__(self, *args, **kwargs):
+        self.request_user = kwargs.pop('request_user')
+        self.corpmembership_app = kwargs.pop('corpmembership_app')
+
+        super(CorpMembershipRenewForm, self).__init__(*args, **kwargs)
+
+        self.fields['corporate_membership_type'].widget = forms.RadioSelect(
+                    choices=get_corpmembership_type_choices(
+                                self.request_user,
+                                self.corpmembership_app,
+                                renew=True))
+        self.fields['corporate_membership_type'].empty_label = None
+        self.fields['corporate_membership_type'
+                ].initial = self.instance.corporate_membership_type.id
+
+        members_choices = get_indiv_memberships_choices(self.instance)
+        self.fields['members'].choices = members_choices
+        self.fields['members'].label = "Select the individual members you " + \
+                                        "want to renew"
+        if self.instance.corporate_membership_type.renewal_price == 0:
+            self.fields['select_all_members'].initial = True
+            self.fields['members'].initial = [c[0] for c in members_choices]
+
+        self.fields['payment_method'].widget = forms.RadioSelect(
+                                    choices=get_payment_method_choices(
+                                    self.request_user,
+                                    self.corpmembership_app))
+        self.fields['payment_method'].empty_label = None
+        self.fields['payment_method'].initial = \
+                self.instance.payment_method
 
 
 class CorpAppForm(forms.ModelForm):

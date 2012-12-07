@@ -33,6 +33,10 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
     url(r"^applications/approve/(?P<id>\d+)/$",
         "corpmembership_approve",
         name="corpmembership.approve"),
+    url(r"^renewal/(?P<id>\d+)/$", "corp_renew",
+        name="corpmembership.renew"),
+    url(r"^renewal_conf/(?P<id>\d+)/$", "corp_renew_conf",
+        name="corpmembership.renew_conf"),
 
 
 

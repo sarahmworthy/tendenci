@@ -16,7 +16,8 @@ from django.core.files.storage import default_storage
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.addons.memberships.models import (AppField,
-                                                Membership)
+                                                Membership,
+                                                MembershipDefault)
 from tendenci.apps.invoices.models import Invoice
 from tendenci.core.payments.models import Payment
 from tendenci.core.base.utils import normalize_newline
@@ -34,18 +35,21 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
 
     for cmt in corporate_membership_types:
         if not renew:
-            price_display = '%s - %s%0.2f' % (cmt.name, currency_symbol, cmt.price)
+            price_display = '%s - %s%0.2f' % (cmt.name, currency_symbol,
+                                              cmt.price)
         else:
             indiv_renewal_price = cmt.membership_type.renewal_price
             if not indiv_renewal_price:
                 indiv_renewal_price = 'Free<span class="type-ind-price"></span>'
             else:
-                indiv_renewal_price = '%s<span class="type-ind-price">%0.2f</span>' % (currency_symbol, indiv_renewal_price)
+                indiv_renewal_price = """
+                    %s<span class="type-ind-price">%0.2f</span>
+                    """ % (currency_symbol, indiv_renewal_price)
             if not cmt.renewal_price:
                 cmt.renewal_price = 0
 
-            price_display = """%s - <b>%s<span class="type-corp-price">%0.2f</span></b> 
-                            (individual members renewal:
+            price_display = """%s - <b>%s<span class="type-corp-price">%0.2f</span>
+                            </b>(individual members:
                             <b>%s</b>)""" % (cmt.name,
                                             currency_symbol,
                                             cmt.renewal_price,
@@ -54,6 +58,24 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
         cmt_list.append((cmt.id, price_display))
 
     return cmt_list
+
+
+def get_indiv_memberships_choices(corp_membership):
+    im_list = []
+    indiv_memberships = MembershipDefault.objects.filter(
+                            corp_profile_id=corp_membership.corp_profile.id,
+                            status_detail__in=['active', 'expired'],
+                            status=True)
+
+    for membership in indiv_memberships:
+        indiv_memb_display = '<a href="%s" target="_blank">%s</a>' % (
+                                    reverse('profile',
+                                            args=[membership.user.username]),
+                                        membership.user.get_full_name())
+        indiv_memb_display = mark_safe(indiv_memb_display)
+        im_list.append((membership.id, indiv_memb_display))
+
+    return im_list
 
 
 def update_authorized_domains(corp_profile, domain_names):
@@ -111,6 +133,97 @@ def corp_membership_update_perms(corp_memb, **kwargs):
         ObjectPermission.objects.assign(rep.user, corp_memb, perms=perms)
 
     return corp_memb
+
+
+def corp_memb_inv_add(user, corp_memb, **kwargs): 
+    """
+    Add an invoice for this corporate membership
+    """
+    corp_profile = corp_memb.corp_profile
+    renewal = kwargs.get('renewal', False)
+    renewal_total = kwargs.get('renewal_total', 0)
+    if not corp_memb.invoice or renewal:
+        inv = Invoice()
+        inv.object_type = ContentType.objects.get(
+                                      app_label=corp_memb._meta.app_label,
+                                      model=corp_memb._meta.module_name)
+        inv.object_id = corp_memb.id
+        inv.title = "Corporate Membership Invoice"
+        if not user.is_anonymous():
+            inv.bill_to = '%s %s' % (user.first_name, user.last_name)
+            inv.bill_to_first_name = user.first_name
+            inv.bill_to_last_name = user.last_name
+            inv.bill_to_email = user.email
+        else:
+            if corp_memb.anonymous_creator:
+                cmc = corp_memb.anonymous_creator
+                inv.bill_to = '%s %s' % (cmc.first_name, cmc.last_name)
+                inv.bill_to_first_name = cmc.first_name
+                inv.bill_to_last_name = cmc.last_name
+                inv.bill_to_email = cmc.email
+            else:
+                inv.bill_to = corp_memb.name
+
+        inv.bill_to_company = corp_profile.name
+        inv.bill_to_address = corp_profile.address
+        inv.bill_to_city = corp_profile.city
+        inv.bill_to_state = corp_profile.state
+        inv.bill_to_zip_code = corp_profile.zip
+        inv.bill_to_country = corp_profile.country
+        inv.bill_to_phone = corp_profile.phone
+        inv.ship_to = corp_profile.name
+        inv.ship_to_company = corp_profile.name
+        inv.ship_to_address = corp_profile.address
+        inv.ship_to_city = corp_profile.city
+        inv.ship_to_state = corp_profile.state
+        inv.ship_to_zip_code = corp_profile.zip
+        inv.ship_to_country = corp_profile.country
+        inv.ship_to_phone = corp_profile.phone
+        inv.ship_to_email = corp_profile.email
+        inv.terms = "Due on Receipt"
+        inv.due_date = datetime.now()
+        inv.ship_date = datetime.now()
+        inv.message = 'Thank You.'
+        inv.status = True
+
+        if not renewal:
+            inv.total = corp_memb.corporate_membership_type.price
+        else:
+            inv.total = renewal_total
+        inv.subtotal = inv.total
+        inv.balance = inv.total
+        inv.estimate = 1
+        inv.status_detail = 'tendered'
+        inv.save(user)
+
+        if user.profile.is_superuser:
+            # if offline payment method
+            if not corp_memb.get_payment_method().is_online:
+                inv.tender(user) # tendered the invoice for admin if offline
+
+                # mark payment as made
+                payment = Payment()
+                payment.payments_pop_by_invoice_user(user, inv, inv.guid)
+                payment.mark_as_paid()
+                payment.method = corp_memb.get_payment_method()
+                payment.save(user)
+
+                # this will make accounting entry
+                inv.make_payment(user, payment.amount)
+        return inv
+    return None
+
+
+def dues_rep_emails_list(corp_memb):
+    from tendenci.addons.corporate_memberships.models import CorpMembershipRep
+    dues_reps = CorpMembershipRep.objects.filter(
+                                corp_profile=corp_memb.corp_profile,
+                                is_dues_rep=True)
+    if dues_reps:
+        return [dues_rep.user.email \
+                for dues_rep in dues_reps \
+                if dues_rep.user.email]
+    return []
 
 
 # get the corpapp default fields list from json
@@ -188,92 +301,6 @@ def get_payment_method_choices(user, corp_app):
     for pm in payment_methods:
         pm_choices.append((pm.pk, pm.human_name))
     return pm_choices
-    
-        
-def corp_memb_inv_add(user, corp_memb, **kwargs): 
-    """
-    Add an invoice for this corporate membership
-    """
-    corp_profile = corp_memb.corp_profile
-    renewal = kwargs.get('renewal', False)
-    renewal_total = kwargs.get('renewal_total', 0)
-    renew_entry = kwargs.get('renew_entry', None)
-    if not corp_memb.invoice or renewal:
-        inv = Invoice()
-        if renew_entry:
-            inv.object_type = ContentType.objects.get(
-                                          app_label=renew_entry._meta.app_label,
-                                          model=renew_entry._meta.module_name)
-            inv.object_id = renew_entry.id
-        else:
-            inv.object_type = ContentType.objects.get(
-                                          app_label=corp_memb._meta.app_label,
-                                          model=corp_memb._meta.module_name)
-            inv.object_id = corp_memb.id
-        inv.title = "Corporate Membership Invoice"
-        if not user.is_anonymous():
-            inv.bill_to = '%s %s' % (user.first_name, user.last_name)
-            inv.bill_to_first_name = user.first_name
-            inv.bill_to_last_name = user.last_name
-            inv.bill_to_email = user.email
-        else:
-            if corp_memb.anonymous_creator:
-                cmc = corp_memb.anonymous_creator
-                inv.bill_to = '%s %s' % (cmc.first_name, cmc.last_name)
-                inv.bill_to_first_name = cmc.first_name
-                inv.bill_to_last_name = cmc.last_name
-                inv.bill_to_email = cmc.email
-            else:
-                inv.bill_to = corp_memb.name
-
-        inv.bill_to_company = corp_profile.name
-        inv.bill_to_address = corp_profile.address
-        inv.bill_to_city = corp_profile.city
-        inv.bill_to_state = corp_profile.state
-        inv.bill_to_zip_code = corp_profile.zip
-        inv.bill_to_country = corp_profile.country
-        inv.bill_to_phone = corp_profile.phone
-        inv.ship_to = corp_profile.name
-        inv.ship_to_company = corp_profile.name
-        inv.ship_to_address = corp_profile.address
-        inv.ship_to_city = corp_profile.city
-        inv.ship_to_state = corp_profile.state
-        inv.ship_to_zip_code = corp_profile.zip
-        inv.ship_to_country = corp_profile.country
-        inv.ship_to_phone = corp_profile.phone
-        inv.ship_to_email = corp_profile.email
-        inv.terms = "Due on Receipt"
-        inv.due_date = datetime.now()
-        inv.ship_date = datetime.now()
-        inv.message = 'Thank You.'
-        inv.status = True
-
-        if not renewal:
-            inv.total = corp_memb.corporate_membership_type.price
-        else:
-            inv.total = renewal_total
-        inv.subtotal = inv.total
-        inv.balance = inv.total
-        inv.estimate = 1
-        inv.status_detail = 'tendered'
-        inv.save(user)
-
-        if user.profile.is_superuser:
-            # if offline payment method
-            if not corp_memb.get_payment_method().is_online:
-                inv.tender(user) # tendered the invoice for admin if offline
-
-                # mark payment as made
-                payment = Payment()
-                payment.payments_pop_by_invoice_user(user, inv, inv.guid)
-                payment.mark_as_paid()
-                payment.method = corp_memb.get_payment_method()
-                payment.save(user)
-
-                # this will make accounting entry
-                inv.make_payment(user, payment.amount)
-        return inv
-    return None
 
 
 def update_auth_domains(corp_memb, domain_names):
@@ -364,14 +391,7 @@ def edit_corpapp_update_memb_app(corpapp):
             for field in field_list:
                 field.update({'app':app})
                 AppField.objects.create(**field)
-                
-def dues_rep_emails_list(corp_memb):
-    from tendenci.addons.corporate_memberships.models import CorporateMembershipRep
-    dues_reps = CorporateMembershipRep.objects.filter(corporate_membership=corp_memb,
-                                                      is_dues_rep=1)
-    if dues_reps:
-        return [dues_rep.user.email for dues_rep in dues_reps if dues_rep.user.email]
-    return []
+
 
 def corp_memb_update_perms(corp_memb, **kwargs):
     """

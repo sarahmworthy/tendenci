@@ -32,6 +32,7 @@ from tendenci.addons.corporate_memberships.models import (
                                             CorpMembershipApp,
                                             CorpMembershipRep,
                                             CorpMembership,
+                                            IndivMembershipRenewEntry,
                                             CorpMembershipAppField,
                                             CorpApp, CorpField,
                                             CorporateMembership,
@@ -45,6 +46,7 @@ from tendenci.addons.corporate_memberships.models import (
 from tendenci.addons.corporate_memberships.forms import (
                                          CorpMembershipForm,
                                          CorpProfileForm,
+                                         CorpMembershipRenewForm,
                                          CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
@@ -56,6 +58,7 @@ from tendenci.addons.corporate_memberships.forms import (
 from tendenci.addons.corporate_memberships.utils import (
                                         get_corporate_membership_type_choices,
                                          get_payment_method_choices,
+                                         get_indiv_memberships_choices,
                                          corp_memb_inv_add, 
                                          dues_rep_emails_list,
                                          corp_memb_update_perms,
@@ -65,7 +68,8 @@ from tendenci.addons.corporate_memberships.utils import (
                                          get_indiv_membs_choices,
                                          get_summary)
 #from tendenci.addons.memberships.models import MembershipType
-from tendenci.addons.memberships.models import Membership
+from tendenci.addons.memberships.models import (Membership,
+                                                MembershipDefault)
 
 from tendenci.core.perms.utils import get_notice_recipients
 from tendenci.core.base.utils import send_email_notification
@@ -627,6 +631,178 @@ def corpmembership_approve(request, id,
                'indiv_renew_entries': indiv_renew_entries,
                'new_expiration_dt': new_expiration_dt,
                'approve_form': approve_form,
+               }
+    return render_to_response(template, context, RequestContext(request))
+
+
+@login_required
+def corp_renew(request, id,
+               template='corporate_memberships/renewal.html'):
+    corp_membership = get_object_or_404(CorpMembership, id=id)
+    new_corp_membership = corp_membership.copy()
+    if not has_perm(request.user,
+                    'corporate_memberships.change_corpmembership',
+                    corp_membership):
+        if not corp_membership.allow_edit_by(request.user):
+            raise Http403
+
+    if corp_membership.is_renewal_pending:
+        messages.add_message(request, messages.INFO,
+                             """The corporate membership "%s"
+                             has been renewed and is pending
+                             or admin approval.""" % corp_membership)
+        return HttpResponseRedirect(reverse('corpmembership.view',
+                                        args=[corp_membership.id]))
+    corpmembership_app = CorpMembershipApp.objects.current_app()
+    form = CorpMembershipRenewForm(
+                            request.POST or None,
+                            instance=new_corp_membership,
+                            request_user=request.user,
+                            corpmembership_app=corpmembership_app
+                                   )
+    if request.method == "POST":
+        if form.is_valid():
+            if 'update_summary' in request.POST:
+                pass
+            else:
+                members = form.cleaned_data['members']
+                # create a new corp_membership entry
+                new_corp_membership = form.save()
+                new_corp_membership.renewal = True
+                new_corp_membership.renew_dt = datetime.now()
+                new_corp_membership.status = True
+                new_corp_membership.status_detail = 'pending'
+
+                # archive old corp_memberships
+                new_corp_membership.archive_old()
+
+                # calculate the total price for invoice
+                corp_memb_type = form.cleaned_data[
+                                            'corporate_membership_type']
+                corp_renewal_price = corp_memb_type.renewal_price
+                if not corp_renewal_price:
+                    corp_renewal_price = 0
+                indiv_renewal_price = corp_memb_type.membership_type.renewal_price
+                if not indiv_renewal_price:
+                    indiv_renewal_price = 0
+
+                renewal_total = corp_renewal_price + \
+                        indiv_renewal_price * len(members)
+                opt_d = {'renewal': True,
+                         'renewal_total': renewal_total}
+                # create an invoice
+                inv = corp_memb_inv_add(request.user,
+                                        new_corp_membership,
+                                        **opt_d)
+                new_corp_membership.invoice = inv
+                new_corp_membership.save()
+
+                # save the individual members
+                for member in members:
+                    [membership] = MembershipDefault.objects.filter(id=member
+                                                    )[:1] or [None]
+                    if membership:
+                        ind_memb_renew_entry = IndivMembershipRenewEntry(
+                                        corp_membership=new_corp_membership,
+                                        membership=membership,
+                                        )
+                        ind_memb_renew_entry.save()
+
+                # handle online payment
+                if new_corp_membership.get_payment_method().is_online:
+                    if new_corp_membership.invoice \
+                        and new_corp_membership.invoice.balance > 0:
+
+                        return HttpResponseRedirect(
+                                reverse('payment.pay_online',
+                                    args=[new_corp_membership.invoice.id,
+                                    new_corp_membership.invoice.guid]))
+
+                # email notifications
+                extra_context = {
+                    'object': new_corp_membership,
+                    'corp_profile': new_corp_membership.corp_profile,
+                    'corpmembership_app': corpmembership_app,
+                    'request': request,
+                    'invoice': inv,
+                }
+                if request.user.is_superuser:
+                    # admin: approve renewal
+                    new_corp_membership.approve_renewal(request)
+                else:
+                    # send a notice to admin
+                    recipients = get_notice_recipients(
+                                           'module',
+                                           'corporate_memberships',
+                                           'corporatemembershiprecipients')
+                    send_email_notification('corp_memb_renewed',
+                                            recipients, extra_context)
+
+                # send an email to dues reps
+                recipients = dues_rep_emails_list(new_corp_membership)
+                send_email_notification('corp_memb_renewed_user',
+                                        recipients, extra_context)
+
+                return HttpResponseRedirect(reverse(
+                                            'corpmembership.renew_conf',
+                                            args=[new_corp_membership.id]))
+
+    summary_data = {'corp_price': 0,
+                    'individual_price': 0,
+                    'individual_count': 0,
+                    'individual_total': 0,
+                    'total_amount':0}
+    if corp_membership.corporate_membership_type.renewal_price == 0:
+        summary_data['individual_count'] = len(get_indiv_memberships_choices(
+                                                    corp_membership))
+
+    if request.method == "POST":
+        cmt_id = request.POST.get('corporate_membership_type', 0)
+        try:
+            cmt = CorporateMembershipType.objects.get(id=cmt_id)
+        except CorporateMembershipType.DoesNotExist:
+            pass
+        summary_data['individual_count'] = len(request.POST.getlist('members'))
+    else:
+        cmt = corp_membership.corporate_membership_type
+
+    if cmt:
+        summary_data['corp_price'] = cmt.renewal_price
+        if not summary_data['corp_price']:
+            summary_data['corp_price'] = 0
+        summary_data['individual_price'] = cmt.membership_type.renewal_price
+        if not summary_data['individual_price']:
+            summary_data['individual_price'] = 0
+    summary_data['individual_total'] = summary_data['individual_count'
+                                        ] * summary_data['individual_price']
+    summary_data['total_amount'] = summary_data['individual_total'
+                                    ] + summary_data['corp_price']
+
+    context = {"corp_membership": corp_membership,
+               'corp_profile': corp_membership.corp_profile,
+               'corp_app': corpmembership_app,
+               'form': form,
+               'summary_data': summary_data,
+               }
+    return render_to_response(template, context, RequestContext(request))
+
+
+def corp_renew_conf(request, id,
+                    template="corporate_memberships/renewal_conf.html"):
+    corp_membership = get_object_or_404(CorpMembership, id=id)
+
+    if not has_perm(request.user,
+                    'corporate_memberships.change_corporatemembership',
+                    corp_membership):
+        if not corp_membership.allow_edit_by(request.user):
+            raise Http403
+
+    corpmembership_app = CorpMembershipApp.objects.current_app()
+
+    EventLog.objects.log(instance=corp_membership)
+    context = {"corp_membership": corp_membership,
+               'corp_profile': corp_membership.corp_profile,
+               'corp_app': corpmembership_app,
                }
     return render_to_response(template, context, RequestContext(request))
 

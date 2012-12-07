@@ -434,7 +434,7 @@ class CorpMembership(TendenciBaseModel):
         return 'Tendenci Invoice %d for Corp. Memb. (%d): %s. ' % (
             inv.id,
             inv.object_id,
-            self.name,
+            self,
         )
 
     def make_acct_entries(self, user, inv, amount, **kwargs):
@@ -505,6 +505,30 @@ class CorpMembership(TendenciBaseModel):
                                         machine_name='credit-card')
         return self.payment_method
 
+    def copy(self):
+        corp_membership = self.__class__()
+        field_names = [field.name for field in self.__class__._meta.fields]
+        ignore_fields = ['id', 'renewal', 'renew_dt', 'status',
+                         'status_detail', 'approved', 'approved_denied_dt',
+                         'approved_denied_user']
+        for field in ignore_fields:
+            field_names.remove(field)
+
+        for name in field_names:
+            setattr(corp_membership, name, getattr(self, name))
+        return corp_membership
+
+    def archive_old(self):
+        """
+        Archive the old records
+        """
+        corp_memberships = self.corp_profile.corp_memberships.exclude(
+                                    id=self.id
+                                        )
+        for corp_memb in corp_memberships:
+            corp_memb.status_detail = 'archived'
+            corp_memb.save()
+
     def approve_join(self, request, **kwargs):
         self.approved = True
         self.approved_denied_dt = datetime.now()
@@ -537,6 +561,122 @@ class CorpMembership(TendenciBaseModel):
         self.status = 1
         self.status_detail = 'disapproved'
         self.save()
+
+    def approve_renewal(self, request, **kwargs):
+        """
+        Approve the corporate membership renewal, and
+        approve the individual memberships that are
+        renewed with the corporate_membership
+        """
+        if self.renewal and self.status_detail in [
+                        'pending', 'paid - pending approval']:
+            request_user = request.user
+            # 2) approve corp_membership
+            self.approved = True
+            self.approved_denied_dt = datetime.now()
+            if request_user and (not request_user.is_anonymous()):
+                self.approved_denied_user = request_user
+            self.status = True
+            self.status_detail = 'active'
+            # calculate the expiration date
+            corp_memb_type = self.corporate_membership_type
+            self.expiration_dt = corp_memb_type.get_expiration_dt(
+                                            renewal=True,
+                                            join_dt=self.join_dt,
+                                            renew_dt=self.renew_dt)
+            if not request_user.is_anonymous():
+                self.owner = request_user
+                self.owner_username = request_user.username
+            self.save()
+
+            # 2) approve the individual memberships
+            group = self.corporate_membership_type.membership_type.group
+
+            ind_memb_renew_entries = IndivMembershipRenewEntry.objects.filter(
+                                            corp_membership=self)
+            total_individuals_renewed = ind_memb_renew_entries.count()
+            for memb_entry in ind_memb_renew_entries:
+                membership = memb_entry.membership
+                new_membership = membership.copy()
+                # update the membership record with the renewal info
+                new_membership.renewal = True
+                new_membership.renew_dt = self.renew_dt
+                new_membership.expiration_dt = self.expiration_dt
+                new_membership.corporate_membership_id = self.id
+                new_membership.corp_profile_id = self.corp_profile.id
+                new_membership.membership_type = self.corporate_membership_type.membership_type
+                new_membership.status = True
+                new_membership.status_detail = 'active'
+                if not request_user.is_anonymous():
+                    new_membership.owner_id = request_user.id
+                    new_membership.owner_username = request_user.username
+
+                new_membership.save()
+                # archive old memberships
+                new_membership.archive_old_memberships()
+
+                # check and add member to the group if not exist
+                [gm] = GroupMembership.objects.filter(group=group,
+                                                    member=new_membership.user
+                                                    )[:1] or [None]
+                if gm:
+                    if gm.status_detail != 'active':
+                        gm.status_detail = 'active'
+                        gm.save()
+                else:
+                    opt = {
+                        'group': group,
+                        'member': new_membership.user,
+                        'status': True,
+                        'status_detail': 'active',
+                        }
+                    if not request_user.is_anonymous():
+                        opt.update({
+                                'creator_id': request_user.id,
+                                'creator_username': request_user.username,
+                                'owner_id': request_user.id,
+                                'owner_username': request_user.username,
+                                   })
+                    GroupMembership.objects.create(**opt)
+
+                # update the status_detail for memb_entry
+                memb_entry.status_detail = 'approved'
+                memb_entry.save()
+
+            # email dues reps that corporate membership has been approved
+            recipients = dues_rep_emails_list(self)
+            if not recipients and self.creator:
+                recipients = [self.creator.email]
+            extra_context = {
+                'object': self,
+                'request': request,
+                'invoice': self.invoice,
+                'total_individuals_renewed': total_individuals_renewed
+            }
+            send_email_notification('corp_memb_renewal_approved',
+                                    recipients, extra_context)
+
+    def disapprove_renewal(self, request, **kwargs):
+        """
+        deny the corporate membership renewal
+        set the status detail to 'disapproved'
+        """
+        if self.renewal and self.status_detail in [
+                        'pending', 'paid - pending approval']:
+            request_user = request.user
+            self.approved = True
+            self.approved_denied_dt = datetime.now()
+            self.status_detail = 'inactive'
+            if not request_user.is_anonymous():
+                self.owner = request_user
+                self.owner_username = request_user.username
+            self.save()
+
+        ind_memb_renew_entries = IndivMembershipRenewEntry.objects.filter(
+                                            corp_membership=self)
+        for memb_entry in ind_memb_renew_entries:
+            memb_entry.status_detail = 'disapproved'
+            memb_entry.save()
 
     def handle_anonymous_creator(self, **kwargs):
         """
@@ -679,19 +819,21 @@ class CorpMembership(TendenciBaseModel):
 
     @property
     def is_join_pending(self):
-        return self.status_detail in ['pending', 
-                                      'paid - pending approval']
+        return not self.renewal and self.status_detail in [
+                                    'pending',
+                                    'paid - pending approval']
 
-#    @property
-#    def is_renewal_pending(self):
-#        renew_entry = self.get_pending_renewal_entry()
-#        return renew_entry <> None
+    @property
+    def is_renewal_pending(self):
+        return self.renewal and self.status_detail in [
+                            'pending',
+                            'paid - pending approval']
 
     @property
     def is_pending(self):
-        #return self.is_join_pending or self.is_renewal_pending
-        return self.is_join_pending
-
+        return self.status_detail in [
+                            'pending',
+                            'paid - pending approval']
 
     @property
     def is_expired(self):

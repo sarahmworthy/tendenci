@@ -726,6 +726,23 @@ class MembershipDefault(TendenciBaseModel):
 
         return self.status_detail.lower()
 
+    def copy(self):
+        membership = self.__class__()
+        field_names = [field.name for field in self.__class__._meta.fields]
+        ignore_fields = ['id', 'renewal', 'renew_dt', 'status',
+                         'status_detail', 'application_approved',
+                         'application_approved_dt',
+                         'application_approved_user',
+                         'application_approved_denied_dt',
+                         'application_approved_denied_user',
+                         'application_denied']
+        for field in ignore_fields:
+            field_names.remove(field)
+
+        for name in field_names:
+            setattr(membership, name, getattr(self, name))
+        return membership
+
     def archive_old_memberships(self):
         """
         Archive old memberships that are active, pending, and expired
