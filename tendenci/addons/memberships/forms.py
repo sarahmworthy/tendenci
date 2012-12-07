@@ -754,7 +754,7 @@ class MembershipDefault2Form(forms.ModelForm):
             else:
                 self.fields['corporate_membership_id'].widget = forms.widgets.Select(
                                         choices=get_corporate_membership_choices())
-                self.fields['corporate_membership_id'].queryset = CorporateMembership.objects.filter(
+                self.fields['corporate_membership_id'].queryset = CorpMembership.objects.filter(
                                                 status=True).exclude(
                                                 status_detail__in=['archive', 'inactive'])
 
@@ -781,6 +781,12 @@ class MembershipDefault2Form(forms.ModelForm):
 
         kwargs['commit'] = False
         membership = super(MembershipDefault2Form, self).save(*args, **kwargs)
+
+        # assign corp_profile_id
+        if membership.corporate_membership_id:
+            corp_membership = CorpMembership.objects.get(
+                                    pk=membership.corporate_membership_id)
+            membership.corp_profile_id = corp_membership.corp_profile.id
 
         # set owner & creator
         if request_user:

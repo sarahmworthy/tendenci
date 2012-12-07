@@ -338,6 +338,7 @@ class MembershipDefault(TendenciBaseModel):
         related_name='organization_set', editable=False, null=True)
     corporate_entity = models.ForeignKey(Entity,
         related_name='corporate_set', editable=False, null=True)
+    corp_profile_id = models.IntegerField(blank=True, default=0)
     corporate_membership_id = models.IntegerField(blank=True, null=True)
     home_state = models.CharField(max_length=50, blank=True, default=u'')
     year_left_native_country = models.IntegerField(blank=True, null=True)
