@@ -20,7 +20,9 @@ from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.apps.invoices.models import Invoice
 from tendenci.addons.memberships.models import (MembershipType, App,
-                                                MembershipApp, Membership)
+                                                MembershipApp,
+                                                MembershipDefault,
+                                                Membership)
 from tendenci.apps.forms_builder.forms.settings import FIELD_MAX_LENGTH, LABEL_MAX_LENGTH
 from tendenci.addons.corporate_memberships.managers import (
                                                 CorporateMembershipManager,
@@ -864,48 +866,21 @@ class IndivEmailVerification(models.Model):
         super(IndivEmailVerification, self).save(*args, **kwargs)
 
 
-#class CorpMembershipRenewEntry(models.Model):
-#    corp_membership = models.ForeignKey("CorpMembership")
-#    corporate_membership_type = models.ForeignKey("CorporateMembershipType")
-#    payment_method = models.CharField(_("Payment Method"),
-#                                      max_length=50,
-#                                      null=True)
-#    invoice = models.ForeignKey(Invoice, blank=True, null=True)
-#    create_dt = models.DateTimeField(auto_now_add=True)
-#    creator = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
-#    status_detail = models.CharField(max_length=50)   # pending, approved and disapproved
-#
-#    @property
-#    def module_name(self):
-#        return self._meta.module_name.lower()
-#    
-#    def indiv_memb_renew_entries(self):
-#        return self.indivmembrenewentry_set.all()
-#    
-#    def get_payment_description(self, inv):
-#        return self.corporate_membership.get_payment_description(inv)
-#    
-#    def make_acct_entries(self, user, inv, amount, **kwargs):
-#        return self.corporate_membership.make_acct_entries(user, inv, amount, **kwargs)
-#    
-#    def auto_update_paid_object(self, request, payment):
-#        return self.corporate_membership.auto_update_paid_object(request, payment)
-#
-#    def get_payment_method(self):
-#        from tendenci.core.payments.models import PaymentMethod
-#
-#        # return payment method if defined
-#        if self.payment_method and self.payment_method.isdigit():
-#            return PaymentMethod.objects.get(pk=int(self.payment_method))
-#
-#        # first method is credit card (online)
-#        # will raise exception if payment method does not exist
-#        return PaymentMethod.objects.get(machine_name='credit-card') 
-#
-#
-#class IndivMembershipRenewEntry(models.Model):
-#    corp_memb_renew_entry = models.ForeignKey("CorpMembershipRenewEntry")
-#    membership = models.ForeignKey(Membership)
+class IndivMembershipRenewEntry(models.Model):
+    """
+    Hold the individual memberships to be renewed with
+    the corporate membership.
+    """
+    STATUS_DETAIL_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('disapproved', 'Disapproved'),
+    )
+    corp_membership = models.ForeignKey("CorpMembership")
+    membership = models.ForeignKey(MembershipDefault)
+    status_detail = models.CharField(max_length=50,
+                                     choices=STATUS_DETAIL_CHOICES,
+                                     default='pending')
 
 
 class CorporateMembership(TendenciBaseModel):
