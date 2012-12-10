@@ -745,7 +745,7 @@ class CorpMembership(TendenciBaseModel):
         """
         if this_user.is_anonymous():
             return False
-        reps = self.reps.all()
+        reps = self.corp_profile.reps.all()
         for rep in reps:
             if rep.user.id == this_user.id:
                 return True
