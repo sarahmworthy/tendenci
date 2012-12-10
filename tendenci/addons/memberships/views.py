@@ -1604,6 +1604,14 @@ def membership_join_report_pdf(request):
 
     return resp
 
+@staff_member_required
+def report_list(request, template_name='reports/membership_report_list.html'):
+    """ List of all available membership reports.
+    """
+    
+    EventLog.objects.log()
+    
+    return render_to_response(template_name, context_instance=RequestContext(request))
 
 @staff_member_required
 def report_active_members(request, template_name='reports/membership_list.html'):

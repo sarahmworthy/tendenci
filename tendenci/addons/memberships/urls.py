@@ -69,7 +69,8 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
         name="membership.add_via_corp_secret_code"),
 
     # reports
-    url(r'^reports/$', 'membership_join_report', name='reports-memberships-joins'),
+    url(r'^reports/$', 'report_list', name='reports-memberships'),
+    url(r'^reports/join_summary$', 'membership_join_report', name='reports-memberships-joins'),
     url(r'^reports/pdf/$', 'membership_join_report_pdf', name='reports-memberships-joins-pdf'),
     url(r'^reports/active_members/$', 'report_active_members', name='reports-active-members'),
     url(r'^reports/expired_members/$', 'report_expired_members', name='reports-expired-members'),

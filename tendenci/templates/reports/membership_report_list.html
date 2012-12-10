@@ -1,0 +1,17 @@
+{% extends "reports/base.html" %}
+{% load i18n %}
+
+{% block content %}
+	<h1>{% trans "Membership Reports" %}</h1>
+<ul>
+<li><a href="{% url reports-memberships-joins %}">{% trans "Membership Joins Report Summary" %}</a></li>
+<li><a href="{% url reports-active-members %}">{% trans "Active Memberships" %}</a></li>
+<li><a href="{% url reports-expired-members %}">{% trans "Expired Memberships" %}</a></li>
+<li><a href="{% url reports-members-summary %}">{% trans "Membership Summary" %}</a></li>
+<li><a href="{% url reports-members-over-time %}">{% trans "Memberships Over Time" %}</a></li>
+<li><a href="{% url reports-members-stats %}">{% trans "Membership Statistics" %}</a></li>
+<li><a href="{% url reports-member-roster %}">{% trans "Current Members Roster" %}</a></li>
+</ul>
+
+{% endblock content %}
+
