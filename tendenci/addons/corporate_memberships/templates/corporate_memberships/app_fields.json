@@ -224,13 +224,6 @@
     "admin_only": "false"
     },
     {
-    "label": "Section 4. Payment Method",
-    "field_name": "",
-    "display": "true",
-    "required": "false",
-    "admin_only": "false"
-    },
-    {
     "label": "Payment Method",
     "field_name": "payment_method",
     "display": "true",
