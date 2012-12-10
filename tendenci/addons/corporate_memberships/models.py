@@ -369,6 +369,8 @@ class CorpMembership(TendenciBaseModel):
     def save(self, *args, **kwargs):
         if not self.guid:
             self.guid = str(uuid.uuid1())
+        if not self.entity:
+                self.entity_id = 1
         super(CorpMembership, self).save(*args, **kwargs)
 
     @property
