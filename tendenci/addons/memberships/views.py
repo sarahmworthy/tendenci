@@ -1896,3 +1896,13 @@ def report_member_roster(request, template_name='reports/membership_roster.html'
     EventLog.objects.log()
 
     return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))
+
+@staff_member_required
+def report_member_quick_list(request, template_name='reports/membership_quick_list.html'):
+    """ Table view of current members fname, lname and company only.
+    """
+    members = MembershipDefault.objects.filter(status=1, status_detail="active").order_by('user__last_name')
+    
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))
