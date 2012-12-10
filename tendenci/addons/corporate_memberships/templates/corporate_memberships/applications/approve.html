@@ -12,7 +12,7 @@
 
 {% block body %}
 <div class="t">
-{# corpmemb_nav request.user corporate_membership #} 
+{% corpmemb_nav request.user corporate_membership %} 
 
      <h1>{% trans "Corporate Membership Submission" %}</h1>
      {% if corporate_membership.is_pending %}

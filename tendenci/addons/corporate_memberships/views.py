@@ -353,6 +353,7 @@ def corpmembership_edit(request, id,
 
     context = {'app': app,
                "app_fields": app_fields,
+               'corp_membership': corp_membership,
                'corpprofile_form': corpprofile_form,
                'corpmembership_form': corpmembership_form}
     return render_to_response(template, context, RequestContext(request))

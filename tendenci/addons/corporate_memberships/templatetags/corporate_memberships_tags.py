@@ -51,6 +51,7 @@ def corpmemb_nav(context, user, corp_memb=None):
     })
     return context
 
+
 @register.inclusion_tag("corporate_memberships/options.html", takes_context=True)
 def corpmemb_options(context, user, corp_memb):
     context.update({

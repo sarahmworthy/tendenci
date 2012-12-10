@@ -50,8 +50,14 @@
 {% block body %}
 <div class="t">
 <div class="application-form-wrap">
-
+{% corpmemb_nav request.user corporate_membership %} 
    <h1>{% trans "View Corporate Membership Information" %}</h1>
+   
+   <div class="options" align="right">
+         <div class="quick-options">
+            {% corpmemb_options request.user corporate_membership %}        
+         </div>
+    </div>
    
    <div class="float-right">
     {% if corporate_membership.status and corporate_membership.status_detail == "active" %}

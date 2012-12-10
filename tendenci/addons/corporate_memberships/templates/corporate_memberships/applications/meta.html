@@ -27,6 +27,7 @@
     <div class="edit-links">
     <ul>
         <li><a class="eventlog-link" href="{% url event_log.search %}?object_id={{ corporate_membership.pk }}&source={{ corporate_membership.opt_app_label }}">{% trans "Eventlogs" %}</a></li>
+        {% if corporate_membership.status_detail != 'archived' %}
         <li><a class="edit-link" href="{% url corpmembership.edit corporate_membership.pk %}">{% trans "Edit" %}</a></li>
         <li><a class="options-link" href="#">{% trans "Options" %} <small>&#9650;</small></a>
         <div class="options-list">
@@ -40,6 +41,7 @@
             </ul>
         </div>
         </li>
+        {% endif %}
     </ul>
     </div>
 </div> 
