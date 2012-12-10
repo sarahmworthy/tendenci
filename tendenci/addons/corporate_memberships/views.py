@@ -196,7 +196,7 @@ def corpmembership_add(request,
 
         if all([corpprofile_form.is_valid(),
                 corpmembership_form.is_valid()]):
-            corp_profile = corpprofile_form.save(creator=creator,)
+            corp_profile = corpprofile_form.save()
             # assign a secret code for this corporate
             # secret code is a unique 6 characters long string
             corp_profile.assign_secret_code()
@@ -555,25 +555,18 @@ def corpmembership_approve(request, id,
         return HttpResponseRedirect(reverse('corpmembership.view',
                                             args=[corporate_membership.id]))
 
-#    try:
-#        renew_entry = CorpMembRenewEntry.objects.get(pk=corporate_membership.renew_entry_id)
-#    except CorpMembRenewEntry.DoesNotExist:
-    renew_entry = None
-
-    if renew_entry:
-        indiv_renew_entries = renew_entry.indiv_memb_renew_entries()
-        corp_membership_type = renew_entry.corporate_membership_type
+    corp_membership_type = corporate_membership.corporate_membership_type
+    if corporate_membership.renewal:
+        indiv_renew_entries = corporate_membership.indivmembershiprenewentry_set.all()
         new_expiration_dt = corp_membership_type.get_expiration_dt(
                                         renewal=True,
                                         join_dt=corporate_membership.join_dt,
-                                        renew_dt=renew_entry.create_dt)
+                                        renew_dt=corporate_membership.renew_dt)
     else:
         indiv_renew_entries = None
-        corp_membership_type = corporate_membership.corporate_membership_type
         new_expiration_dt = corp_membership_type.get_expiration_dt(
                                     renewal=False,
-                                    join_dt=corporate_membership.join_dt,
-                                    renew_dt=corporate_membership.create_dt)
+                                    join_dt=corporate_membership.join_dt)
 
     approve_form = CorpApproveForm(request.POST or None,
                                    corporate_membership=corporate_membership)
@@ -581,7 +574,7 @@ def corpmembership_approve(request, id,
         if approve_form.is_valid():
             msg = ''
             if 'approve' in request.POST:
-                if renew_entry:
+                if corporate_membership.renewal:
                     # approve the renewal
                     corporate_membership.approve_renewal(request)
                     msg = """Corporate membership "%s" renewal has been APPROVED.
@@ -607,7 +600,7 @@ def corpmembership_approve(request, id,
                         """ % corporate_membership
             else:
                 if 'disapprove' in request.POST:
-                    if renew_entry:
+                    if corporate_membership.renewal:
                         # deny the renewal
                         corporate_membership.disapprove_renewal(request)
 
@@ -627,7 +620,6 @@ def corpmembership_approve(request, id,
                                                 args=[corporate_membership.id]))
 
     context = {"corporate_membership": corporate_membership,
-               'renew_entry': renew_entry,
                'indiv_renew_entries': indiv_renew_entries,
                'new_expiration_dt': new_expiration_dt,
                'approve_form': approve_form,
@@ -640,6 +632,7 @@ def corp_renew(request, id,
                template='corporate_memberships/renewal.html'):
     corp_membership = get_object_or_404(CorpMembership, id=id)
     new_corp_membership = corp_membership.copy()
+
     if not has_perm(request.user,
                     'corporate_memberships.change_corpmembership',
                     corp_membership):
@@ -650,7 +643,7 @@ def corp_renew(request, id,
         messages.add_message(request, messages.INFO,
                              """The corporate membership "%s"
                              has been renewed and is pending
-                             or admin approval.""" % corp_membership)
+                             for admin approval.""" % corp_membership)
         return HttpResponseRedirect(reverse('corpmembership.view',
                                         args=[corp_membership.id]))
     corpmembership_app = CorpMembershipApp.objects.current_app()
@@ -672,6 +665,10 @@ def corp_renew(request, id,
                 new_corp_membership.renew_dt = datetime.now()
                 new_corp_membership.status = True
                 new_corp_membership.status_detail = 'pending'
+                new_corp_membership.creator = request.user
+                new_corp_membership.creator_username = request.user.username
+                new_corp_membership.owner = request.user
+                new_corp_membership.owner_username = request.user.username
 
                 # archive old corp_memberships
                 new_corp_membership.archive_old()

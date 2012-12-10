@@ -57,9 +57,9 @@
     {% if corporate_membership.status and corporate_membership.status_detail == "active" %}
     <div><a href="{% url membership_default.add_under_corp corporate_membership.id %}">{% trans "Join under this corporation" %}</a></div>
     {% endif %}
-     {% if request.user.is_superuser and corporate_membership.is_join_pending %}
+     {% if request.user.is_superuser and corporate_membership.is_pending %}
         <div class="pending-info-box">
-        <b>{% trans "Admin" %}</b>: <a href="{% url corp_memb.approve corporate_membership.pk %}">{% trans "Approve / Disapprove" %}</a>
+        <b>{% trans "Admin" %}</b>: <a href="{% url corpmembership.approve corporate_membership.pk %}">{% trans "Approve / Disapprove" %}</a>
         </div>
     {% endif %}
     </div>

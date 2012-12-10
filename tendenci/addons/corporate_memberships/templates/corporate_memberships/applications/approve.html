@@ -80,12 +80,12 @@
         </tr>
      </table>
      
-   {% if renew_entry %}
+   {% if corporate_membership.renewal %}
        <div style="height:1px;width:80%;border-bottom:1px dashed #ccc;margin-bottom:1em;">&nbsp;</div>
        <div>
-        {% blocktrans with renew_entry.create_dt|date:"d-M-Y" as create_date %}Renewed on {{ create_date }} by:{% endblocktrans %} <a href="{% url profile renew_entry.creator.username %}">{{ renew_entry.creator.get_full_name }}</a>
+        {% blocktrans with corporate_membership.renew_dt|date:"d-M-Y" as renew_date %}Renewed on {{ renew_date }} by:{% endblocktrans %} <a href="{% url profile corporate_membership.creator.username %}">{{ corporate_membership.creator.get_full_name }}</a>
         <br />
-        <a href="{% url invoice.view renew_entry.invoice.id %}">{% trans "View Invoice" %}</a>
+        <a href="{% url invoice.view corporate_membership.invoice.id %}">{% trans "View Invoice" %}</a>
         <br />
         {% trans "New expiration date upon approval: " %}<b>{{ new_expiration_dt }}</b>
         
