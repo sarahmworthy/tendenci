@@ -1935,3 +1935,18 @@ def report_members_by_company(request, template_name='reports/members_by_company
     EventLog.objects.log()
 
     return render_to_response(template_name, {'companies': companies}, context_instance=RequestContext(request))
+
+@staff_member_required
+def report_new_members(request, template_name='reports/new_members.html'):
+    """ Table of memberships ordered by join dt, filterable by time period between join date and now.
+    """
+    if request.GET.get('days'):
+        days = int(request.GET.get('days'))
+    else:
+        days = 30
+    compare_dt = datetime.now() - timedelta(days=days)
+    members = MembershipDefault.objects.filter(join_dt__gte=compare_dt)
+
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {'members': members, 'days': days}, context_instance=RequestContext(request))
