@@ -1975,3 +1975,28 @@ def report_renewal_period_members(request, template_name='reports/renewal_period
     EventLog.objects.log()
 
     return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))
+
+@staff_member_required
+def report_grace_period_members(request, template_name='reports/grace_period_members.html'):
+    """ List of memberships that are past expiration date but status detail still = active.
+    """
+    members = []
+    for member in MembershipDefault.objects.all():
+        if member.in_grace_period():
+            member_dict = {
+                'member_number': member.member_number,
+                'first_name': member.user.first_name,
+                'last_name': member.user.last_name,
+                'city': member.user.profile.city,
+                'state': member.user.profile.state,
+                'country': member.user.profile.country,
+                'membership_type': member.membership_type,
+                'expire_dt': member.expire_dt
+            }
+            members.append(member_dict)
+
+    members = sorted(members, key=lambda k: k['expire_dt'])
+
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))

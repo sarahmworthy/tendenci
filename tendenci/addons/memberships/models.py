@@ -833,6 +833,14 @@ class MembershipDefault(TendenciBaseModel):
 
         return user, created
 
+    def in_grace_period(self):
+        """ Returns True if a member's expiration date has passed but status detail is still active.
+        """
+        if self.expire_dt < datetime.now() and self.status_detail == "active":
+            return True
+        else:
+            return False
+
     def get_renewal_period_dt(self):
         """
          Returns a none type object or 2-tuple with start_dt and end_dt
