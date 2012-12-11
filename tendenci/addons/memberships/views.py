@@ -1528,7 +1528,7 @@ def verify_email(request,
 @staff_member_required
 def membership_join_report(request):
     now = datetime.now()
-    mems = Membership.objects.all()
+    mems = MembershipDefault.objects.all()
     mem_type = ''
     mem_stat = ''
     if request.method == 'POST':
@@ -1545,9 +1545,9 @@ def membership_join_report(request):
                     mems = mems.exclude(expire_dt__gte=now, subscribe_dt__lte=now)
     else:
         form = ReportForm()
-    mems30days = mems.filter(subscribe_dt__gte=now - timedelta(days=30))
-    mems60days = mems.filter(subscribe_dt__gte=now - timedelta(days=60))
-    mems90days = mems.filter(subscribe_dt__gte=now - timedelta(days=90))
+    mems30days = mems.filter(join_dt__gte=now - timedelta(days=30))
+    mems60days = mems.filter(join_dt__gte=now - timedelta(days=60))
+    mems90days = mems.filter(join_dt__gte=now - timedelta(days=90))
 
     EventLog.objects.log()
 
@@ -1587,15 +1587,15 @@ def membership_join_report_pdf(request):
     days = request.GET.get('days', 30)
     mem_type = request.GET.get('mem_type', None)
     mem_stat = request.GET.get('mem_stat', None)
-    mems = Membership.objects.all()
+    mems = MembershipDefault.objects.all()
     if mem_type:
         mems = mems.filter(membership_type=mem_type)
     if mem_stat:
         if mem_stat == 'ACTIVE':
-            mems = mems.filter(expire_dt__gte=now, subscribe_dt__lte=now)
+            mems = mems.filter(expire_dt__gte=now, join_dt__lte=now)
         else:
-            mems = mems.exclude(expire_dt__gte=now, subscribe_dt__lte=now)
-    mems = mems.filter(subscribe_dt__gte=now - timedelta(days=int(days)))
+            mems = mems.exclude(expire_dt__gte=now, join_dt__lte=now)
+    mems = mems.filter(join_dt__gte=now - timedelta(days=int(days)))
     report = ReportNewMems(queryset=mems)
     resp = HttpResponse(mimetype='application/pdf')
     report.generate_by(PDFGenerator, filename=resp)
@@ -1950,3 +1950,28 @@ def report_new_members(request, template_name='reports/new_members.html'):
     EventLog.objects.log()
 
     return render_to_response(template_name, {'members': members, 'days': days}, context_instance=RequestContext(request))
+
+@staff_member_required
+def report_renewal_period_members(request, template_name='reports/renewal_period_members.html'):
+    """ Table of memberships ordered by join dt, filterable by time period between join date and now.
+    """
+    members = []
+    for member in MembershipDefault.objects.all():
+        if member.can_renew():
+            member_dict = {
+                'member_number': member.member_number,
+                'first_name': member.user.first_name,
+                'last_name': member.user.last_name,
+                'city': member.user.profile.city,
+                'state': member.user.profile.state,
+                'country': member.user.profile.country,
+                'membership_type': member.membership_type,
+                'expire_dt': member.expire_dt
+            }
+            members.append(member_dict)
+
+    members = sorted(members, key=lambda k: k['expire_dt'])
+
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))
