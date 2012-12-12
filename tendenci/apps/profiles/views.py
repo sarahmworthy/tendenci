@@ -96,15 +96,7 @@ def index(request, username='', template_name="profiles/index.html"):
                                     status_detail__in=['active', 'expired']
                                     )
 
-    log_defaults = {
-        'event_id': 125000,
-        'event_data': '%s (%d) viewed by %s' % (profile._meta.object_name, profile.pk, request.user),
-        'description': '%s viewed' % profile._meta.object_name,
-        'user': request.user,
-        'request': request,
-        'instance': profile,
-    }
-    EventLog.objects.log(**log_defaults)
+    EventLog.objects.log(instance=profile)
 
     state_zip = ' '.join([s for s in (profile.state, profile.zipcode) if s])
     city_state = ', '.join([s for s in (profile.city, profile.state) if s])
@@ -233,17 +225,7 @@ def add(request, form_class=ProfileForm, template_name="profiles/add.html"):
             new_user.save()
 
             ObjectPermission.objects.assign(new_user, profile)
-
-            log_defaults = {
-                'event_id' : 121000,
-                'event_data': '%s (%d) added by %s' % (new_user._meta.object_name, new_user.pk, request.user),
-                'description': '%s added' % new_user._meta.object_name,
-                'user': request.user,
-                'request': request,
-                'instance': new_user,
-            }
-            EventLog.objects.log(**log_defaults)
-            
+          
             # send notification to administrators
             recipients = get_notice_recipients('module', 'users', 'userrecipients')
             if recipients:
@@ -353,16 +335,6 @@ def edit(request, id, form_class=ProfileForm, template_name="profiles/edit.html"
                         }
                         notification.send_emails(recipients,'user_edited', extra_context)
             
-
-            log_defaults = {
-                'event_id' : 122000,
-                'event_data': '%s (%d) edited by %s' % (user_edit._meta.object_name, user_edit.pk, request.user),
-                'description': '%s edited' % user_edit._meta.object_name,
-                'user': request.user,
-                'request': request,
-                'instance': user_edit,
-            }
-            EventLog.objects.log(**log_defaults)
             return HttpResponseRedirect(reverse('profile', args=[user_edit.username]))
     else:
         if profile:
