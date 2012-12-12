@@ -1615,8 +1615,13 @@ def report_list(request, template_name='reports/membership_report_list.html'):
 
 @staff_member_required
 def report_active_members(request, template_name='reports/membership_list.html'):
-
-    mems = MembershipDefault.objects.filter(status=True, status_detail='active')
+    if request.GET.get('days'):
+        days = int(request.GET.get('days'))
+        compare_dt = datetime.now() - timedelta(days=days)
+        mems = MembershipDefault.objects.filter(status=True, status_detail="active", join_dt__gte=compare_dt).order_by('join_dt')
+    else:
+        days = 0
+        mems = MembershipDefault.objects.filter(status=True, status_detail='active')
 
     # sort order of all fields for the upcoming response
     is_ascending_username = True
@@ -1721,6 +1726,7 @@ def report_active_members(request, template_name='reports/membership_list.html')
     return render_to_response(template_name, {
             'mems': mems,
             'active': True,
+            'days': days,
             'is_ascending_username': is_ascending_username,
             'is_ascending_full_name': is_ascending_full_name,
             'is_ascending_email': is_ascending_email,
@@ -1736,7 +1742,13 @@ def report_expired_members(request, template_name='reports/membership_list.html'
     """
     Returns an HTML report of expired members.
     """
-    mems = MembershipDefault.objects.expired()
+    if request.GET.get('days'):
+        days = int(request.GET.get('days'))
+        compare_dt = datetime.now() - timedelta(days=days)
+        mems = MembershipDefault.objects.filter(status_detail="expired", expire_dt__gte=compare_dt).order_by('expire_dt')
+    else:
+        days = 0
+        mems = MembershipDefault.objects.filter(status_detail="expired")
 
     # sort order of all fields for the upcoming response
     is_ascending_username = True
@@ -1839,6 +1851,7 @@ def report_expired_members(request, template_name='reports/membership_list.html'
     return render_to_response(template_name, {
             'mems': mems,
             'active': False,
+            'days': days,
             'is_ascending_username': is_ascending_username,
             'is_ascending_full_name': is_ascending_full_name,
             'is_ascending_email': is_ascending_email,
@@ -1935,21 +1948,6 @@ def report_members_by_company(request, template_name='reports/members_by_company
     EventLog.objects.log()
 
     return render_to_response(template_name, {'companies': companies}, context_instance=RequestContext(request))
-
-@staff_member_required
-def report_new_members(request, template_name='reports/new_members.html'):
-    """ Table of memberships ordered by join dt, filterable by time period between join date and now.
-    """
-    if request.GET.get('days'):
-        days = int(request.GET.get('days'))
-    else:
-        days = 30
-    compare_dt = datetime.now() - timedelta(days=days)
-    members = MembershipDefault.objects.filter(join_dt__gte=compare_dt).order_by('join_dt')
-
-    EventLog.objects.log()
-
-    return render_to_response(template_name, {'members': members, 'days': days}, context_instance=RequestContext(request))
 
 @staff_member_required
 def report_renewed_members(request, template_name='reports/renewed_members.html'):

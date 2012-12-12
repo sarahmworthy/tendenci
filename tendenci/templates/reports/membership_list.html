@@ -6,11 +6,55 @@
     
     {% if active %}
         <h1>{% trans "Active Memberships Report" %}</h1>
-        {% trans "Lists all memberships that are still active." %}
+        {% if days = 0 %}
+            {% trans "Lists all memberships that are still active." %}
+        {% else %}
+        {% if days = 1826 %}
+            {% trans "Currently showing members who joined in the last 5 years." %}
+        {% else %}
+            {% blocktrans with days=days %}
+            Currently showing members who joined in the last {{ days }} days.
+            {% endblocktrans %}
+        {% endif %}
+        {% endif %}
+        <form class="search-form" action="{% url reports-active-members %}" method="get">
+        <label for="id_days">{% trans "Filter by join date" %}:</label><select name="days" id="id_days" onchange="this.form.submit();">
+        <option value="" selected="selected">-----------</option>
+        <option value="30">Last 30 days</option>
+        <option value="60">Last 60 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="180">Last 180 days</option>
+        <option value="365">Last 365 days</option>
+        <option value="1826">Last 5 years</option>
+        </select>
+        </form>
     {% else %}
         <h1>{% trans "Expired Memberships Report" %}</h1>
-        {% trans "Lists all memberships that have expired.  Grace periods are not included." %}
+        {% if days = 0 %}
+            {% trans "Lists all memberships that have expired.  Grace periods are not included." %}
+        {% else %}
+        {% if days = 1826 %}
+            {% trans "Currently showing members who expired in the last 5 years." %}
+        {% else %}
+            {% blocktrans with days=days %}
+            Currently showing members who expired in the last {{ days }} days.
+            {% endblocktrans %}
+        {% endif %}
+        {% endif %}
+        <form class="search-form" action="{% url reports-expired-members %}" method="get">
+        <label for="id_days">{% trans "Filter by expire date" %}:</label><select name="days" id="id_days" onchange="this.form.submit();">
+        <option value="" selected="selected">-----------</option>
+        <option value="30">Last 30 days</option>
+        <option value="60">Last 60 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="180">Last 180 days</option>
+        <option value="365">Last 365 days</option>
+        <option value="1826">Last 5 years</option>
+        </select>
+        </form>
     {% endif %}
+
+
 
     {{ mems|length }} {% trans "Members listed" %}
     {% autopaginate mems 50 %}
