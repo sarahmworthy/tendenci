@@ -2,10 +2,11 @@ import math
 import os
 import hashlib
 from hashlib import md5
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import subprocess
 from sets import Set
 import chardet
+import calendar
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -2013,3 +2014,48 @@ def report_grace_period_members(request, template_name='reports/grace_period_mem
     EventLog.objects.log()
 
     return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))
+
+@staff_member_required
+def report_active_members_ytd(request, template_name='reports/active_members_ytd.html'):
+    import datetime
+    from datetime import timedelta
+    
+    year = datetime.datetime.now().year
+    years = [year, year-1, year-2, year-3, year-4]
+    if request.GET.get('year'):
+        year = int(request.GET.get('year'))
+    
+    active_mems = MembershipDefault.objects.filter(status=True, status_detail="active")
+
+    total_new = active_mems.filter(join_dt__year=year).count()
+    total_renew = active_mems.filter(renew_dt__year=year).count()
+
+    months = []
+    itermonths = iter(calendar.month_abbr)
+    next(itermonths)
+
+    for index, month in enumerate(itermonths):
+        index = index + 1
+        new_mems = active_mems.filter(join_dt__year=year, join_dt__month=index).count()
+        renew_mems = active_mems.filter(renew_dt__year=year, renew_dt__month=index).count()
+
+        if index is 12:
+            date = datetime.date(year, 12, 31)
+        else:
+            date = datetime.date(year, index+1, 1) - datetime.timedelta(days=1)
+        total_active = MembershipDefault.objects.filter(
+            create_dt__lte=date,
+            expire_dt__gt=date,
+        ).count()
+
+        month_dict = {
+            'name': month,
+            'new_mems': new_mems,
+            'renew_mems': renew_mems,
+            'total_active': total_active
+        }
+        months.append(month_dict)
+
+    EventLog.objects.log()
+    
+    return render_to_response(template_name, {'months': months, 'total_new': total_new, 'total_renew': total_renew, 'years': years, 'year': year}, context_instance=RequestContext(request))
