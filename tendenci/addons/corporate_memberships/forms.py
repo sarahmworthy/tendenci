@@ -20,6 +20,7 @@ from tendenci.addons.corporate_memberships.models import (
                     CorpMembership,
                     CorpProfile,
                     CorpMembershipApp,
+                    CorpMembershipImport,
                     CorpApp,
                     CorpField,
                     CorporateMembership,
@@ -412,6 +413,45 @@ class RosterSearchAdvancedForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(RosterSearchAdvancedForm, self).__init__(*args, **kwargs)
+
+
+class CorpMembershipUploadForm(forms.ModelForm):
+    KEY_CHOICES = (
+        ('company_name', 'Company Name'),
+        )
+    key = forms.ChoiceField(label="Key",
+                            choices=KEY_CHOICES)
+
+    class Meta:
+        model = CorpMembershipImport
+        fields = (
+                'key',
+                'override',
+                'upload_file',
+                  )
+
+    def __init__(self, *args, **kwargs):
+        super(CorpMembershipUploadForm, self).__init__(*args, **kwargs)
+        self.fields['key'].initial = 'name'
+
+    def clean_upload_file(self):
+        key = self.cleaned_data['key']
+        upload_file = self.cleaned_data['upload_file']
+        if not key:
+            raise forms.ValidationError('Please specify the key to identify duplicates')
+
+        file_content = upload_file.read()
+        upload_file.seek(0)
+        header_line_index = file_content.find('\n')
+        header_list = ((file_content[:header_line_index]
+                            ).strip('\r')).split(',')
+        if 'company_name' not in header_list:
+            raise forms.ValidationError(
+                        """
+                        'Field %s used to identify the duplicates
+                        should be included in the .csv file.'
+                        """ % 'company_name')
+        return upload_file
 
 
 class CorpAppForm(forms.ModelForm):

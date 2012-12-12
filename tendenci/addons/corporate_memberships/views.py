@@ -3,6 +3,7 @@ from datetime import datetime, date
 import csv
 import operator
 from hashlib import md5
+from sets import Set
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.template import RequestContext
@@ -20,6 +21,7 @@ from django.core.files.storage import default_storage
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import Http404
+from django.db.models import ForeignKey, OneToOneField
 
 from tendenci.core.imports.utils import render_excel
 
@@ -32,6 +34,7 @@ from tendenci.addons.corporate_memberships.models import (
                                             CorpMembershipApp,
                                             CorpMembershipRep,
                                             CorpMembership,
+                                            CorpProfile,
                                             IndivMembershipRenewEntry,
                                             CorpMembershipAppField,
                                             CorpApp, CorpField,
@@ -48,6 +51,7 @@ from tendenci.addons.corporate_memberships.forms import (
                                          CorpProfileForm,
                                          CorpMembershipRenewForm,
                                          RosterSearchAdvancedForm,
+                                         CorpMembershipUploadForm,
                                          CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
@@ -902,6 +906,51 @@ def roster_search(request,
                                   'memberships': memberships,
                                   'form': form},
             context_instance=RequestContext(request))
+
+
+@login_required
+def import_upload(request,
+                  template='corporate_memberships/imports/upload.html'):
+    """
+    Corp memberships import first step: upload
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+
+    form = CorpMembershipUploadForm(request.POST or None,
+                                    request.FILES or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            corp_membership_import = form.save(commit=False)
+            corp_membership_import.creator = request.user
+            corp_membership_import.save()
+
+#            # redirect to preview page.
+#            return redirect(reverse('corpmembership.import_preview',
+#                                     args=[corp_membership_import.id]))
+
+    # make sure the site has corp_membership types set up
+    corp_memb_type_exists = CorporateMembershipType.objects.all(
+                                    ).exists()
+
+    # list of foreignkey fields
+    corp_profile_fks = [field.name for field in CorpProfile._meta.fields \
+                   if isinstance(field, (ForeignKey, OneToOneField))]
+    corp_memb_fks = [field.name for field in CorpMembership._meta.fields \
+                if isinstance(field, (ForeignKey, OneToOneField))]
+
+    fks = Set(corp_profile_fks + corp_memb_fks)
+    fks = [field for field in fks]
+    if 'corp_profile' in fks:
+        fks.remove('corp_profile')
+    fks.sort()
+    foreign_keys = ', '.join(fks)
+
+    return render_to_response(template, {
+        'form': form,
+        'corp_memb_type_exists': corp_memb_type_exists,
+        'foreign_keys': foreign_keys
+        }, context_instance=RequestContext(request))
 
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
