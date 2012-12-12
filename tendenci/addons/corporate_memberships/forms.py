@@ -28,6 +28,7 @@ from tendenci.addons.corporate_memberships.models import (
                     CorpMembRenewEntry)
 from tendenci.addons.corporate_memberships.utils import (
                  get_corpmembership_type_choices,
+                 get_corp_memberships_choices,
                  get_indiv_memberships_choices,
                  update_authorized_domains,
                  get_corpapp_default_fields_list,
@@ -376,6 +377,41 @@ class CorpMembershipRenewForm(forms.ModelForm):
         self.fields['payment_method'].empty_label = None
         self.fields['payment_method'].initial = \
                 self.instance.payment_method
+
+
+class RosterSearchAdvancedForm(forms.Form):
+    SEARCH_CRITERIA_CHOICES = (
+                        ('username', _('Username')),
+                        ('member_number', _('Member Number')),
+                        ('phone', _('Phone')),
+                        ('city', _('City')),
+                        ('state', _('State')),
+                        ('zip', _('Zip Code')),
+                        ('country', _('Country'))
+                               )
+    SEARCH_METHOD_CHOICES = (
+                             ('starts_with', _('Starts With')),
+                             ('contains', _('Contains')),
+                             ('exact', _('Exact')),
+                             )
+    cm_id = forms.ChoiceField(label=_('Company Name'),
+                                  choices=get_corp_memberships_choices(),
+                                  required=False)
+    first_name = forms.CharField(label=_('First Name'),
+                                 max_length=100,
+                                 required=False)
+    last_name = forms.CharField(label=_('Last Name'),
+                                max_length=100, required=False)
+    email = forms.CharField(label=_('Email'),
+                            max_length=100, required=False)
+    search_criteria = forms.ChoiceField(choices=SEARCH_CRITERIA_CHOICES,
+                                        required=False)
+    search_text = forms.CharField(max_length=100, required=False)
+    search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
+                                        required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(RosterSearchAdvancedForm, self).__init__(*args, **kwargs)
 
 
 class CorpAppForm(forms.ModelForm):

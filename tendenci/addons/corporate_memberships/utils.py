@@ -13,6 +13,7 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from django.core.files.storage import default_storage
+from django.utils.translation import ugettext_lazy as _
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.addons.memberships.models import (AppField,
@@ -58,6 +59,20 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
         cmt_list.append((cmt.id, price_display))
 
     return cmt_list
+
+
+def get_corp_memberships_choices():
+    from tendenci.addons.corporate_memberships.models import CorpMembership
+    corp_values = CorpMembership.objects.filter(
+                                status=True).exclude(
+                                status_detail='archived').values_list(
+                                'id', 'corp_profile__name'
+                                ).order_by('corp_profile__name')
+    corp_list = [(0, _('Select One'))]
+    for value in corp_values:
+        corp_list.append((value[0], value[1]))
+
+    return corp_list
 
 
 def get_indiv_memberships_choices(corp_membership):
@@ -272,7 +287,7 @@ def get_corporate_membership_type_choices(user, corpapp, renew=False):
         price_display = mark_safe(price_display)
         cmt_list.append((cmt.id, price_display))
 
-    return cmt_list 
+    return cmt_list
 
 
 def get_indiv_membs_choices(corp):

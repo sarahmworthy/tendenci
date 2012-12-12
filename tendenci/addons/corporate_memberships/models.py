@@ -411,7 +411,7 @@ class CorpMembership(TendenciBaseModel):
 
         if allow_anonymous_search or \
             (allow_member_search and user.profile.is_member):
-            filter_and = {'status': 1,
+            filter_and = {'status': True,
                           'status_detail': 'active'}
         else:
             if user.is_authenticated():
@@ -423,6 +423,29 @@ class CorpMembership(TendenciBaseModel):
                     filter_or.update({'reps__user': user})
             else:
                 filter_and = {'allow_anonymous_view': True}
+
+        return filter_and, filter_or
+
+    @staticmethod
+    def get_membership_search_filter(user):
+        if user.profile.is_superuser:
+            return None, None
+
+        filter_or = None
+        filter_and = {'status': True,
+                      'status_detail': 'active'}
+        if not user.is_anonymous():
+            if user.profile.is_member:
+                filter_or = {'allow_anonymous_view': True,
+                             'allow_user_view': True,
+                             'allow_member_view': True}
+            else:
+                filter_or = {'allow_anonymous_view': True,
+                             'allow_user_view': True}
+            filter_or.update({'creator': user,
+                             'owner': user})
+        else:
+            filter_and = {'allow_anonymous_view': True}
 
         return filter_and, filter_or
 

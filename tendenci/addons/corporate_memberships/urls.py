@@ -37,7 +37,8 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         name="corpmembership.renew"),
     url(r"^renewal_conf/(?P<id>\d+)/$", "corp_renew_conf",
         name="corpmembership.renew_conf"),
-
+    url(r'^roster/$', 'roster_search',
+        name="corpmembership.roster_search"),
 
 
     url(r"^(?P<slug>.*)/add_pre/$", "add_pre", name="corp_memb.add_pre"),
@@ -50,7 +51,6 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
     #url(r"^list/$", "list_view", name="corp_memb.list"),
     url(r"^search/$", "search", name="corp_memb.search"),
     url(r"^index/$", "index", name="corp_memb.index"),
-    url(r'^roster/$', 'roster_search', name="corp_memb.roster_search"),
     url(r'^delete/(?P<id>\d+)/$', 'delete', name="corp_memb.delete"),
     url(r'^delete_rep/(?P<id>\d+)/$', 'delete_rep',
         name="corp_memb.delete_rep"),

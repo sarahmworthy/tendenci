@@ -47,6 +47,7 @@ from tendenci.addons.corporate_memberships.forms import (
                                          CorpMembershipForm,
                                          CorpProfileForm,
                                          CorpMembershipRenewForm,
+                                         RosterSearchAdvancedForm,
                                          CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
@@ -803,6 +804,104 @@ def corp_renew_conf(request, id,
                'corp_app': corpmembership_app,
                }
     return render_to_response(template, context, RequestContext(request))
+
+
+@login_required
+def roster_search(request,
+                  template_name='corporate_memberships/roster_search.html'):
+    form = RosterSearchAdvancedForm(request.GET or None)
+    if form.is_valid():
+        cm_id = form.cleaned_data['cm_id']
+        first_name = form.cleaned_data['first_name']
+        last_name = form.cleaned_data['last_name']
+        email = form.cleaned_data['email']
+        search_criteria = form.cleaned_data['search_criteria']
+        search_text = form.cleaned_data['search_text']
+        search_method = form.cleaned_data['search_method']
+    else:
+        cm_id = None
+        first_name = None
+        last_name = None
+        email = None
+        search_criteria = None
+        search_text = None
+        search_method = None
+    if cm_id:
+        [corp_membership] = CorpMembership.objects.filter(
+                                    id=cm_id).exclude(
+                                    status_detail='archived'
+                                            )[:1] or [None]
+    else:
+        corp_membership = None
+
+    # check for membership permissions
+    memberships = MembershipDefault.objects.filter(
+                        status=True
+                            ).exclude(
+                        status_detail='archived')
+
+    if corp_membership:
+        memberships = memberships.filter(
+                    corp_profile_id=corp_membership.corp_profile.id)
+
+    if request.user.profile.is_superuser or \
+        (corp_membership.allow_edit_by(request.user)):
+        pass
+    else:
+        filter_and, filter_or = CorpMembership.get_membership_search_filter(
+                                                            request.user)
+        q_obj = None
+        if filter_and:
+            q_obj = Q(**filter_and)
+
+        if filter_or:
+            q_obj_or = reduce(operator.or_,
+                    [Q(**{key: value}) for key, value in filter_or.items()])
+            if q_obj:
+                q_obj = reduce(operator.and_, [q_obj, q_obj_or])
+            else:
+                q_obj = q_obj_or
+        if q_obj:
+            memberships = memberships.filter(q_obj)
+
+    # check form fields - first_name, last_name and email
+    filter_and = {}
+    if first_name:
+        filter_and.update({'user__first_name': first_name})
+    if last_name:
+        filter_and.update({'user__last_name': last_name})
+    if email:
+        filter_and.update({'user__email': email})
+    search_type = ''
+    if search_method == 'starts_with':
+        search_type = '__startswith'
+    elif search_method == 'contains':
+        search_type = '__contains'
+
+    # check search criteria
+    if search_criteria and search_text:
+        if search_criteria == 'username':
+            filter_and.update({'user__username%s' % search_type: search_text})
+        else:
+            filter_and.update({'user__profile__%s%s' % (search_criteria,
+                                                        search_type
+                                                        ):
+                               search_text})
+    if filter_and:
+        memberships = memberships.filter(**filter_and)
+
+    if corp_membership:
+        form.fields['cm_id'].initial = corp_membership.id
+    if corp_membership:
+        EventLog.objects.log(instance=corp_membership)
+    corp_profile = corp_membership and corp_membership.corp_profile
+
+    return render_to_response(template_name, {
+                                  'corp_membership': corp_membership,
+                                  'corp_profile': corp_profile,
+                                  'memberships': memberships,
+                                  'form': form},
+            context_instance=RequestContext(request))
 
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
@@ -1567,35 +1666,7 @@ def delete_rep(request, id, template_name="corporate_memberships/delete_rep.html
             context_instance=RequestContext(request))
     else:
         raise Http403
-
-@login_required    
-def roster_search(request, template_name='corporate_memberships/roster_search.html'):
-    name = request.GET.get('name', None)
-    corp_memb = get_object_or_404(CorporateMembership, name=name)
-    
-    query = request.GET.get('q', None)
-    if use_search_index:
-        memberships = Membership.objects.corp_roster_search(query, user=request.user).filter(corporate_membership_id=corp_memb.id)
-    else:
-        memberships = Membership.objects.active(corporate_membership_id=corp_memb.id)
-        
-    if request.user.profile.is_superuser or corp_memb.is_rep(request.user):
-        pass
-    else:
-        memberships = memberships.filter(status=True, status_detail='active')
-        
-    # a list of corporate memberships for the drop down
-    #corp_members = CorporateMembership.objects.search(None, user=request.user).order_by('name_exact')
-    #name_choices = ((corp_member.name, corp_member.name) for corp_member in corp_members)
-    form = RosterSearchForm(request.GET or None)
-    #form.fields['name'].choices = name_choices
-    form.fields['name'].initial = corp_memb.name
-    EventLog.objects.log(instance=corp_memb)
-    return render_to_response(template_name, {'corp_memb': corp_memb,
-                                              'memberships': memberships, 
-                                              'form': form}, 
-            context_instance=RequestContext(request))
-    
+  
     
 @staff_member_required
 @password_required
