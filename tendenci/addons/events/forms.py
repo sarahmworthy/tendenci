@@ -38,7 +38,6 @@ from tendenci.apps.user_groups.models import Group
 from tendenci.apps.discounts.models import Discount
 from tendenci.apps.profiles.models import Profile
 from tendenci.addons.events.settings import FIELD_MAX_LENGTH
-from tendenci.core.site_settings.utils import get_setting
 from tendenci.addons.memberships.models import Membership
 
 from fields import Reg8nDtField, UseCustomRegField
@@ -498,6 +497,8 @@ class EventForm(TendenciBaseForm):
         if not self.user.profile.is_superuser:
             if 'status' in self.fields: self.fields.pop('status')
             if 'status_detail' in self.fields: self.fields.pop('status_detail')
+
+        self.fields['timezone'].initial = get_setting('site', 'global', 'defaulttimezone') 
 
     def clean_photo_upload(self):
         photo_upload = self.cleaned_data['photo_upload']

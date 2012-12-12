@@ -115,6 +115,10 @@ def build_settings_form(user, settings):
             elif setting.input_value == '<box_list>':
                 choices = get_box_list(user)
                 required = False
+            elif setting.input_value == '<timezone_list>':
+                from timezones import zones
+                choices = zones.PRETTY_TIMEZONE_CHOICES
+                required = False
             else:
                 # Allow literal_eval in settings in order to pass a list from the setting
                 # This is useful if you want different values and labels for the select options
