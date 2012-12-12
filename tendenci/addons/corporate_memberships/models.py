@@ -33,6 +33,7 @@ from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.core.payments.models import PaymentMethod
 from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.apps.profiles.models import Profile
+from tendenci.core.base.fields import DictField
 
 from tendenci.core.base.utils import send_email_notification
 from tendenci.addons.corporate_memberships.settings import use_search_index
@@ -1048,6 +1049,61 @@ class IndivMembershipRenewEntry(models.Model):
     status_detail = models.CharField(max_length=50,
                                      choices=STATUS_DETAIL_CHOICES,
                                      default='pending')
+
+
+class CorpMembershipImport(models.Model):
+    OVERRIDE_CHOICES = (
+        (0, 'Blank Fields'),
+        (1, 'All Fields (override)'),
+    )
+
+    STATUS_CHOICES = (
+        ('not_started', 'Not Started'),
+        ('preprocessing', 'Pre_processing'),
+        ('preprocess_done', 'Pre_process Done'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+    )
+
+    UPLOAD_DIR = "imports/corpmemberships/%s" % uuid.uuid1().get_hex()[:8]
+
+    upload_file = models.FileField(_("Upload File"), max_length=260,
+                                   upload_to=UPLOAD_DIR)
+    # overwrite already existing fields if match
+    override = models.IntegerField(choices=OVERRIDE_CHOICES, default=0)
+    # uniqueness key
+    key = models.CharField(_('Key'), max_length=50,
+                           default="name")
+
+    total_rows = models.IntegerField(default=0)
+    num_processed = models.IntegerField(default=0)
+    summary = models.CharField(_('Summary'), max_length=500,
+                           null=True, default='')
+    status = models.CharField(choices=STATUS_CHOICES,
+                              max_length=50,
+                              default='not_started')
+    complete_dt = models.DateTimeField(null=True)
+
+    creator = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    create_dt = models.DateTimeField(auto_now_add=True)
+
+    def get_file(self):
+        return self.upload_file
+
+    def __unicode__(self):
+        return self.get_file().file.name
+
+
+class CorpMembershipImportData(models.Model):
+    mimport = models.ForeignKey(CorpMembershipImport,
+                                related_name="corp_membership_import_data",)
+    # dictionary object representing a row in csv
+    row_data = DictField(_('Row Data'))
+    # the original row number in the uploaded csv file
+    row_num = models.IntegerField(_('Row #'))
+    # action_taken can be 'insert', 'update' or 'mixed'
+    action_taken = models.CharField(_('Action Taken'),
+                                    max_length=20, null=True)
 
 
 class CorporateMembership(TendenciBaseModel):
