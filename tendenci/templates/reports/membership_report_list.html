@@ -23,6 +23,7 @@
             <li><a href="{% url reports-active-members %}">{% trans "Active Memberships" %}</a></li>
             <li><a href="{% url reports-expired-members %}">{% trans "Expired Memberships" %}</a></li>
             <li><a href="{% url admin:memberships_membershipdefault_changelist %}?status_detail=pending">{% trans "Pending Memberships" %}</a></li>
+            <li><a href="{% url reports-renewed-members %}">{% trans "Renewed Members, filterable by renew date" %}</a></li>
             <li><a href="{% url reports-renewal-period-members %}">{% trans "Members in Renewal Period" %}</a></li>
             <li><a href="{% url reports-grace-period-members %}">{% trans "Expired Members in Grace Period" %}</a></li>
             <li><a href="{% url reports-members-stats %}">{% trans "Membership Statistics" %}</a></li>
