@@ -22,8 +22,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import Http404
 from django.db.models import ForeignKey, OneToOneField
+from django.db.models.fields import AutoField
 
 from tendenci.core.imports.utils import render_excel
+from tendenci.core.exports.utils import render_csv
 
 from tendenci.core.base.http import Http403
 from tendenci.core.perms.utils import has_perm
@@ -951,6 +953,44 @@ def import_upload(request,
         'corp_memb_type_exists': corp_memb_type_exists,
         'foreign_keys': foreign_keys
         }, context_instance=RequestContext(request))
+
+
+@login_required
+def download_template(request):
+    """
+    Download import template for  corporate memberships
+    """
+    from tendenci.core.perms.models import TendenciBaseModel
+    if not request.user.profile.is_superuser:
+        raise Http403
+
+    filename = "corp_memberships_import_template.csv"
+    base_field_list = [smart_str(field.name) for field \
+                       in TendenciBaseModel._meta.fields \
+                     if not field.__class__ == AutoField]
+    corp_profile_field_list = [smart_str(field.name) for field \
+                       in CorpProfile._meta.fields \
+                     if not field.__class__ == AutoField]
+    corp_profile_field_list = [name for name in corp_profile_field_list \
+                               if not name in base_field_list]
+    corp_profile_field_list.remove('guid')
+    corp_profile_field_list.extend(['dues_rep', 'authorized_domains'])
+    # change name to company_name to avoid the confusion
+    corp_profile_field_list.remove('name')
+    corp_profile_field_list.insert(0, 'company_name')
+
+    corp_memb_field_list = [smart_str(field.name) for field \
+                       in CorpMembership._meta.fields \
+                     if not field.__class__ == AutoField]
+    corp_memb_field_list = [name for name in corp_memb_field_list \
+                               if not name in base_field_list]
+    corp_memb_field_list.remove('guid')
+    corp_memb_field_list.remove('corp_profile')
+
+    title_list = corp_profile_field_list + corp_memb_field_list \
+                     + base_field_list
+
+    return render_csv(filename, title_list, [])
 
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):

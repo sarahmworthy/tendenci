@@ -43,6 +43,8 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
     # import to CorpMembership
     url(r"^import/$", "import_upload",
         name="corpmembership.import"),
+    url(r"^import/download/$", "download_template",
+        name="corpmembership.download_template"),
 
 
     url(r"^(?P<slug>.*)/add_pre/$", "add_pre", name="corp_memb.add_pre"),

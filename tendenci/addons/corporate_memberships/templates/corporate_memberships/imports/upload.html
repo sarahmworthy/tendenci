@@ -62,11 +62,11 @@
 <div class="t">
 <div id="import-wrap">
     
-    <h1>{% trans "Import Corporate Membership" %}</h1>
+    <h1>{% trans "Import Corporate Memberships" %}</h1>
     
     {% if not corp_memb_type_exists %}
     <div class="alert">
-        Please <a href="{% url admin:corporate_memberships_corporatemembershiptype_add %}">set up membership types</a> before proceeding.  
+        Please <a href="{% url admin:corporate_memberships_corporatemembershiptype_add %}">set up corporate membership types</a> before proceeding.  
     </div>
     {% endif %}
 
@@ -101,12 +101,12 @@
     </div>
     
     <div class="template-download">
-        <a href="{# url memberships.download_default_template #}">
+        <a href="{% url corpmembership.download_template %}">
         <img src="{{ STATIC_URL }}images/icons/xls-icon.gif" alt="Download CSV Template" title="Download CSV Template"/>
         </a>
         
         <div class="link">
-            <a href="{# url memberships.download_default_template #}">{% trans "Download Template" %}</a>
+            <a href="{% url corpmembership.download_template %}">{% trans "Download Template" %}</a>
             
         </div>
     </div>
