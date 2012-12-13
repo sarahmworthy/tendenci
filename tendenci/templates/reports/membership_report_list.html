@@ -28,6 +28,11 @@
             <li><a href="{% url reports-grace-period-members %}">{% trans "Expired Members in Grace Period" %}</a></li>
             <li><a href="{% url reports-members-stats %}">{% trans "Membership Statistics" %}</a></li>
         </ul>
+    
+    <h2>{% trans "Financial Reporting" %}</h2>
+        <ul>
+            <li><a href="{% url invoices %}?invoice_type=memberships">{% trans "Membership Invoices" %}</a></li>
+        </ul>
 
 {% endblock content %}
 
