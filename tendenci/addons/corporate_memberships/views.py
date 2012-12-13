@@ -1037,7 +1037,7 @@ def import_preview(request, mimport_id,
 
         return render_to_response(template, {
             'mimport': mimport,
-            'users_list': corp_membs_list,
+            'corp_membs_list': corp_membs_list,
             'curr_page': curr_page,
             'total_rows': total_rows,
             'prev': curr_page - 1,

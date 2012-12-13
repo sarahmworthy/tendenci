@@ -69,7 +69,7 @@
             {% for cm in corp_membs_list %}
             <tr class="row-{{ cm.action }}">
                 <td>{{ cm.row_num }}</td>
-                <td class="action-{{ u.action }}">{{ u.action }}</td>
+                <td class="action-{{ cm.action }}">{{ cm.action }}</td>
                 <td>{{ cm.company_name }}</td>
                 {% if 'email' in fieldnames %}
                 <td>{{ cm.email }}</td>
