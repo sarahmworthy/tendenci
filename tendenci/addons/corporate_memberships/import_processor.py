@@ -150,7 +150,7 @@ class CorpMembershipImportProcessor(object):
                 return
 
         corp_memb_display.update({
-                    'company_name': self.cmemb_data.get('first_name', ''),
+                    'company_name': self.cmemb_data.get('company_name', ''),
                     'email': self.cmemb_data.get('email', ''),
                     'address': self.cmemb_data.get('address', ''),
                     'address2': self.cmemb_data.get('address2', ''),
