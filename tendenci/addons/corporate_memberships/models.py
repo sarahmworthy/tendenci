@@ -552,7 +552,7 @@ class CorpMembership(TendenciBaseModel):
                                     id=self.id
                                         )
         for corp_memb in corp_memberships:
-            corp_memb.status_detail = 'archived'
+            corp_memb.status_detail = 'archive'
             corp_memb.save()
 
     def approve_join(self, request, **kwargs):

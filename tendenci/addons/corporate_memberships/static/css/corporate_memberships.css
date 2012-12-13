@@ -69,6 +69,10 @@ div.forms div.form-field input.timepicker{
     background-color: #000;
     color: #fff;
 }
+.status-archive{
+    background-color: #000;
+    color: #fff;
+}
 .pending-info-box{
 	background-color: #F7FFAF;
 }

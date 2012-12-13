@@ -841,7 +841,7 @@ def roster_search(request,
     if cm_id:
         [corp_membership] = CorpMembership.objects.filter(
                                     id=cm_id).exclude(
-                                    status_detail='archived'
+                                    status_detail='archive'
                                             )[:1] or [None]
     else:
         corp_membership = None
@@ -850,7 +850,7 @@ def roster_search(request,
     memberships = MembershipDefault.objects.filter(
                         status=True
                             ).exclude(
-                        status_detail='archived')
+                        status_detail='archive')
 
     if corp_membership:
         memberships = memberships.filter(

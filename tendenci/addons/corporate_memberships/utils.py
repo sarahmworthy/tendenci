@@ -65,7 +65,7 @@ def get_corp_memberships_choices():
     from tendenci.addons.corporate_memberships.models import CorpMembership
     corp_values = CorpMembership.objects.filter(
                                 status=True).exclude(
-                                status_detail='archived').values_list(
+                                status_detail='archive').values_list(
                                 'id', 'corp_profile__name'
                                 ).order_by('corp_profile__name')
     corp_list = [(0, _('Select One'))]

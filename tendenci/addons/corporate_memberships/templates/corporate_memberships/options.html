@@ -21,7 +21,7 @@
 		{% endif %}
 	{% endif %}
 
-    {% if opt_object.status and opt_object.status_detail != 'archived' %}
+    {% if opt_object.status and opt_object.status_detail != 'archive' %}
 	{% if can_edit or allow_edit %}
 		<a class="opt-link" href="{% url corpmembership.edit opt_object.pk %}" title="Edit">Edit</a>
 	{% endif %}

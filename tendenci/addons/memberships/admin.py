@@ -55,7 +55,7 @@ def approve_selected(modeladmin, request, queryset):
 
     qs_active = Q(status_detail='active')
     qs_expired = Q(status_detail='expired')
-    qs_archived = Q(status_detail='archived')
+    qs_archived = Q(status_detail='archive')
 
     # exclude already approved memberships
     memberships = queryset.exclude(
@@ -76,7 +76,7 @@ def renew_selected(modeladmin, request, queryset):
     Exclude archived memberships
     """
 
-    qs_archived = Q(status_detail='archived')
+    qs_archived = Q(status_detail='archive')
 
     memberships = queryset.exclude(qs_archived)
 

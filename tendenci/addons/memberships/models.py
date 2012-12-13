@@ -417,7 +417,7 @@ class MembershipDefault(TendenciBaseModel):
         good = (
             not self.is_approved(),
             not self.is_expired(),
-            self.status_detail != 'archived',
+            self.status_detail != 'archive',
         )
 
         if not all(good):
@@ -478,7 +478,7 @@ class MembershipDefault(TendenciBaseModel):
             - Archived memberships
         """
 
-        if self.status_detail == 'archived':
+        if self.status_detail == 'archive':
             return False
 
         NOW = datetime.now()
@@ -538,7 +538,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         good = (
             not self.is_expired(),
-            self.status_detail != 'archived',
+            self.status_detail != 'archive',
         )
 
         if not all(good):
@@ -618,7 +618,7 @@ class MembershipDefault(TendenciBaseModel):
         This should not be a method available
         to the end-user.  Used within membership process.
         """
-        if self.status_detail == 'archived':
+        if self.status_detail == 'archive':
             return False
 
         self.status = True,
@@ -714,7 +714,7 @@ class MembershipDefault(TendenciBaseModel):
     def get_status(self):
         """
         Returns status of membership
-        'expired', 'approved', 'pending', 'disapproved', archived'
+        'expired', 'approved', 'pending', 'disapproved', archive'
         """
 
         if self.is_active():
@@ -755,7 +755,7 @@ class MembershipDefault(TendenciBaseModel):
 
         for membership in memberships:
             if membership != self:
-                membership.status_detail = 'archived'
+                membership.status_detail = 'archive'
                 membership.save()
 
     def approval_required(self):
