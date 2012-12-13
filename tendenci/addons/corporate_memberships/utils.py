@@ -150,7 +150,7 @@ def corp_membership_update_perms(corp_memb, **kwargs):
     return corp_memb
 
 
-def corp_memb_inv_add(user, corp_memb, **kwargs): 
+def corp_memb_inv_add(user, corp_memb, **kwargs):
     """
     Add an invoice for this corporate membership
     """

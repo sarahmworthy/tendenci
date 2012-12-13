@@ -45,6 +45,12 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         name="corpmembership.import"),
     url(r"^import/download/$", "download_template",
         name="corpmembership.download_template"),
+    url(r"^import/preview/(?P<import_id>\d+)/$",
+        "import_preview",
+        name="corpmembership.import_preview"),
+    url(r"^import/check_preprocess_status/(?P<mimport_id>\d+)/$",
+        "check_preprocess_status",
+        name="corpmembership.check_preprocess_status"),
 
 
     url(r"^(?P<slug>.*)/add_pre/$", "add_pre", name="corp_memb.add_pre"),

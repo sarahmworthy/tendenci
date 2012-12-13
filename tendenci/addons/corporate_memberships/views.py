@@ -1,9 +1,11 @@
 import os
+import math
 from datetime import datetime, date
 import csv
 import operator
 from hashlib import md5
 from sets import Set
+import subprocess
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.template import RequestContext
@@ -23,6 +25,7 @@ from django.template.loader import render_to_string
 from django.http import Http404
 from django.db.models import ForeignKey, OneToOneField
 from django.db.models.fields import AutoField
+from johnny.cache import invalidate
 
 from tendenci.core.imports.utils import render_excel
 from tendenci.core.exports.utils import render_csv
@@ -39,6 +42,8 @@ from tendenci.addons.corporate_memberships.models import (
                                             CorpProfile,
                                             IndivMembershipRenewEntry,
                                             CorpMembershipAppField,
+                                            CorpMembershipImport,
+                                            CorpMembershipImportData,
                                             CorpApp, CorpField,
                                             CorporateMembership,
                                           CorporateMembershipType,
@@ -74,6 +79,7 @@ from tendenci.addons.corporate_memberships.utils import (
                                          get_over_time_stats,
                                          get_indiv_membs_choices,
                                          get_summary)
+from tendenci.addons.corporate_memberships.import_processor import CorpMembershipImportProcessor
 #from tendenci.addons.memberships.models import MembershipType
 from tendenci.addons.memberships.models import (Membership,
                                                 MembershipDefault)
@@ -927,9 +933,9 @@ def import_upload(request,
             corp_membership_import.creator = request.user
             corp_membership_import.save()
 
-#            # redirect to preview page.
-#            return redirect(reverse('corpmembership.import_preview',
-#                                     args=[corp_membership_import.id]))
+            # redirect to preview page.
+            return redirect(reverse('corpmembership.import_preview',
+                                     args=[corp_membership_import.id]))
 
     # make sure the site has corp_membership types set up
     corp_memb_type_exists = CorporateMembershipType.objects.all(
@@ -953,6 +959,122 @@ def import_upload(request,
         'corp_memb_type_exists': corp_memb_type_exists,
         'foreign_keys': foreign_keys
         }, context_instance=RequestContext(request))
+
+
+@login_required
+def import_preview(request, mimport_id,
+                template='corporate_memberships/imports/preview.html'):
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(CorpMembershipImport,
+                                    pk=mimport_id)
+
+    if mimport.status == 'preprocess_done':
+        try:
+            curr_page = int(request.GET.get('page', 1))
+        except:
+            curr_page = 1
+        num_items_per_page = 10
+#        total_rows = len(data_list)
+        total_rows = CorpMembershipImportData.objects.filter(
+                                mimport=mimport).count()
+        # if total_rows not updated, update it
+        if mimport.total_rows != total_rows:
+            mimport.total_rows = total_rows
+            mimport.save()
+        num_pages = int(math.ceil(total_rows * 1.0 / num_items_per_page))
+        if curr_page <= 0 or curr_page > num_pages:
+            curr_page = 1
+
+        # calculate the page range to display if the total # of pages > 35
+        # display links in 3 groups - first 10, middle 10 and last 10
+        # the middle group will contain the current page.
+        start_num = 35
+        max_num_in_group = 10
+        if num_pages > start_num:
+            # first group
+            page_range = range(1, max_num_in_group + 1)
+            # middle group
+            i = curr_page - int(max_num_in_group / 2)
+            if i <= max_num_in_group:
+                i = max_num_in_group
+            else:
+                page_range.extend(['...'])
+            j = i + max_num_in_group
+            if j > num_pages - max_num_in_group:
+                j = num_pages - max_num_in_group
+            page_range.extend(range(i, j + 1))
+            if j < num_pages - max_num_in_group:
+                page_range.extend(['...'])
+            # last group
+            page_range.extend(range(num_pages - max_num_in_group,
+                                    num_pages + 1))
+        else:
+            page_range = range(1, num_pages + 1)
+
+        # slice the data_list
+        start_index = (curr_page - 1) * num_items_per_page + 2
+        end_index = curr_page * num_items_per_page + 2
+        if end_index - 2 > total_rows:
+            end_index = total_rows + 2
+        data_list = CorpMembershipImportData.objects.filter(
+                                mimport=mimport,
+                                row_num__gte=start_index,
+                                row_num__lt=end_index).order_by(
+                                    'row_num')
+
+        corp_membs_list = []
+
+        imd = CorpMembershipImportProcessor(request.user, mimport, dry_run=True)
+        # to be efficient, we only process corp memberships on the current page
+        fieldnames = None
+        for idata in data_list:
+            corp_memb_display = imd.process_corp_membership(idata.row_data)
+            corp_memb_display['row_num'] = idata.row_num
+            corp_membs_list.append(corp_memb_display)
+            if not fieldnames:
+                fieldnames = idata.row_data.keys()
+
+        return render_to_response(template, {
+            'mimport': mimport,
+            'users_list': corp_membs_list,
+            'curr_page': curr_page,
+            'total_rows': total_rows,
+            'prev': curr_page - 1,
+            'next': curr_page + 1,
+            'num_pages': num_pages,
+            'page_range': page_range,
+            'fieldnames': fieldnames,
+            }, context_instance=RequestContext(request))
+    else:
+        if mimport.status in ('processing', 'completed'):
+            pass
+#            return redirect(reverse('memberships.default_import_status',
+#                                 args=[mimport.id]))
+        else:
+            if mimport.status == 'not_started':
+                subprocess.Popen(["python", "manage.py",
+                              "corp_membership_import_preprocess",
+                              str(mimport.pk)])
+
+            return render_to_response(template, {
+                'mimport': mimport,
+                }, context_instance=RequestContext(request))
+
+
+@csrf_exempt
+@login_required
+def check_preprocess_status(request, mimport_id):
+    """
+    Get the import preprocessing (encoding, inserting) status
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    invalidate('corporate_memberships_corpmembershipimport')
+    mimport = get_object_or_404(CorpMembershipImport,
+                                    pk=mimport_id)
+
+    return HttpResponse(mimport.status)
 
 
 @login_required
