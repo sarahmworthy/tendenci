@@ -1127,8 +1127,7 @@ def membership_default_import_status(request, mimport_id,
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
     if mimport.status not in ('processing', 'completed'):
-        return redirect(reverse('memberships.default_import',
-                                     args=[mimport.id]))
+        return redirect(reverse('memberships.default_import'))
 
     return render_to_response(template_name, {
         'mimport': mimport,
