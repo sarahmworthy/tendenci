@@ -162,6 +162,19 @@
                  <div class="field-label">Identify duplicates by</div>
                 <div>{{ form.key }}</div>
             </div>
+            
+            
+            {% if form.bind_members.errors %}
+            <div class="error">
+                {% for error in form.bind_members.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="import-field">
+               {{ form.bind_members }} {{ form.bind_members.label }}
+            </div>
         
             {% if form.upload_file.errors %}
             <div class="error">

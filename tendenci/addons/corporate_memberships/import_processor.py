@@ -12,6 +12,8 @@ from tendenci.addons.corporate_memberships.models import (
                                             CorpMembership,
                                             CorpProfile,
                                             CorporateMembershipType)
+from tendenci.addons.memberships.models import MembershipDefault
+from tendenci.apps.profiles.models import Profile
 
 
 class CorpMembershipImportProcessor(object):
@@ -76,17 +78,21 @@ class CorpMembershipImportProcessor(object):
             d['allow_member_view'] = True
         return d
 
-    def check_missing_fields(self, cmemb_data, key):
+    def validate_fields(self, cmemb_data, key):
         """
-        Check if we have enough data to process for this row.
+        1. Check if we have enough data to process for this row.
+        2. Check if this is an archived corporate membership.
         """
-        missing_field_msg = ''
+        error_msg = []
 
         if key == 'name':
             if not cmemb_data['company_name']:
-                missing_field_msg = "Missing key 'company_name'"
+                error_msg.append("Missing key 'company_name'.")
+        if 'status_detail' in cmemb_data.keys():
+            if cmemb_data['status_detail'] in ['archive', 'archived']:
+                error_msg.append('No import for archived.')
 
-        return missing_field_msg
+        return ' '.join(error_msg)
 
     def process_corp_membership(self, cmemb_data, **kwargs):
         """
@@ -104,11 +110,11 @@ class CorpMembershipImportProcessor(object):
         corp_memb_display['error'] = ''
         corp_memb_display['user'] = None
 
-        missing_fields_msg = self.check_missing_fields(self.cmemb_data, self.key)
+        error_msg = self.validate_fields(self.cmemb_data, self.key)
 
         # don't process if we have missing value of required fields
-        if missing_fields_msg:
-            corp_memb_display['error'] = missing_fields_msg
+        if error_msg:
+            corp_memb_display['error'] = error_msg
             corp_memb_display['action'] = 'skip'
             if not self.dry_run:
                 self.summary_d['invalid'] += 1
@@ -152,7 +158,7 @@ class CorpMembershipImportProcessor(object):
                 return
 
         corp_memb_display.update({
-                    'company_name': self.cmemb_data.get('company_name', ''),
+                    'company_name': self.cmemb_data.get('name', ''),
                     'email': self.cmemb_data.get('email', ''),
                     'address': self.cmemb_data.get('address', ''),
                     'address2': self.cmemb_data.get('address2', ''),
@@ -221,6 +227,26 @@ class CorpMembershipImportProcessor(object):
                                             join_dt=corp_memb.join_dt)
                 setattr(corp_memb, 'expiration_dt', expiration_dt)
         corp_memb.save()
+
+        # bind members to their corporations by company names
+        if self.mimport.bind_members:
+            self.bind_members_to_corp_membership(corp_memb)
+
+    def bind_members_to_corp_membership(self, corp_memb):
+        corp_profile = corp_memb.corp_profile
+        company_name = corp_profile.name
+        user_ids = Profile.objects.filter(company=company_name
+                                    ).values('user__id', flat=True)
+        if user_ids:
+            memberships = MembershipDefault.objects.filter(
+                                    user__id__in=user_ids
+                                    ).filter(status=True
+                                    ).exclude(status_detail='archive')
+            for membership in memberships:
+                if not membership.corp_profile:
+                    membership.corp_profile_id = corp_profile.id
+                    membership.corporate_membership_id = corp_memb.id
+                    membership.save()
 
     def is_active(self, corp_memb):
         return all([

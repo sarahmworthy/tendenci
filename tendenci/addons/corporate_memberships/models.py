@@ -1074,6 +1074,8 @@ class CorpMembershipImport(models.Model):
     # uniqueness key
     key = models.CharField(_('Key'), max_length=50,
                            default="name")
+    bind_members = models.BooleanField(
+                _('Bind members to corporations by their company names'), default=False)
 
     total_rows = models.IntegerField(default=0)
     num_processed = models.IntegerField(default=0)

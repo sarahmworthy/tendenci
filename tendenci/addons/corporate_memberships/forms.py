@@ -427,6 +427,7 @@ class CorpMembershipUploadForm(forms.ModelForm):
         fields = (
                 'key',
                 'override',
+                'bind_members',
                 'upload_file',
                   )
 
