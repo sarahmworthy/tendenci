@@ -36,7 +36,8 @@ class CorpMembershipImportProcessor(object):
         self.corp_membership_fields = dict([(field.name, field) \
                             for field in CorpMembership._meta.fields \
                             if field.get_internal_type() != 'AutoField' and \
-                            field.name not in ['user', 'guid']])
+                            field.name not in ['user', 'guid',
+                                               'corp_profile']])
         self.private_settings = self.set_default_private_settings()
         self.t4_timezone_map = {'AST': 'Canada/Atlantic',
                              'EST': 'US/Eastern',
@@ -96,9 +97,9 @@ class CorpMembershipImportProcessor(object):
         of a corp_membership
         """
         self.cmemb_data = cmemb_data
+        self.cmemb_data['name'] = self.cmemb_data['company_name']
+        del self.cmemb_data['company_name']
         self.field_names = cmemb_data.keys()  # csv field names
-        user = None
-        memb = None
         corp_memb_display = {}
         corp_memb_display['error'] = ''
         corp_memb_display['user'] = None
@@ -114,16 +115,17 @@ class CorpMembershipImportProcessor(object):
         else:
             #if self.key == 'name':
             [corp_profile] = CorpProfile.objects.filter(
-                    name=self.cmemb_data['company_name'])[:1] or [None]
+                    name=self.cmemb_data['name'])[:1] or [None]
             if corp_profile:
-                [corp_memb] = CorpMembership.objects.filter(user=user).exclude(
+                [corp_memb] = CorpMembership.objects.filter(
+                            corp_profile=corp_profile).exclude(
                           status_detail='archive'
                                 ).order_by('-id')[:1] or [None]
             else:
                 corp_memb = None
 
             if corp_profile:
-                if memb:
+                if corp_memb:
                     corp_memb_display['action'] = 'update'
                     corp_memb_display['corp_profile_action'] = 'update'
                     corp_memb_display['corp_memb_action'] = 'update'
@@ -213,7 +215,7 @@ class CorpMembershipImportProcessor(object):
                 corp_memb.join_dt = datetime.now()
 
         # no expire_dt - get it via membership_type
-        if not hasattr(corp_memb, 'expiration_dt') or not corp_memb.expire_dt:
+        if not hasattr(corp_memb, 'expiration_dt') or not corp_memb.expiration_dt:
             if corp_memb.corporate_membership_type:
                 expiration_dt = corp_memb.corporate_membership_type.get_expiration_dt(
                                             join_dt=corp_memb.join_dt)
@@ -253,6 +255,7 @@ class CorpMembershipImportProcessor(object):
                     value = self.clean_data(value,
                                             assign_to_fields[field_name])
                     setattr(instance, field_name, value)
+                    #print field_name, value
 
         # if insert, set defaults for the fields not in csv.
         for field_name in assign_to_fields_names:

@@ -1078,6 +1078,76 @@ def check_preprocess_status(request, mimport_id):
 
 
 @login_required
+def import_process(request, mimport_id):
+    """
+    Process the import
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(CorpMembershipImport,
+                                    pk=mimport_id)
+    if mimport.status == 'preprocess_done':
+        mimport.status = 'processing'
+        mimport.num_processed = 0
+        mimport.save()
+        # start the process
+        subprocess.Popen(["python", "manage.py",
+                          "import_corp_memberships",
+                          str(mimport.pk),
+                          str(request.user.pk)])
+
+        # log an event
+        EventLog.objects.log()
+
+    # redirect to status page
+    return redirect(reverse('corpmembership.import_status',
+                                     args=[mimport.id]))
+
+
+@login_required
+def import_status(request, mimport_id,
+                    template_name='corporate_memberships/imports/status.html'):
+    """
+    Display import status
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(CorpMembershipImport,
+                                    pk=mimport_id)
+    if mimport.status not in ('processing', 'completed'):
+        return redirect(reverse('corpmembership.import'))
+
+    return render_to_response(template_name, {
+        'mimport': mimport,
+        }, context_instance=RequestContext(request))
+
+
+@csrf_exempt
+@login_required
+def import_get_status(request, mimport_id):
+    """
+    Get the import status and return as json
+    """
+    if not request.user.profile.is_superuser:
+        raise Http403
+    mimport = get_object_or_404(CorpMembershipImport,
+                                    pk=mimport_id)
+
+    status_data = {'status': mimport.status,
+                   'total_rows': str(mimport.total_rows),
+                   'num_processed': str(mimport.num_processed)}
+
+    if mimport.status == 'completed':
+        summary_list = mimport.summary.split(',')
+        status_data['num_insert'] = summary_list[0].split(':')[1]
+        status_data['num_update'] = summary_list[1].split(':')[1]
+        status_data['num_update_insert'] = summary_list[2].split(':')[1]
+        status_data['num_invalid'] = summary_list[3].split(':')[1]
+
+    return HttpResponse(simplejson.dumps(status_data))
+
+
+@login_required
 def download_template(request):
     """
     Download import template for  corporate memberships

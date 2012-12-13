@@ -43,7 +43,7 @@
 
 {% if mimport.status == 'preprocess_done' %}
 
-    <form class="import" method="post" action="{# url memberships.default_import_process mimport.id #}">{% csrf_token %}
+    <form class="import" method="post" action="{% url corpmembership.import_process mimport.id %}">{% csrf_token %}
 
     <div class="import-preview">
         <table>
