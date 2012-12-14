@@ -1985,6 +1985,42 @@ def report_renewed_members(request, template_name='reports/renewed_members.html'
         days = 30
     compare_dt = datetime.now() - timedelta(days=days)
     members = MembershipDefault.objects.filter(renewal=1, renew_dt__gte=compare_dt).order_by('renew_dt')
+    
+    # returns csv response ---------------
+    ouput = request.GET.get('output', '')
+    if ouput == 'csv':
+    
+        table_header = [
+            'member number',
+            'last name',
+            'first name',
+            'email',
+            'city',
+            'state',
+            'country',
+            'renew date'
+        ]
+    
+        table_data = []
+        for mem in members:
+    
+            table_data.append([
+                mem.member_number,
+                mem.user.last_name,
+                mem.user.first_name,
+                mem.user.email,
+                mem.user.profile.city,
+                mem.user.profile.state,
+                mem.user.profile.country,
+                mem.renew_dt
+            ])
+    
+        return render_csv(
+            'renewed-members.csv',
+            table_header,
+            table_data,
+        )
+    # ------------------------------------
 
     EventLog.objects.log()
 

@@ -26,6 +26,8 @@
 </form>
 
 {% if members %}
+<p><a href="{% url reports-renewed-members %}?output=csv">
+    Download CSV File</a></p>
     <table>
         <tr>
             <th>{% trans 'Member Number' %}</th>
