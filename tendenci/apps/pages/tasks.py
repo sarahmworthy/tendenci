@@ -23,7 +23,6 @@ class PagesExportTask(Task):
             'content',
             'view_contact_form',
             'design_notes',
-            'syndicate',
             'template',
             'tags',
             'entity',

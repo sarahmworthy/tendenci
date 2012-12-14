@@ -11,15 +11,10 @@ from tendenci.core.categories.models import Category
 class PageIndex(TendenciBaseSearchIndex):
     title = indexes.CharField(model_attr='title')
     content = indexes.CharField(model_attr='content')
-    syndicate = indexes.BooleanField(model_attr='syndicate')
 
     # categories
     category = indexes.CharField()
     sub_category = indexes.CharField()
-
-    # RSS fields
-    can_syndicate = indexes.BooleanField()
-    order = indexes.DateTimeField()
 
     def prepare_content(self, obj):
         content = obj.content
@@ -38,12 +33,5 @@ class PageIndex(TendenciBaseSearchIndex):
         if category:
             return category.name
         return ''
-
-    def prepare_can_syndicate(self, obj):
-        return obj.allow_anonymous_view and obj.syndicate and obj.status == 1  \
-            and obj.status_detail == 'active'
-
-    def prepare_order(self, obj):
-        return obj.update_dt
 
 site.register(Page, PageIndex)

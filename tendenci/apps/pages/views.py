@@ -495,7 +495,6 @@ def export(request, template_name="pages/export.html"):
             'content',
             'view_contact_form',
             'design_notes',
-            'syndicate',
             'template',
             'tags',
             'entity',

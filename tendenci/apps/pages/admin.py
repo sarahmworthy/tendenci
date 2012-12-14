@@ -14,7 +14,7 @@ except:
     notification = None
     
 class PageAdmin(admin.ModelAdmin):
-    list_display = ('view_on_site', 'edit_link', 'title', 'link', 'syndicate', 
+    list_display = ('view_on_site', 'edit_link', 'title', 'link', 
                     'allow_anonymous_view', 'status', 
                     'status_detail')
     search_fields = ('title','content',)
@@ -27,7 +27,6 @@ class PageAdmin(admin.ModelAdmin):
             'group_perms',
         )}),
         ('Publishing Status', {'fields': (
-            'syndicate',
             'status',
             'status_detail'
         )}),

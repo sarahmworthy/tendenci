@@ -28,7 +28,6 @@ class BasePage(TendenciBaseModel):
     content = tinymce_models.HTMLField()
     view_contact_form = models.BooleanField()
     design_notes = models.TextField(_('Design Notes'), blank=True)
-    syndicate = models.BooleanField(_('Include in RSS feed'))
     template = models.CharField(_('Template'), max_length=50, blank=True)
     tags = TagField(blank=True)
     meta = models.OneToOneField(MetaTags, null=True)
