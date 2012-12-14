@@ -645,7 +645,7 @@ def get_user_by_email(email):
     if not email:
         return None
 
-    [user] = User.objects.filter(email=email).order_by(
+    [user] = User.objects.filter(email__iexact=email).order_by(
                     '-is_active', '-is_superuser', '-is_staff'
                         )[:1] or [None]
     return user
