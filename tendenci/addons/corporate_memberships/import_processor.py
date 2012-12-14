@@ -6,12 +6,15 @@ import dateutil.parser as dparser
 import pytz
 
 from django.core import exceptions
+from django.contrib.auth.models import User
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.addons.corporate_memberships.models import (
                                             CorpMembership,
                                             CorpProfile,
+                                            CorpMembershipRep,
                                             CorporateMembershipType)
+from tendenci.addons.corporate_memberships.utils import update_authorized_domains
 from tendenci.addons.memberships.models import MembershipDefault
 from tendenci.apps.profiles.models import Profile
 
@@ -155,6 +158,16 @@ class CorpMembershipImportProcessor(object):
                 # now do the update or insert
                 self.do_import_corp_membership(corp_profile, corp_memb,
                                                   corp_memb_display)
+                # handle authorized_domain
+                if 'authorized_domains' in self.field_names:
+                    update_authorized_domains(corp_profile,
+                                        self.cmemb_data['authorized_domains'])
+
+                # handle dues_rep
+                if 'dues_rep' in self.field_names:
+                    self.update_dues_reps(corp_profile,
+                                          self.cmemb_data['dues_rep'])
+
                 return
 
         corp_memb_display.update({
@@ -168,11 +181,34 @@ class CorpMembershipImportProcessor(object):
                              })
         return corp_memb_display
 
+    def update_dues_reps(self, corp_profile, dues_reps):
+        """
+        Update the dues reps for this corp_profile.
+        """
+        dues_reps = dues_reps.split(',')
+        dues_reps_list = [name.strip() for name in dues_reps]
+        dues_reps_users_list = []
+        # get the user objects by username
+        for username in dues_reps_list:
+            [u] = User.objects.filter(username=username)[:1] or [None]
+            if u:
+                dues_reps_users_list.append(u)
+        if dues_reps_users_list:
+            # delete the existing dues reps
+            CorpMembershipRep.objects.filter(corp_profile=corp_profile,
+                                             is_dues_rep=True).delete()
+            for u in dues_reps_users_list:
+                dues_rep = CorpMembershipRep(
+                                    corp_profile=corp_profile,
+                                    user=u,
+                                    is_dues_rep=True)
+                dues_rep.save()
+
     def do_import_corp_membership(self, corp_profile, corp_memb, action_info):
         """
         Database import here - insert or update
         """
-        # handle user
+        # handle corp_profile
         if not corp_profile:
             corp_profile = CorpProfile()
 
@@ -188,7 +224,7 @@ class CorpMembershipImportProcessor(object):
 
         corp_profile.save()
 
-        # membership
+        # corpmembership
         if not corp_memb:
             corp_memb = CorpMembership(
                     corp_profile=corp_profile,
@@ -220,7 +256,7 @@ class CorpMembershipImportProcessor(object):
             if corp_memb.status and corp_memb.status_detail == 'active':
                 corp_memb.join_dt = datetime.now()
 
-        # no expire_dt - get it via membership_type
+        # no expire_dt - get it via corporate_membership_type
         if not hasattr(corp_memb, 'expiration_dt') or not corp_memb.expiration_dt:
             if corp_memb.corporate_membership_type:
                 expiration_dt = corp_memb.corporate_membership_type.get_expiration_dt(
@@ -236,7 +272,7 @@ class CorpMembershipImportProcessor(object):
         corp_profile = corp_memb.corp_profile
         company_name = corp_profile.name
         user_ids = Profile.objects.filter(company=company_name
-                                    ).values('user__id', flat=True)
+                                    ).values_list('user__id', flat=True)
         if user_ids:
             memberships = MembershipDefault.objects.filter(
                                     user__id__in=user_ids

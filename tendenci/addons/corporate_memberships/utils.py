@@ -98,7 +98,7 @@ def update_authorized_domains(corp_profile, domain_names):
     Update the authorized domains for this corporate membership.
     """
     from tendenci.addons.corporate_memberships.models import CorpMembershipAuthDomain
-    if domain_names:
+    if domain_names.strip():
         dname_list = domain_names.split(',')
         dname_list = [name.strip() for name in dname_list]
 
