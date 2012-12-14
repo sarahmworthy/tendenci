@@ -672,3 +672,8 @@ form.connect-with li {
     width: 350px;
     line-height: 20px;
 }
+
+/* Members YTD by Type */
+.totals-row {
+    background: #ccc;
+}

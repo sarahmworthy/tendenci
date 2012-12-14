@@ -84,6 +84,7 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
     url(r'^reports/members_in_grace_period/$', 'report_grace_period_members', name='reports-grace-period-members'),
     url(r'^reports/renewed_members/$', 'report_renewed_members', name='reports-renewed-members'),
     url(r'^reports/active_members_ytd/$', 'report_active_members_ytd', name='reports-active-members-ytd'),
+    url(r'^reports/members_ytd_type/$', 'report_members_ytd_type', name='reports-members-ytd-type'),
 
     # entries
     url(r"^entries/$", "application_entries", name="membership.application_entries"),

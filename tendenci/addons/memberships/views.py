@@ -2058,3 +2058,62 @@ def report_active_members_ytd(request, template_name='reports/active_members_ytd
     EventLog.objects.log()
     
     return render_to_response(template_name, {'months': months, 'total_new': total_new, 'total_renew': total_renew, 'years': years, 'year': year}, context_instance=RequestContext(request))
+
+@staff_member_required
+def report_members_ytd_type(request, template_name='reports/members_ytd_type.html'):
+    import datetime
+    from datetime import timedelta
+    
+    year = datetime.datetime.now().year
+    years = [year, year-1, year-2, year-3, year-4]
+    if request.GET.get('year'):
+        year = int(request.GET.get('year'))
+
+    types_new = []
+    types_renew = []
+    types_expired = []
+    months = calendar.month_abbr[1:]
+    itermonths = iter(calendar.month_abbr)
+    next(itermonths)
+
+    for type in MembershipType.objects.all():
+        mems = MembershipDefault.objects.filter(membership_type=type)
+        for index, month in enumerate(itermonths):
+            index = index + 1
+            new_mems = mems.filter(join_dt__year=year, join_dt__month=index).count()
+            renew_mems = mems.filter(renew_dt__year=year, renew_dt__month=index).count()
+            expired_mems = mems.filter(expire_dt__year=year, expire_dt__month=index).count()
+            new_dict = {
+                'name': type.name,
+                'new_mems': new_mems,
+            }
+            types_new.append(new_dict)
+            renew_dict = {
+                'name': type.name,
+                'renew_mems': renew_mems,
+            }
+            types_renew.append(renew_dict)
+            expired_dict = {
+                'name': type.name,
+                'expired_mems': expired_mems,
+            }
+            types_expired.append(expired_dict)
+    
+    totals_new = []
+    totals_renew = []
+    totals_expired = []
+    itermonths = iter(calendar.month_abbr)
+    next(itermonths)
+    for index, month in enumerate(itermonths):
+        index = index + 1
+        new = MembershipDefault.objects.filter(join_dt__year=year, join_dt__month=index).count()
+        renew = MembershipDefault.objects.filter(renew_dt__year=year, renew_dt__month=index).count()
+        expired = MembershipDefault.objects.filter(expire_dt__year=year, expire_dt__month=index).count()
+        totals_new.append(new)
+        totals_renew.append(renew)
+        totals_expired.append(expired)
+        
+
+    EventLog.objects.log()
+    
+    return render_to_response(template_name, {'months': months, 'years': years, 'year': year, 'types_new': types_new, 'types_renew': types_renew, 'types_expired': types_expired, 'totals_new': totals_new, 'totals_renew': totals_renew, 'totals_expired': totals_expired}, context_instance=RequestContext(request))
