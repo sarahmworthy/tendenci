@@ -1188,9 +1188,10 @@ def download_template(request):
 
 
 @login_required
+@password_required
 def corp_membership_export(request):
     """
-    Export corp memberships as .csv file.
+    Export corp memberships as .csv
     """
     from tendenci.core.perms.models import TendenciBaseModel
     if not request.user.profile.is_superuser:
