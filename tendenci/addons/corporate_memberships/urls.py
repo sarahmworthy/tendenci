@@ -61,6 +61,11 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         "import_get_status",
         name="corpmembership.import_get_status"),
 
+    # export CorpMembership
+    url(r"^corp-export/$",
+        "corp_membership_export",
+        name="corpmembership.export"),
+
 
     url(r"^(?P<slug>.*)/add_pre/$", "add_pre", name="corp_memb.add_pre"),
     url(r"^(?P<slug>.*)/add/$", "add", name="corp_memb.add"),

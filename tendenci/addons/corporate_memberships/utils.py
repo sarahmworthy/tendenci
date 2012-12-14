@@ -61,6 +61,34 @@ def get_corpmembership_type_choices(user, corpmembership_app, renew=False):
     return cmt_list
 
 
+def corp_membership_rows(corp_profile_field_names,
+                         corp_memb_field_names,
+                         foreign_keys):
+    from tendenci.addons.corporate_memberships.models import CorpMembership
+    # grab all except the archived
+    corp_memberships = CorpMembership.objects.filter(
+                                            status=True
+                                ).exclude(
+                                status_detail='archive'
+                                ).select_related('corp_profile')
+
+    for corp_membership in corp_memberships:
+        row_items = []
+        for field_name in corp_profile_field_names:
+            item = getattr(corp_membership.corp_profile, field_name)
+            if item and field_name in foreign_keys:
+                # display ids for foreign keys
+                item = item.id
+            row_items.append(item)
+        for field_name in corp_memb_field_names:
+            item = getattr(corp_membership, field_name)
+            if item and field_name in foreign_keys:
+                item = item.id
+            row_items.append(item)
+
+        yield row_items
+
+
 def get_corp_memberships_choices():
     from tendenci.addons.corporate_memberships.models import CorpMembership
     corp_values = CorpMembership.objects.filter(
