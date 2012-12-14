@@ -282,6 +282,13 @@ class CorpProfile(TendenciBaseModel):
                                       object_id_field="object_id",
                                       content_type_field="content_type")
 
+    def save(self, *args, **kwargs):
+        if not self.guid:
+            self.guid = str(uuid.uuid1())
+        if not self.entity:
+                self.entity_id = 1
+        super(CorpProfile, self).save(*args, **kwargs)
+
     def assign_secret_code(self):
         if not self.secret_code:
             # use the make_random_password in the User object

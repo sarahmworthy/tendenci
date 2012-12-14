@@ -222,6 +222,13 @@ class CorpMembershipImportProcessor(object):
         else:
             corp_profile.status_detail = corp_profile.status_detail.lower()
 
+        if not corp_profile.creator:
+            corp_profile.creator = self.request_user
+            corp_profile.creator_username = self.request_user.username
+        if not corp_profile.owner:
+            corp_profile.owner = self.request_user
+            corp_profile.owner_username = self.request_user.username
+
         corp_profile.save()
 
         # corpmembership
@@ -244,6 +251,11 @@ class CorpMembershipImportProcessor(object):
         else:
             corp_memb.status_detail = corp_memb.status_detail.lower()
 
+        # set to approved for active memberships
+        if not corp_memb.approved:
+            if corp_memb.status and corp_memb.status_detail == 'active':
+                corp_memb.approved = True
+
         # corporate membership type
         if not hasattr(corp_memb, "corporate_membership_type") or \
                 not corp_memb.corporate_membership_type:
@@ -262,6 +274,13 @@ class CorpMembershipImportProcessor(object):
                 expiration_dt = corp_memb.corporate_membership_type.get_expiration_dt(
                                             join_dt=corp_memb.join_dt)
                 setattr(corp_memb, 'expiration_dt', expiration_dt)
+
+        if not corp_memb.creator:
+            corp_memb.creator = self.request_user
+            corp_memb.creator_username = self.request_user.username
+        if not corp_memb.owner:
+            corp_memb.owner = self.request_user
+            corp_memb.owner_username = self.request_user.username
         corp_memb.save()
 
         # bind members to their corporations by company names
@@ -323,10 +342,13 @@ class CorpMembershipImportProcessor(object):
         for field_name in assign_to_fields_names:
             if field_name not in self.field_names and action == 'insert':
                 if field_name not in self.private_settings.keys():
-                    value = self.get_default_value(
-                                    assign_to_fields[field_name])
-                    if value != None:
-                        setattr(instance, field_name, value)
+                    if field_name not in ['creator', 'owner',
+                                          'creator_username',
+                                          'owner_username']:
+                        value = self.get_default_value(
+                                        assign_to_fields[field_name])
+                        if value != None:
+                            setattr(instance, field_name, value)
 
     def get_default_value(self, field):
         # if allows null or has default, return None
@@ -354,9 +376,11 @@ class CorpMembershipImportProcessor(object):
             return 0
 
         if field_type == 'ForeignKey':
-            [value] = field.related.parent_model.objects.all(
-                                        )[:1] or [None]
-            return value
+            if not field.name in ['creator', 'owner']:
+                [value] = field.related.parent_model.objects.all(
+                                            )[:1] or [None]
+                return value
+            return None
 
         return ''
 
@@ -448,8 +472,9 @@ class CorpMembershipImportProcessor(object):
                                             name=orignal_value)[:1] or [None]
 
             if not value and not field.null:
-                # if the field doesn't allow null, grab the first one.
-                [value] = field.related.parent_model.objects.all(
-                                        ).order_by('id')[:1] or [None]
+                if not field.name in ['creator', 'owner']:
+                    # if the field doesn't allow null, grab the first one.
+                    [value] = field.related.parent_model.objects.all(
+                                            ).order_by('id')[:1] or [None]
 
         return value
