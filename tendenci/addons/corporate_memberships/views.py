@@ -917,6 +917,7 @@ def roster_search(request,
 
 
 @login_required
+@password_required
 def import_upload(request,
                   template='corporate_memberships/imports/upload.html'):
     """
