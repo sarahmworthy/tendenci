@@ -1916,6 +1916,32 @@ def report_member_quick_list(request, template_name='reports/membership_quick_li
     """
     members = MembershipDefault.objects.filter(status=1, status_detail="active").order_by('user__last_name')
     
+    # returns csv response ---------------
+    ouput = request.GET.get('output', '')
+    if ouput == 'csv':
+
+        table_header = [
+            'first name',
+            'last name',
+            'company'
+        ]
+
+        table_data = []
+        for mem in members:
+
+            table_data.append([
+                mem.user.first_name,
+                mem.user.last_name,
+                mem.user.profile.company
+            ])
+
+        return render_csv(
+            'current-members-quicklist.csv',
+            table_header,
+            table_data,
+        )
+    # ------------------------------------
+
     EventLog.objects.log()
 
     return render_to_response(template_name, {'members': members}, context_instance=RequestContext(request))
