@@ -455,6 +455,12 @@ class CorpMembershipUploadForm(forms.ModelForm):
         return upload_file
 
 
+class CorpExportForm(forms.Form):
+    export_format = forms.ChoiceField(
+                label=_('Export Format'),
+                choices=(('csv', 'csv (Export)'),))
+
+
 class CorpAppForm(forms.ModelForm):
     description = forms.CharField(required=False,
                      widget=TinyMCE(

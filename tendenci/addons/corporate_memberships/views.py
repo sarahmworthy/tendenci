@@ -59,6 +59,7 @@ from tendenci.addons.corporate_memberships.forms import (
                                          CorpMembershipRenewForm,
                                          RosterSearchAdvancedForm,
                                          CorpMembershipUploadForm,
+                                         CorpExportForm,
                                          CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
@@ -1189,7 +1190,8 @@ def download_template(request):
 
 @login_required
 @password_required
-def corp_membership_export(request):
+def corp_membership_export(request,
+                           template='corporate_memberships/export.html'):
     """
     Export corp memberships as .csv
     """
@@ -1197,58 +1199,63 @@ def corp_membership_export(request):
     if not request.user.profile.is_superuser:
         raise Http403
 
-    base_field_list = [smart_str(field.name) for field \
-                       in TendenciBaseModel._meta.fields \
-                     if not field.__class__ == AutoField]
-    corp_profile_field_list = [smart_str(field.name) for field \
-                       in CorpProfile._meta.fields \
-                     if not field.__class__ == AutoField]
-    corp_profile_field_list = [name for name in corp_profile_field_list \
-                               if not name in base_field_list]
-    corp_profile_field_list.remove('guid')
-    corp_memb_field_list = [smart_str(field.name) for field \
-                       in CorpMembership._meta.fields \
-                     if not field.__class__ == AutoField]
-    corp_memb_field_list.remove('guid')
-    corp_memb_field_list.remove('corp_profile')
+    form = CorpExportForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            base_field_list = [smart_str(field.name) for field \
+                               in TendenciBaseModel._meta.fields \
+                             if not field.__class__ == AutoField]
+            corp_profile_field_list = [smart_str(field.name) for field \
+                               in CorpProfile._meta.fields \
+                             if not field.__class__ == AutoField]
+            corp_profile_field_list = [name for name in corp_profile_field_list \
+                                       if not name in base_field_list]
+            corp_profile_field_list.remove('guid')
+            corp_memb_field_list = [smart_str(field.name) for field \
+                               in CorpMembership._meta.fields \
+                             if not field.__class__ == AutoField]
+            corp_memb_field_list.remove('guid')
+            corp_memb_field_list.remove('corp_profile')
 
-    title_list = corp_profile_field_list + corp_memb_field_list
+            title_list = corp_profile_field_list + corp_memb_field_list
 
-    # list of foreignkey fields
-    corp_profile_fks = [field.name for field in CorpProfile._meta.fields \
-                   if isinstance(field, (ForeignKey, OneToOneField))]
-    corp_memb_fks = [field.name for field in CorpMembership._meta.fields \
-                if isinstance(field, (ForeignKey, OneToOneField))]
+            # list of foreignkey fields
+            corp_profile_fks = [field.name for field in CorpProfile._meta.fields \
+                           if isinstance(field, (ForeignKey, OneToOneField))]
+            corp_memb_fks = [field.name for field in CorpMembership._meta.fields \
+                        if isinstance(field, (ForeignKey, OneToOneField))]
 
-    fks = Set(corp_profile_fks + corp_memb_fks)
-    #fks = [field for field in fks]
+            fks = Set(corp_profile_fks + corp_memb_fks)
+            #fks = [field for field in fks]
 
-    filename = 'corporate_memberships_export.csv'
-    response = HttpResponse(mimetype='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=' + filename
+            filename = 'corporate_memberships_export.csv'
+            response = HttpResponse(mimetype='text/csv')
+            response['Content-Disposition'] = 'attachment; filename=' + filename
 
-    csv_writer = csv.writer(response)
+            csv_writer = csv.writer(response)
 
-    csv_writer.writerow(title_list)
-    # corp_membership_rows is a generator - for better performance
-    for row_item_list in corp_membership_rows(corp_profile_field_list,
-                                              corp_memb_field_list,
-                                              fks
-                                              ):
-        for i in range(0, len(row_item_list)):
-            if row_item_list[i]:
-                if isinstance(row_item_list[i], datetime):
-                    row_item_list[i] = row_item_list[i].strftime('%Y-%m-%d %H:%M:%S')
-                elif isinstance(row_item_list[i], date):
-                    row_item_list[i] = row_item_list[i].strftime('%Y-%m-%d')
-                elif isinstance(row_item_list[i], time):
-                    row_item_list[i] = row_item_list[i].strftime('%H:%M:%S')
-                elif isinstance(row_item_list[i], basestring):
-                    row_item_list[i] = row_item_list[i].encode("utf-8")
-        csv_writer.writerow(row_item_list)
+            csv_writer.writerow(title_list)
+            # corp_membership_rows is a generator - for better performance
+            for row_item_list in corp_membership_rows(corp_profile_field_list,
+                                                      corp_memb_field_list,
+                                                      fks
+                                                      ):
+                for i in range(0, len(row_item_list)):
+                    if row_item_list[i]:
+                        if isinstance(row_item_list[i], datetime):
+                            row_item_list[i] = row_item_list[i].strftime('%Y-%m-%d %H:%M:%S')
+                        elif isinstance(row_item_list[i], date):
+                            row_item_list[i] = row_item_list[i].strftime('%Y-%m-%d')
+                        elif isinstance(row_item_list[i], time):
+                            row_item_list[i] = row_item_list[i].strftime('%H:%M:%S')
+                        elif isinstance(row_item_list[i], basestring):
+                            row_item_list[i] = row_item_list[i].encode("utf-8")
+                csv_writer.writerow(row_item_list)
 
-    # use StreamingHttpResponse once we're on 1.5
-    return response
+            # switch to StreamingHttpResponse once we're on 1.5
+            return response
+    context = {"form": form}
+    return render_to_response(template, context, RequestContext(request))
 
 
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
