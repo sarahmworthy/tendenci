@@ -1,5 +1,4 @@
 from datetime import datetime
-import traceback
 
 from django.core.management.base import BaseCommand
 from django.shortcuts import get_object_or_404
@@ -20,14 +19,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from tendenci.addons.memberships.models import MembershipImport
         from tendenci.addons.memberships.models import MembershipImportData
-#        from tendenci.addons.memberships.utils import memb_import_parse_csv
         from tendenci.addons.memberships.utils import ImportMembDefault
 
-        mimport = get_object_or_404(MembershipImport,
-                                        pk=args[0])
+        mimport = get_object_or_404(MembershipImport, pk=args[0])
         request_user = User.objects.get(pk=args[1])
 
-#        fieldnames, data_list = memb_import_parse_csv(mimport)
         data_list = MembershipImportData.objects.filter(
                                 mimport=mimport).order_by('pk')
 
@@ -35,14 +31,10 @@ class Command(BaseCommand):
 
         for idata in data_list:
             memb_data = idata.row_data
-            # catch any error
+
             try:
                 imd.process_default_membership(memb_data)
             except Exception, e:
-                # mimport.status = 'error'
-                # TODO: add a field to log the error
-                # mimport.save()
-                # raise  Exception(traceback.format_exc())
                 print e
 
             mimport.num_processed += 1
