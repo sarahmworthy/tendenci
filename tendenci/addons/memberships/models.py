@@ -2201,7 +2201,9 @@ class AppEntry(TendenciBaseModel):
         # TODO: Prone to error; We're depending on a string membership type name
         try:
             entry_field = self.fields.get(field__field_type="payment-method")
-            return PaymentMethod.objects.get(human_name__exact=entry_field.value.strip())
+            v = entry_field.value.strip()
+            if v:
+                return PaymentMethod.objects.get(human_name__exact=v)
         except PaymentMethod.MultipleObjectsReturned:
             return PaymentMethod.objects.filter(
                 human_name__exact=entry_field.value.strip()
