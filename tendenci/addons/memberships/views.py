@@ -1186,7 +1186,7 @@ def download_default_template(request):
 
     title_list = [field for field in MembershipDefault._meta.fields \
                      if not field.__class__ == AutoField]
-    title_list = [smart_str(field.name) for field in title_list ]
+    title_list = [smart_str(field.name) for field in title_list]
     # adjust the order for some fields
     title_list = title_list[14:] + title_list[:14]
 
@@ -1202,7 +1202,7 @@ def download_default_template(request):
                   'url', 'url2', 'address_type', 'fax',
                   'work_phone', 'home_phone', 'mobile_phone',
                   'dob', 'ssn', 'spouse',
-                  'department'
+                  'department', 'ud1', 'ud2', 'ud3', 'ud4', 'ud5',
                   ] + title_list
     data_row_list = []
 
