@@ -1190,7 +1190,7 @@ def download_template(request):
 
 @login_required
 @password_required
-def corp_membership_export(request,
+def corpmembership_export(request,
                            template='corporate_memberships/export.html'):
     """
     Export corp memberships as .csv
@@ -1211,6 +1211,8 @@ def corp_membership_export(request,
             corp_profile_field_list = [name for name in corp_profile_field_list \
                                        if not name in base_field_list]
             corp_profile_field_list.remove('guid')
+            corp_profile_field_list.append('dues_rep')
+            corp_profile_field_list.append('authorized_domains')
             corp_memb_field_list = [smart_str(field.name) for field \
                                in CorpMembership._meta.fields \
                              if not field.__class__ == AutoField]

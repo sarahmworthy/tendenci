@@ -63,7 +63,7 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
 
     # export CorpMembership
     url(r"^corp-export/$",
-        "corp_membership_export",
+        "corpmembership_export",
         name="corpmembership.export"),
 
 
