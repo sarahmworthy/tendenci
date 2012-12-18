@@ -32,11 +32,11 @@ class Command(BaseCommand):
                 )
 
             if m_default:
-                # not found; then creating
-                m_default_created = False
-            else:
                 # found; already created
                 m_default_created = True
+            else:
+                # not found; then creating
+                m_default_created = False
                 m_default = MembershipDefault()
 
             if e.membership:
@@ -45,6 +45,7 @@ class Command(BaseCommand):
                 m_default.renewal = e.membership.renewal
 
                 m_default.guid = e.membership.guid
+                m_default.expire_dt = e.membership.expire_dt
 
                 # m_default.certifications
                 # m_default.work_experience
@@ -96,9 +97,10 @@ class Command(BaseCommand):
                 if hasattr(e.membership, 'user'):
                     m_default.user = e.membership.user
 
-            m_default.user, user_created = m_default.get_or_create_user(
-                email=e.email, first_name=e.first_name, last_name=e.last_name
-            )
+            if not m_default.user:
+                m_default.user, user_created = m_default.get_or_create_user(
+                    email=e.email, first_name=e.first_name, last_name=e.last_name
+                )
 
             if not hasattr(m_default, 'membership_type'):
                 if e.membership_type:
@@ -140,7 +142,8 @@ class Command(BaseCommand):
                 m_default.action_taken_user = e.judge
 
             m_default.set_renew_dt()
-            m_default.set_expire_dt()
+            if not m_default.expire_dt:
+                m_default.set_expire_dt()
             m_default.user.profile.refresh_member_number()
 
             self.set_owner_creator_fields(m_default, e)
