@@ -993,6 +993,7 @@ def membership_default_import_preview(request, mimport_id,
     """
     if not request.user.profile.is_superuser:
         raise Http403
+    invalidate('memberships_membershipimport')
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
 
@@ -1096,6 +1097,7 @@ def membership_default_import_process(request, mimport_id):
     """
     if not request.user.profile.is_superuser:
         raise Http403
+    invalidate('memberships_membershipimport')
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
     if mimport.status == 'preprocess_done':
@@ -1124,6 +1126,7 @@ def membership_default_import_status(request, mimport_id,
     """
     if not request.user.profile.is_superuser:
         raise Http403
+    invalidate('memberships_membershipimport')
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
     if mimport.status not in ('processing', 'completed'):
@@ -1142,6 +1145,7 @@ def membership_default_import_get_status(request, mimport_id):
     """
     if not request.user.profile.is_superuser:
         raise Http403
+    invalidate('memberships_membershipimport')
     mimport = get_object_or_404(MembershipImport,
                                     pk=mimport_id)
 
