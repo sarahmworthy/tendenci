@@ -277,7 +277,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         Intercept add page and redirect to form.
         """
         return HttpResponseRedirect(
-            reverse('membership.application_detail_default')
+            reverse('membership_default.add')
         )
 
     def queryset(self, request):
