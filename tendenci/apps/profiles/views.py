@@ -342,7 +342,9 @@ def edit(request, id, form_class=ProfileForm, template_name="profiles/edit.html"
 
             user_edit.save()
             profile.save()
-            
+
+            # update member-number on profile
+            profile.refresh_member_number()
             
             # notify ADMIN of update to a user's record
             if get_setting('module', 'users', 'userseditnotifyadmin'):
