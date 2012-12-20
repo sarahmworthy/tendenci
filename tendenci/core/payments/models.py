@@ -1,4 +1,8 @@
 import uuid
+from Crypto.Cipher import Blowfish
+import binascii
+
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
@@ -63,6 +67,8 @@ class Payment(models.Model):
     status_detail = models.CharField(max_length=50, default='')
     status = models.BooleanField(default=True)
     
+    merchant_account = models.ForeignKey('PaymentGateway', null=True)
+
     def save(self, user=None):
         if not self.id:
             self.guid = str(uuid.uuid1())
@@ -170,14 +176,14 @@ class Payment(models.Model):
             #site_url = "http://tendenci5.schipul.net"
             #merchant_account = "authorizenet"
             site_url = get_setting('site', 'global', 'siteurl')
-            merchant_account = get_setting('site', "global", "merchantaccount")
-            if merchant_account.lower() == "authorizenet":
+            #merchant_account = get_setting('site', "global", "merchantaccount")
+            if self.merchant_account.name == "authorizenet":
                 self.response_page = site_url + reverse('authorizenet.sim_thank_you', args=[self.id])
-            elif merchant_account.lower() == "firstdata":
+            elif self.merchant_account.name == "firstdata":
                 self.response_page = site_url + reverse('firstdata.thank_you', args=[self.id])
-            elif merchant_account.lower() == "paypalpayflowlink":
+            elif self.merchant_account.name == "paypalpayflowlink":
                 self.response_page = site_url + reverse('payflowlink.thank_you')
-            elif merchant_account.lower() == "paypal":
+            elif self.merchant_account.name == "paypal":
                 self.response_page = site_url + reverse('paypal.thank_you')
             else:
                 self.response_page = site_url + "/payments/thankyou/%d" % (self.id)
@@ -204,3 +210,48 @@ class PaymentMethod(models.Model):
             return "%s - Online" % name
         return "%s - Offline" % name
     
+
+class PaymentGateway(models.Model):
+    """
+        Payment Gateway
+    """
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        ordering = ('name',)
+
+    def __unicode__(self):
+        return self.name
+
+    def get_value_of(self, label):
+        for field in self.fields.all():
+            if field.label == label:
+                return field.get_value()
+        return ''
+
+
+class PaymentGatewayField(models.Model):
+    """
+        Payment Gateway Information Fields
+    """
+    gateway = models.ForeignKey(PaymentGateway, related_name="fields")
+    label = models.CharField(max_length=200, blank=False)
+    value = models.CharField(max_length=200, blank=True)
+
+    def __unicode__(self):
+        return u"%s - %s" %(self.gateway, self.label)
+
+    def save(self):
+        if self.value:
+            enc_obj = Blowfish.new( settings.SECRET_KEY )
+            # encrypt value
+            value = self.value
+            repeat = 8 - (len( value ) % 8)
+            value = value + " " * repeat
+            self.value = binascii.b2a_hex(enc_obj.encrypt( value ))
+
+        super(PaymentGatewayField, self).save()
+
+    def get_value(self):
+        enc_obj = Blowfish.new( settings.SECRET_KEY )
+        return enc_obj.decrypt( binascii.a2b_hex(self.value) ).rstrip()

@@ -1,11 +1,11 @@
 #import time
 #import hashlib
 import urllib
-from django.conf import settings
+from django.shortcuts import get_object_or_404
 #from django.http import Http404
 from django.core.urlresolvers import reverse
 from forms import PayflowLinkPaymentForm
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.payments.utils import payment_processing_object_updates
 from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.notifications.utils import send_notifications
@@ -15,11 +15,12 @@ from django.utils.encoding import smart_str
 
 
 def prepare_payflowlink_form(request, payment):
+    gateway = get_object_or_404(PaymentGateway, name="paypalpayflowlink")
     amount = "%.2f" % payment.amount
     #payment.description = urllib.quote(smart_str(payment.description))
     params = {
-              'login':settings.PAYPAL_MERCHANT_LOGIN,
-              'partner': settings.PAYFLOWLINK_PARTNER,
+              'login':gateway.get_value_of("PAYPAL_MERCHANT_LOGIN"),
+              'partner': gateway.get_value_of("PAYFLOWLINK_PARTNER"),
               'amount':amount,
               'type': 'S',
               'showconfirm': 'True',

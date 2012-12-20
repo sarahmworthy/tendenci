@@ -2,19 +2,26 @@
 {% load i18n %}
 
 {% block body %}
-{% if form %}
-<form action="{{ post_url }}" method="POST" name="myform99">
-    {{ form.as_p }}
-    
-    <br><br><br><br>
-    {% trans "If you are not redirected within 45 secs,<br> please click the button below to submit your payment. Thank you." %}
-    <br><br><br>
-    <input type="submit" value="Submit Payment" />
-    <script language="javascript">
-    	document.myform99.submit();
-    </script>
-</form>
+{% if gateway_chosen %}
+    {% if form %}
+    <form action="{{ post_url }}" method="POST" name="myform99">
+        {{ form.as_p }}
+        
+        <br><br><br><br>
+        {% trans "If you are not redirected within 45 secs,<br> please click the button below to submit your payment. Thank you." %}
+        <br><br><br>
+        <input type="submit" value="Submit Payment" />
+        <script language="javascript">
+        	document.myform99.submit();
+        </script>
+    </form>
+    {% else %}
+    <p>{% trans "The online payment is not setup for the site. Check out later." %}</p>
+    {% endif %}
 {% else %}
-<p>{% trans "The online payment is not setup for the site. Check out later." %}</p>
+    <form action="" method="POST">{% csrf_token %}
+        {{ gateway_form.as_p }}
+        <input type="submit" value="Select Gateway" />
+    </form>
 {% endif %}
 {% endblock %}

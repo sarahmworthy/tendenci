@@ -23,7 +23,7 @@ from tendenci.core.exports.utils import run_export_task
 from tendenci.apps.notifications.utils import send_notifications
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.invoices.forms import AdminNotesForm, AdminAdjustForm, InvoiceSearchForm
-
+from tendenci.core.payments.models import PaymentGateway
 
 @is_enabled('invoices')
 def view(request, id, guid=None, form_class=AdminNotesForm, template_name="invoices/view.html"):
@@ -48,7 +48,7 @@ def view(request, id, guid=None, form_class=AdminNotesForm, template_name="invoi
     if guid==None: guid=''
     
     merchant_login = False
-    if hasattr(settings, 'MERCHANT_LOGIN') and settings.MERCHANT_LOGIN:
+    if PaymentGateway.objects.count() > 0:
         merchant_login = True
       
     obj = invoice.get_object()

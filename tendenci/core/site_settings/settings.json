@@ -204,23 +204,6 @@
         "updated_by": ""
     }, 
     {
-        "default_value": "AuthorizeNet", 
-        "description": "If you have a merchant account, enter the name of the merchant account service provider. Check out the help file on <a href='http://tendenci.com/help-files/setup-online-payment-tendenci-t5-site/'>how to set up online payment</a>.", 
-        "data_type": "string", 
-        "update_dt": "2011-04-28 13:59:53", 
-        "input_type": "text", 
-        "client_editable": false, 
-        "name": "merchantaccount", 
-        "value": "asdf asdf asdf", 
-        "label": "Merchant Account", 
-        "input_value": " ", 
-        "parent_id": 0, 
-        "scope": "site", 
-        "scope_category": "global", 
-        "store": true, 
-        "updated_by": ""
-    }, 
-    {
         "default_value": "false", 
         "description": "The Merchant Account Test Mode Feature is currently not available.", 
         "data_type": "boolean", 

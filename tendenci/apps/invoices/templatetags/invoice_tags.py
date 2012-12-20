@@ -1,6 +1,6 @@
 from django.template import Library
 from django.conf import settings
-
+from tendenci.core.payments.models import PaymentGateway
 register = Library()
 
 @register.inclusion_tag("invoices/nav.html", takes_context=True)
@@ -102,7 +102,7 @@ def invoice_total_display(request, invoice):
                 payment_method = payment.method
 
     merchant_login = False
-    if hasattr(settings, 'MERCHANT_LOGIN') and settings.MERCHANT_LOGIN:
+    if PaymentGateway.objects.count() > 0:
         merchant_login = True
 
     context = {

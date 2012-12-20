@@ -1,10 +1,10 @@
 import time
 import hmac
 import hashlib
-from django.conf import settings
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from forms import SIMPaymentForm
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.payments.utils import payment_processing_object_updates
 from tendenci.core.payments.utils import log_payment, send_payment_notice
 from tendenci.core.site_settings.utils import get_setting
@@ -12,16 +12,18 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.notifications.utils import send_notifications
 
 def get_fingerprint(x_fp_sequence, x_fp_timestamp, x_amount):
-    msg = '^'.join([settings.MERCHANT_LOGIN,
+    gateway = get_object_or_404(PaymentGateway, name="authorizenet")
+    msg = '^'.join([gateway.get_value_of("MERCHANT_LOGIN"),
            x_fp_sequence,
            x_fp_timestamp,
            x_amount
            ])+'^'
 
-    return hmac.new(settings.MERCHANT_TXN_KEY, msg).hexdigest()
+    return hmac.new(gateway.get_value_of("MERCHANT_TXN_KEY"), msg).hexdigest()
 
 
 def prepare_authorizenet_sim_form(request, payment):
+    gateway = get_object_or_404(PaymentGateway, name="authorizenet")
     x_fp_timestamp = str(int(time.time()))
     x_amount = "%.2f" % payment.amount
     x_fp_hash = get_fingerprint(str(payment.id), x_fp_timestamp, x_amount)
@@ -33,7 +35,7 @@ def prepare_authorizenet_sim_form(request, payment):
               'x_fp_hash':x_fp_hash,
               'x_amount':x_amount,
               'x_version':'3.1',
-              'x_login':settings.MERCHANT_LOGIN,
+              'x_login':gateway.get_value_of("MERCHANT_LOGIN"),
               'x_relay_response':'TRUE',
               'x_relay_url':payment.response_page,
               'x_invoice_num':payment.invoice_num,
@@ -67,7 +69,6 @@ def prepare_authorizenet_sim_form(request, payment):
     return form
 
 def authorizenet_thankyou_processing(request, response_d, **kwargs):
-    from django.shortcuts import get_object_or_404
 
     x_invoice_num = response_d.get('x_invoice_num', 0)
     try:
@@ -76,14 +77,15 @@ def authorizenet_thankyou_processing(request, response_d, **kwargs):
         x_invoice_num = 0
     
     payment = get_object_or_404(Payment, pk=x_invoice_num)
+    gateway = get_object_or_404(PaymentGateway, name="authorizenet")
     
     # authenticate with md5 hash to make sure the response is securely received from authorize.net.
     # client needs to set up the MD5 Hash Value in their account
     # and add this value to the local_settings.py AUTHNET_MD5_HASH_VALUE
     md5_hash = response_d.get('x_MD5_Hash', '')
     # calculate our md5_hash
-    md5_hash_value = settings.AUTHNET_MD5_HASH_VALUE
-    api_login_id = settings.MERCHANT_LOGIN
+    md5_hash_value = gateway.get_value_of("AUTHNET_MD5_HASH_VALUE")
+    api_login_id = gateway.get_value_of("MERCHANT_LOGIN")
     t_id = response_d.get('x_trans_id', '')
     amount = response_d.get('x_amount', 0)
     

@@ -3,14 +3,13 @@ import urllib2
 import cgi
 from decimal import Decimal
 
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django import forms
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from tendenci.core.payments.paypal.forms import PayPalPaymentForm
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.payments.utils import payment_processing_object_updates
 from tendenci.core.payments.utils import log_payment, send_payment_notice
 from tendenci.core.site_settings.utils import get_setting
@@ -22,10 +21,12 @@ def prepare_paypal_form(request, payment):
     site_url = get_setting('site', 'global', 'siteurl')
     notify_url = '%s/%s' % (site_url, reverse('paypal.ipn'))
     currency_code = get_setting('site', 'global', 'currency')
+
+    gateway = get_object_or_404(PaymentGateway, name="paypal")
     if not currency_code:
         currency_code = 'USD'
     params = {
-              'business': settings.PAYPAL_MERCHANT_LOGIN,
+              'business': gateway.get_value_of("PAYPAL_MERCHANT_LOGIN"),
               'image_url': image_url,
               'amount': amount,
               'notify_url': notify_url,
@@ -66,7 +67,7 @@ def parse_pdt_validation(data):
     return success, result_params
 
 
-def validate_with_paypal(request, validate_type):
+def validate_with_paypal(request, validate_type, gateway):
     """
     Validate either PDT or IPN with PayPal.
     """
@@ -77,7 +78,7 @@ def validate_with_paypal(request, validate_type):
         params = {
                   'cmd': '_notify-synch',
                   'tx': request.GET.get('tx', ''),
-                  'at': settings.MERCHANT_TXN_KEY
+                  'at': gateway.get_value_of("PAYPAL_PDT_TOKEN")
                   }
         data = urllib.urlencode(params)
 
@@ -102,7 +103,7 @@ def validate_with_paypal(request, validate_type):
     headers = {"Content-type": "application/x-www-form-urlencoded",
                'encoding': 'utf-8',
                "Accept": "text/plain"}
-    request = urllib2.Request(settings.PAYPAL_POST_URL,
+    request = urllib2.Request(gateway.get_value_of("PAYPAL_POST_URL"),
                               data,
                               headers)
     response = urllib2.urlopen(request)
@@ -114,7 +115,7 @@ def validate_with_paypal(request, validate_type):
         return data.strip('\n').lower() == 'verified', None
 
 
-def verify_no_fraud(response_d, payment):
+def verify_no_fraud(response_d, payment, gateway):
     # Has duplicate txn_id?
     txn_id = response_d.get('txn_id')
     if not txn_id:
@@ -126,7 +127,7 @@ def verify_no_fraud(response_d, payment):
 
     # Does receiver_email matches?
     receiver_email = response_d.get('receiver_email')
-    if receiver_email != settings.PAYPAL_MERCHANT_LOGIN:
+    if receiver_email != gateway.get_value_of("PAYPAL_MERCHANT_LOGIN"):
         return False
 
     # Is the amount correct?
@@ -145,11 +146,12 @@ def paypal_thankyou_processing(request, response_d, **kwargs):
 
     # validate with PayPal
     validate_type = kwargs.get('validate_type', 'PDT')
+    gateway = get_object_or_404(PaymentGateway, name="paypal")
 
     if validate_type == 'PDT':
-        success, response_d = validate_with_paypal(request, validate_type)
+        success, response_d = validate_with_paypal(request, validate_type, gateway)
     else:
-        success = validate_with_paypal(request, validate_type)[0]
+        success = validate_with_paypal(request, validate_type, gateway)[0]
         response_d = dict(map(lambda x: (x[0].lower(), x[1]),
                               response_d.items()))
 

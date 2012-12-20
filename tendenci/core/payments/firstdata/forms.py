@@ -1,8 +1,7 @@
 from django import forms
-from django.conf import settings
 
 class FirstDataPaymentForm(forms.Form):
-    storename = forms.CharField(max_length=20, required=True, widget=forms.HiddenInput, initial=settings.MERCHANT_LOGIN)
+    storename = forms.CharField(max_length=20, required=True, widget=forms.HiddenInput)
     mode = forms.CharField(max_length=7, widget=forms.HiddenInput, initial="payonly")
     txntype = forms.CharField(max_length=4, widget=forms.HiddenInput, initial="sale")
     #timezone = forms.CharField(max_length=4, widget=forms.HiddenInput, initial="CST")

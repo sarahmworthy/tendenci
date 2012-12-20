@@ -1,12 +1,10 @@
 from django import forms
-from django.conf import settings
 
 class PayflowLinkPaymentForm(forms.Form):
     # required fields: login, partner, amount, type
     
     login = forms.CharField(max_length=20, required=True, 
-                            widget=forms.HiddenInput, 
-                            initial=settings.PAYPAL_MERCHANT_LOGIN)
+                            widget=forms.HiddenInput)
     partner = forms.CharField(max_length=20, widget=forms.HiddenInput)
     amount = forms.DecimalField(max_digits=15, decimal_places=2, widget=forms.HiddenInput)
     type = forms.CharField(max_length=4, widget=forms.HiddenInput)

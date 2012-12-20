@@ -22,22 +22,24 @@ class CIMBase(object):
     A base class to handle basic CIM request and response
     """
     def __init__(self):
+        gateway = get_object_or_404(PaymentGateway, name="authorizenet")
         if hasattr(settings, 'AUTHNET_CIM_TEST_MODE') and  settings.AUTHNET_CIM_TEST_MODE:
-            self.cim_url = settings.AUTHNET_CIM_API_TEST_URL
+            self.cim_url = gateway.get_value_of("AUTHNET_CIM_API_TEST_URL")
         else:
-            self.cim_url = settings.AUTHNET_CIM_API_URL
+            self.cim_url = gateway.get_value_of("AUTHNET_CIM_API_URL")
 
     def create_base_xml(self, root_name,  **kwargs):
         """
         Create a basic xml file with the merchantAuthentication node.
         """
+        gateway = get_object_or_404(PaymentGateway, name="authorizenet")
         root = ET.Element(root_name)
         root.set('xmlns', 'AnetApi/xml/v1/schema/AnetApiSchema.xsd')
         authentication = ET.SubElement(root, 'merchantAuthentication')
         name_e = ET.SubElement(authentication, 'name')
-        name_e.text = settings.MERCHANT_LOGIN
+        name_e.text = gateway.get_value_of("MERCHANT_LOGIN")
         key_e = ET.SubElement(authentication, 'transactionKey')
-        key_e.text = settings.MERCHANT_TXN_KEY
+        key_e.text = gateway.get_value_of("MERCHANT_TXN_KEY")
 
         return root
     

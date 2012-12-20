@@ -1,5 +1,5 @@
 from django.contrib import admin
-from tendenci.core.payments.models import Payment, PaymentMethod
+from tendenci.core.payments.models import Payment, PaymentMethod, PaymentGateway, PaymentGatewayField
 
 
 class PaymentAdmin(admin.ModelAdmin):
@@ -11,5 +11,13 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     list_display = ['human_name', 'machine_name', 'is_online', 'admin_only']
 
 
+class FieldAdmin(admin.TabularInline):
+    model = PaymentGatewayField
+    extra = 0
+
+class PaymentGatewayAdmin(admin.ModelAdmin):
+    inlines = (FieldAdmin,)
+
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(PaymentMethod, PaymentMethodAdmin)
+admin.site.register(PaymentGateway, PaymentGatewayAdmin)

@@ -1,5 +1,7 @@
 from django.template import Library
 from django.conf import settings
+from django.shortcuts import get_object_or_404
+from tendenci.core.payments.models import PaymentGateway
 
 register = Library()
 
@@ -44,5 +46,6 @@ def payment_thankyou_display(request, payment):
     
 @register.inclusion_tag('payments/stripe/js_stripe_key.html', takes_context=True)
 def set_stripe_key(context):
-    context["STRIPE_PUBLISHABLE_KEY"] = settings.STRIPE_PUBLISHABLE_KEY
+    gateway = get_object_or_404(PaymentGateway, name="stripe")
+    context["STRIPE_PUBLISHABLE_KEY"] = gateway.get_value_of("STRIPE_PUBLISHABLE_KEY")
     return context

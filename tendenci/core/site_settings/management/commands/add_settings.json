@@ -1052,24 +1052,7 @@
         "scope_category": "global", 
         "store": true, 
         "updated_by": ""
-    }, 
-    {
-        "default_value": "AuthorizeNet", 
-        "description": "Merchant Account is the entity where the client has their merchant account for online processing.", 
-        "data_type": "string", 
-        "update_dt": "2011-04-28 13:59:53", 
-        "input_type": "text", 
-        "client_editable": false, 
-        "name": "merchantaccount", 
-        "value": "asdf asdf asdf", 
-        "label": "Merchant Account", 
-        "input_value": " ", 
-        "parent_id": 0, 
-        "scope": "site", 
-        "scope_category": "global", 
-        "store": true, 
-        "updated_by": ""
-    }, 
+    },  
     {
         "default_value": "false", 
         "description": "Merchant Tes tModeis a true false variable to turn  atesting environment on.  If true, any orders that are submitted will not proceed to the MerchantAccount.", 

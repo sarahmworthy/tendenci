@@ -27,7 +27,7 @@ from tendenci.apps.user_groups.utils import get_default_group
 from tendenci.apps.invoices.models import Invoice
 from tendenci.core.files.models import File
 from tendenci.core.site_settings.utils import get_setting
-from tendenci.core.payments.models import PaymentMethod as GlobalPaymentMethod
+from tendenci.core.payments.models import PaymentGateway, PaymentMethod as GlobalPaymentMethod
 
 from tendenci.addons.events.settings import (FIELD_MAX_LENGTH, 
                              LABEL_MAX_LENGTH, 
@@ -165,10 +165,10 @@ class RegistrationConfiguration(models.Model):
         Return boolean.
         """
         has_method = GlobalPaymentMethod.objects.filter(is_online=True).exists()
-        has_account = get_setting('site', 'global', 'merchantaccount') is not ''
-        has_api = settings.MERCHANT_LOGIN is not ''
+        has_account = PaymentGateway.objects.count() > 0
+        #has_api = settings.MERCHANT_LOGIN is not ''
 
-        return all([has_method, has_account, has_api])
+        return all([has_method, has_account])
     
     def get_available_pricings(self, user, is_strict=False, spots_available=-1):
         """

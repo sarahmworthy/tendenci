@@ -359,32 +359,6 @@ HAYSTACK_INDEX_LIMITS = {
 }
 
 # --------------------------------------#
-# PAYMENT GATEWAYS
-# --------------------------------------#
-MERCHANT_LOGIN = ""
-MERCHANT_TXN_KEY = ""
-
-# AUTHORIZE.NET
-AUTHNET_POST_URL = "https://test.authorize.net/gateway/transact.dll"
-AUTHNET_MD5_HASH_VALUE = ''
-
-# FIRSTDATA
-FIRSTDATA_POST_URL = 'https://secure.linkpt.net/lpcentral/servlet/lppay'
-
-AUTHNET_CIM_API_TEST_URL = "https://apitest.authorize.net/xml/v1/request.api"
-AUTHNET_CIM_API_URL = "https://api.authorize.net/xml/v1/request.api"
-
-# PAYPAL PAYFLOW LINK
-PAYFLOWLINK_PARTNER = ''
-PAYPAL_MERCHANT_LOGIN = ''
-PAYFLOWLINK_POST_URL = 'https://payflowlink.paypal.com'
-
-# PAYPAL 
-PAYPAL_POST_URL = 'https://www.paypal.com/cgi-bin/webscr'
-# for test mode
-# PAYPAL_POST_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr'
-
-# --------------------------------------#
 # RSS
 # --------------------------------------#
 MAX_RSS_ITEMS = 100

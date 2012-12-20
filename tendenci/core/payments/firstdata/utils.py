@@ -1,10 +1,11 @@
 #import time
 #import hashlib
-from django.conf import settings
+#from django.conf import settings
 #from django.http import Http404
 from django.core.urlresolvers import reverse
+from django.shortcuts import get_object_or_404
 from forms import FirstDataPaymentForm
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.payments.utils import payment_processing_object_updates
 from tendenci.core.payments.utils import log_payment, send_payment_notice
 
@@ -32,14 +33,15 @@ def prepare_firstdata_form(request, payment):
     # SHA1 hash
     #s = '%s%s%s%s%s' % (settings.MERCHANT_LOGIN, txndatetime, chargetotal, currency, settings.MERCHANT_TXN_KEY)
     #hash = hashlib.sha1(s).hexdigest()
-    
+    gateway = get_object_or_404(PaymentGateway, name="firstdata")
+
     if request.user.is_authenticated():
         userid = request.user.id
     else:
         userid = 0
     
     params = {
-              'storename':settings.MERCHANT_LOGIN,
+              'storename':gateway.get_value_of("MERCHANT_LOGIN"),
               'mode':'payonly',
               'txntype':'sale',
               #'timezone': time_zone,

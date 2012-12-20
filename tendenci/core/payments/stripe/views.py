@@ -4,7 +4,6 @@ import traceback
 #from datetime import datetime
 from django.shortcuts import render_to_response, get_object_or_404
 #from django.http import HttpResponse
-from django.conf import settings
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -14,7 +13,7 @@ import simplejson
 
 from tendenci.core.payments.utils import payment_processing_object_updates
 from tendenci.core.payments.utils import log_payment, send_payment_notice
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from forms import StripeCardForm, BillingInfoForm
 import stripe
 from utils import payment_update_stripe
@@ -23,12 +22,13 @@ from utils import payment_update_stripe
 @csrf_exempt
 def pay_online(request, payment_id, template_name='payments/stripe/payonline.html'):
     payment = get_object_or_404(Payment, pk=payment_id) 
+    gateway = get_object_or_404(PaymentGateway, name="stripe")
     form = StripeCardForm(request.POST or None)
     billing_info_form = BillingInfoForm(request.POST or None, instance=payment)
     if request.method == "POST":
         if form.is_valid():
             # get stripe token and make a payment immediately
-            stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+            stripe.api_key = gateway.get_value_of("STRIPE_SECRET_KEY")
             token = request.POST.get('stripe_token')
             
             if billing_info_form.is_valid():
