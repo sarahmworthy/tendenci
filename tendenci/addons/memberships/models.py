@@ -400,6 +400,27 @@ class MembershipDefault(TendenciBaseModel):
             membership_type=self.membership_type,
         )
 
+     # Called by payments_pop_by_invoice_user in Payment model.
+    def get_payment_description(self, inv):
+        """
+        The description will be sent to payment gateway and displayed on invoice.
+        If not supplied, the default description will be generated.
+        """
+        if inv.for_renewal:
+            description = '%s Invoice %d for Online Membership Renewal Application - Submission #%s' % (
+                get_setting('site', 'global', 'sitedisplayname'),
+                inv.id,
+                self.id,
+            )
+        else:
+            description = '%s Invoice %d for Online Membership Application - Submission #%s' % (
+                get_setting('site', 'global', 'sitedisplayname'),
+                inv.id,
+                self.id,
+            )
+
+        return description
+
     def approve(self, request_user=None):
         """
         Approve this membership.
@@ -518,7 +539,7 @@ class MembershipDefault(TendenciBaseModel):
         dupe.group_refresh()
 
         # new invoice; bound via ct and object_id
-        dupe.save_invoice(status_detail='tendered')
+        dupe.save_invoice(status_detail='tendered', renew=True)
 
         # archive other membership [of this type]
         dupe.archive_old_memberships()
@@ -915,6 +936,7 @@ class MembershipDefault(TendenciBaseModel):
             creator = self.user
 
         status_detail = kwargs.get('status_detail', 'estimate')
+        renew = kwargs.get('renew', False)
 
         content_type = ContentType.objects.get(
             app_label=self._meta.app_label, model=self._meta.module_name)
@@ -933,6 +955,7 @@ class MembershipDefault(TendenciBaseModel):
             invoice.estimate = True
             invoice.status_detail = status_detail
 
+        invoice.for_renewal = renew
         invoice.bill_to_user(self.user)
         invoice.ship_to_user(self.user)
         invoice.set_creator(creator)

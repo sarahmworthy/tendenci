@@ -35,6 +35,7 @@ class Invoice(models.Model):
     status_detail = models.CharField(max_length=50, default='estimate')
     status = models.BooleanField(default=True)
     estimate = models.BooleanField(default=1)
+    for_renewal = models.BooleanField(default=False)
     payments_credits = models.DecimalField(max_digits=15, decimal_places=2, blank=True, default=0)
     balance = models.DecimalField(max_digits=15, decimal_places=2, blank=True, default=0)
     total = models.DecimalField(max_digits=15, decimal_places=2, blank=True)
