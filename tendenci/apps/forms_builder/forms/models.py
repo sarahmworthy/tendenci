@@ -201,6 +201,13 @@ class Field(models.Model):
             field_class, field_widget = self.field_type, None
         return field_widget
 
+    def get_choices(self):
+        if self.field_function == 'Recipients':
+            choices = [(label+':'+val, label) for label, val in (i.split(":") for i in self.choices.split(","))]
+        else:
+            choices = [(val, val) for val in self.choices.split(",")]
+        return choices
+
     def execute_function(self, entry, value, user=None):
         if self.field_function == "GroupSubscription":
             if value:
@@ -322,10 +329,7 @@ class FormEntry(models.Model):
         """
         for entry in self.fields.order_by('field__position'):
             if entry.field.field_function == field_function:
-                if field_function=='Recipients' and entry.field.field_type == 'BooleanField' and entry.value:
-                    return entry.field.function_email_recipients
-                else:
-                    return entry.value
+                return entry.value
         return ''
 
     def get_type_of(self, field_type):
@@ -351,7 +355,18 @@ class FormEntry(models.Model):
         return self.get_value_of("EmailPhoneNumber")
 
     def get_function_email_recipients(self):
-        return self.get_value_of("Recipients")
+        for entry in self.fields.order_by('field__position'):
+            if entry.field.field_function == 'Recipients' and entry.value:
+                if entry.field.field_type == 'BooleanField':
+                    return entry.field.function_email_recipients
+                else:
+                    email_list = []
+                    for email in entry.value.split(","):
+                        email = email.split(":")
+                        if len(email) > 1:
+                            email_list.append(email[1])
+                    return ','.join(email_list)
+        return ''
 
     def get_email_address(self):
         return self.get_type_of("emailverificationfield")

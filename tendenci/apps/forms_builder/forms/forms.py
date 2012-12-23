@@ -65,10 +65,10 @@ class FormForForm(forms.ModelForm):
                 field_args["max_length"] = FIELD_MAX_LENGTH
             if "choices" in arg_names:
                 if field.field_function == 'Recipients':
-                    choices = field.function_email_recipients.split(",")
+                    field_args["choices"] = field.get_choices()
                 else:
-                    choices = field.choices.split(",")
-                field_args["choices"] = zip(choices, choices)
+                    field_args["choices"] = field.get_choices()
+                #field_args["choices"] = zip(choices, choices)
             if "initial" in arg_names:
                 default = field.default.lower()
                 if field_class == "BooleanField":
@@ -385,6 +385,7 @@ class FormForField(forms.ModelForm):
         field_function = cleaned_data.get("field_function")
         function_params = cleaned_data.get("function_params")
         function_email_recipients = cleaned_data.get("function_email_recipients")
+        choices = cleaned_data.get("choices")
         field_type = cleaned_data.get("field_type")
         required = cleaned_data.get("required")
         
@@ -405,15 +406,26 @@ class FormForField(forms.ModelForm):
                 field_type != "MultipleChoiceField" and
                 field_type != "BooleanField" and
                 field_type != "ChoiceField"):
-                raise forms.ValidationError("This field's function requires Multi-select - Checkboxes "
+                raise forms.ValidationError("The \"Email to Recipients\" function requires Multi-select - Checkboxes "
                                             + "or Multi-select - Select Many as field type")
-            if not function_email_recipients:
-                raise forms.ValidationError("This field's function requires at least 1 email specified.")
+
+            if field_type == "BooleanField":
+                if not function_email_recipients:
+                    raise forms.ValidationError("The \"Email to Recipients\" function requires at least 1 email specified.")
+                else:
+                    for val in function_email_recipients.split(','):
+                        if not email_re.match(val):
+                            raise forms.ValidationError("\"%s\" is not a valid email address" % (val))
             else:
-                for val in function_email_recipients.split(','):
-                    if not email_re.match(val):
-                        raise forms.ValidationError("\"%s\" is not a valid email address" % (val))      
-                
+                if not choices:
+                    raise forms.ValidationError("The \"Email to Recipients\" function requires at least 1 choice specified.")
+                else:
+                    for val in choices.split(','):
+                        val = val.split(':')
+                        if len(val) < 2:
+                            raise forms.ValidationError("The \"Email to Recipients\" function requires choices to be in the following format: <choice_label>:<email_address>.")
+                        if not email_re.match(val[1]):
+                            raise forms.ValidationError("\"%s\" is not a valid email address" % (val[1]))
                     
         if field_function != None and field_function.startswith("Email"):
             if field_type != "CharField":

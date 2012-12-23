@@ -84,8 +84,7 @@ jQuery(function($) {
     	var selected_text = $dd.find(":selected").text();
     	var fieldset = $dd.parents(".dynamic-fields");
 
-        triggers = ['BooleanField','MultipleChoiceField/django.forms.CheckboxSelectMultiple', 
-                    'ChoiceField', 'MultipleChoiceField']
+        triggers = ['BooleanField']
 
     	// toggle help text field 
         if (in_list(selected_value, triggers)){
