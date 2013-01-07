@@ -1,4 +1,4 @@
-{% extends "forms/base.html" %}
+{% extends form_template %}
 {% load styled_forms %}
 {% load forms_tags %}
 
@@ -7,7 +7,7 @@
 
 {% block extra_head %}
 {{ block.super }}
-<link rel="stylesheet" href="{{ STATIC_URL }}css/forms_detail-sent.css">
+<link rel="stylesheet" href="{{ STATIC_URL }}css/forms.css">
 
 {% endblock extra_head %}
 
@@ -39,6 +39,7 @@
 
 {% block extra_body %}
     {{ block.super }}
+    <script type="text/javascript" src="{{ STATIC_URL }}js/email-verification.js"></script>
     <script type="text/javascript">
 		$(document).ready(function(){
 			$('.custom-price').closest('label').attr('for', '');

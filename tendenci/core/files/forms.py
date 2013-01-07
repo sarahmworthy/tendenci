@@ -6,15 +6,20 @@ from tendenci.core.categories.forms import CategoryField
 from tendenci.core.categories.models import CategoryItem
 from tendenci.core.files.models import File
 from tendenci.core.perms.forms import TendenciBaseForm
+from tendenci.apps.user_groups.models import Group
 
 
 class FileForm(TendenciBaseForm):
+
+    group = forms.ModelChoiceField(required=True, queryset=Group.objects.filter(status=True, status_detail='active'), empty_label=None)
+
     class Meta:
         model = File
 
         fields = (
             'file',
             'name',
+            'group',
             'tags',
             'allow_anonymous_view',
             'user_perms',
@@ -27,6 +32,7 @@ class FileForm(TendenciBaseForm):
                       'fields': [
                         'file',
                         'name',
+                        'group',
                         'tags',
                       ],
                       'legend': ''
@@ -52,11 +58,37 @@ class FileForm(TendenciBaseForm):
             self.user = kwargs.pop('user', None)
         else:
             self.user = None
+
         super(FileForm, self).__init__(*args, **kwargs)
+
+
+class SwfFileForm(TendenciBaseForm):
+
+    class Meta:
+        model = File
+
+        fields = (
+            'file',
+            'name',
+            'allow_anonymous_view',
+            'user_perms',
+            'member_perms',
+            'group_perms',
+            'status',
+        )
+
+    def __init__(self, *args, **kwargs):
+        if 'user' in kwargs:
+            self.user = kwargs.pop('user', None)
+        else:
+            self.user = None
+
+        super(SwfFileForm, self).__init__(*args, **kwargs)
+
 
 class MostViewedForm(forms.Form):
     """
-    Takes in the date range and files type you're 
+    Takes in the date range and files type you're
     searching for and returns back a result list.
     """
 
@@ -82,9 +114,15 @@ class FileSearchForm(forms.Form):
     q = forms.CharField(label=_("Search"), required=False, max_length=200,)
     category = CategoryField(label=_('Category'), choices=[], required=False)
     sub_category = CategoryField(label=_('Sub Category'), choices=[], required=False)
+    group = forms.ChoiceField(label=_('Group'), choices=[], required=False)
 
     def __init__(self, *args, **kwargs):
         super(FileSearchForm, self).__init__(*args, **kwargs)
+
+        groups = Group.objects.filter(status=True, status_detail='active')
+        groups = [[g.id, g.name] for g in groups]
+        groups.insert(0, ['', '------------'])
+        self.fields['group'].choices = tuple(groups)
 
         content_type = ContentType.objects.get(app_label='files', model='file')
         categories = CategoryItem.objects.filter(content_type=content_type,

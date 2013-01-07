@@ -13,6 +13,7 @@ from django.db.models import Q
 from tendenci.core.base.template_tags import ListNode, parse_tag_kwargs
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.utils import get_query_filters
+from tendenci.apps.user_groups.models import Group
 
 from tendenci.addons.events.models import Event, Registrant, Type, RegConfPricing
 from tendenci.addons.events.utils import get_pricing, registration_earliest_time
@@ -33,9 +34,13 @@ def event_options(context, user, event):
 
 @register.inclusion_tag("events/nav.html", takes_context=True)
 def event_nav(context, user, event=None):
+    display_attendees = False
+    if event:
+        display_attendees = event.can_view_registrants(user)
     context.update({
         "nav_object": event,
         "user": user,
+        "can_view_attendees": display_attendees,
         "today": datetime.today()
     })
     return context
@@ -65,7 +70,7 @@ def registrant_search(context, event=None):
 
 @register.inclusion_tag('events/reg8n/registration_pricing.html', takes_context=True)
 def registration_pricing_and_button(context, event, user):
-    limit = event.registration_configuration.limit
+    limit = event.get_limit()
     spots_taken = 0
     spots_left = limit - spots_taken
     registration = event.registration_configuration
@@ -250,6 +255,7 @@ class ListEventsNode(ListNode):
         limit = 3
         order = 'next_upcoming'
         event_type = ''
+        group = u''
 
         randomize = False
 
@@ -311,6 +317,18 @@ class ListEventsNode(ListNode):
             except:
                 event_type = self.kwargs['type']
 
+        if 'group' in self.kwargs:
+            try:
+                group = Variable(self.kwargs['group'])
+                group = unicode(group.resolve(context))
+            except:
+                group = self.kwargs['group']
+
+            try:
+                group = int(group)
+            except:
+                group = None
+
         filters = get_query_filters(user, 'events.view_event')
         items = Event.objects.filter(filters)
         if user.is_authenticated():
@@ -332,6 +350,9 @@ class ListEventsNode(ListNode):
             tag_queries += [Q(tags__icontains=","+t.strip()+",") for t in tags]
             tag_query = reduce(or_, tag_queries)
             items = items.filter(tag_query)
+
+        if hasattr(self.model, 'group') and group:
+            items = items.filter(group=group)
 
         objects = []
 
@@ -383,6 +404,8 @@ def list_events(parser, token):
            The type of the event.
         ``tags``
            The tags required on items to be included.
+        ``group``
+           The group id associated with items to be included.
         ``random``
            Use this with a value of true to randomize the items included.
 

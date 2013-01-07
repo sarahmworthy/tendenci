@@ -18,11 +18,16 @@ from tinymce.widgets import TinyMCE
 from tendenci.core.perms.forms import TendenciBaseForm
 from captcha.fields import CaptchaField
 from tendenci.apps.user_groups.models import Group
+from tendenci.core.base.utils import get_template_list
+from tendenci.core.base.fields import EmailVerificationField
 
 from tendenci.addons.recurring_payments.fields import BillingCycleField
 from tendenci.addons.recurring_payments.widgets import BillingCycleWidget, BillingDateSelectWidget
 from tendenci.apps.forms_builder.forms.models import FormEntry, FieldEntry, Field, Form, Pricing
 from tendenci.apps.forms_builder.forms.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
+
+template_choices = [('default.html','Default')]
+template_choices += get_template_list()
 
 #fs = FileSystemStorage(location=UPLOAD_ROOT)
 
@@ -48,8 +53,12 @@ class FormForForm(forms.ModelForm):
                 field_class, field_widget = field.field_type.split("/")
             else:
                 field_class, field_widget = field.field_type, None
-            field_class = getattr(forms, field_class)
-            field_args = {"label": field.label, "required": field.required}
+
+            if field.field_type == 'EmailVerificationField':
+                field_class = EmailVerificationField
+            else:
+                field_class = getattr(forms, field_class)
+            field_args = {"label": mark_safe(field.label), "required": field.required}
             arg_names = field_class.__init__.im_func.func_code.co_varnames
             if "max_length" in arg_names:
                 field_args["max_length"] = FIELD_MAX_LENGTH
@@ -195,12 +204,15 @@ class FormAdminForm(TendenciBaseForm):
         mce_attrs={'storme_app_label':Form._meta.app_label, 
         'storme_model':Form._meta.module_name.lower()}))
 
+    template = forms.ChoiceField(choices=template_choices)
+
     class Meta:
         model = Form
         fields = ('title',
                   'slug',
                   'intro',
                   'response',
+                  'template',
                   'send_email', # removed per ed's request, added back per Aaron's request 2011-10-14
                   'email_text',
                   'subject_template',
