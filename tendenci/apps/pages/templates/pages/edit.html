@@ -31,7 +31,7 @@
     <h1>{% firstof MODULE_PAGES_LABEL 'Page' %} {% trans "Edit" %}</h1>
 
     <div class="page-wrap">
-        <form action="{% url page.edit page.pk %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+        <form id="page_edit_form" action="{% url page.edit page.pk %}" method="post" enctype="multipart/form-data">{% csrf_token %}
     	<div class="forms">
 			{{ form|styled_form }}
             <fieldset class="boxy-grey" >
@@ -88,6 +88,17 @@
 				return false;
 			});
 		});
+        // auto save feature every 2 min
+        setInterval(function() {
+            tinyMCE.triggerSave();
+            var post_data = $('#page_edit_form').serialize();
+            $.ajax({
+                type: 'POST',
+                url: '{% url page.edit page.pk %}',
+                async: true,
+                data: post_data,
+            });
+        }, 120000);
     </script>
     <script type="text/javascript">
         $('#meta-form').hide();
