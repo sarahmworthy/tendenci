@@ -3,6 +3,7 @@
 {% load page_tags %}
 {% load perm_tags %}
 {% load styled_forms %}
+{% load active_user_tags %}
 {% load i18n %}
 
 {% block title %}{% firstof MODULE_PAGES_LABEL 'Page' %} Edit{% endblock %}
@@ -27,6 +28,22 @@
 <div class="t">
 
     {% page_nav request.user page %}
+
+    {% live_collaborators as visitors %}
+    {% if visitors %}
+    <div class="alert-message fade in success">
+        {% for visitor in visitors %}
+            {% if forloop.first and forloop.last %}
+                {{ visitor.user }} 
+            {% elif not forloop.first and forloop.last %}
+                and {{ visitor.user }} 
+            {% else %}
+                {{ visitor.user }}, 
+            {% endif %}
+        {% endfor %}
+        {{ visitors|pluralize:"is,are" }} editing this page.
+    </div>
+    {% endif %}
 
     <h1>{% firstof MODULE_PAGES_LABEL 'Page' %} {% trans "Edit" %}</h1>
 

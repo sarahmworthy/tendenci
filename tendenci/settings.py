@@ -83,6 +83,8 @@ MIDDLEWARE_CLASSES = (
     'johnny.middleware.LocalStoreClearMiddleware',
     'johnny.middleware.QueryCacheMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'tracking.middleware.VisitorTrackingMiddleware',
+    'tracking.middleware.VisitorCleanUpMiddleware',
     'pagination.middleware.PaginationMiddleware',
     'tendenci.apps.profiles.middleware.ProfileMiddleware',
     'tendenci.core.base.middleware.Http403Middleware',
@@ -180,6 +182,7 @@ INSTALLED_APPS = (
     'south',
     'tastypie',
     'model_report',
+    'tracking',
 
     'tendenci.apps.entities',
     'tendenci.core.base',
@@ -458,3 +461,9 @@ MAX_MEMBERSHIP_TYPES = 10
 # indexes are being used.
 #-------------------------------------------------------#
 INDEX_UPDATE_NOTE = 'updated hourly'
+
+#-------------------------------------------------------#
+# DJANGO TRACKING SETTINGS
+#-------------------------------------------------------#
+TRACKING_TIMEOUT = 10
+NO_TRACKING_PREFIXES = ['/themes/']
