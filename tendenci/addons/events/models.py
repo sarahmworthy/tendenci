@@ -208,6 +208,7 @@ class RegConfPricing(models.Model):
     display_order = models.IntegerField(default=1, help_text="The pricing will be sorted by this field.")
     
     price = models.DecimalField(_('Price'), max_digits=21, decimal_places=2, default=0)
+    payment_required = models.NullBooleanField(help_text='A payment required before registration is accepted.')
     
     reg_form = models.ForeignKey("CustomRegForm", blank=True, null=True, 
                                  verbose_name=_("Custom Registration Form"),
@@ -508,7 +509,10 @@ class Registration(models.Model):
         config = self.event.registration_configuration
 
         balance = self.invoice.balance
-        payment_required = config.payment_required
+        if self.reg_conf_price.payment_required is None:
+            payment_required = config.payment_required
+        else:
+            payment_required = self.reg_conf_price.payment_required
 
         if self.canceled:
             return 'cancelled'
@@ -740,7 +744,10 @@ class Registrant(models.Model):
         config = self.registration.event.registration_configuration
 
         balance = self.registration.invoice.balance
-        payment_required = config.payment_required
+        if self.pricing.payment_required is None:
+            payment_required = config.payment_required
+        else:
+            payment_required = self.pricing.payment_required
 
         if self.cancel_dt:
             return 'cancelled'
