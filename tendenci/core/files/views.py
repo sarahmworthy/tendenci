@@ -175,7 +175,7 @@ def search(request, template_name="files/search.html"):
     if has_index and query:
         files = File.objects.search(query, user=request.user)
     else:
-        filters = get_query_filters(request.user, 'files.view_file', perms_field=False)
+        filters = get_query_filters(request.user, 'files.view_file')
         files = File.objects.filter(filters).distinct()
 
     if category:
@@ -460,7 +460,8 @@ def tinymce(request, template_name="files/templates/tinymce.html"):
     from django.contrib.contenttypes.models import ContentType
     params = {'app_label': 0, 'model': 0, 'instance_id':0}
     files = File.objects.none() # EmptyQuerySet
-    all_files = File.objects.filter(creator=request.user)
+    #all_files = File.objects.filter(creator=request.user)
+    all_files = None
     # if all required parameters are in the GET.keys() list
     if not set(params.keys()) - set(request.GET.keys()):        
 

@@ -23,12 +23,12 @@ from django.middleware.csrf import get_token as csrf_get_token
 
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.base.http import Http403
+from tendenci.core.perms.decorators import is_enabled
 from tendenci.core.perms.utils import has_perm, update_perms_and_save, get_query_filters, has_view_perm
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.files.utils import get_image, aspect_ratio, generate_image_cache_key
 from tendenci.apps.user_groups.models import Group
-from tendenci.apps.redirects.models import Redirect
 from djcelery.models import TaskMeta
 
 from tendenci.addons.photos.cache import PHOTO_PRE_KEY
@@ -39,12 +39,9 @@ from tendenci.addons.photos.utils import get_privacy_settings
 from tendenci.addons.photos.tasks import ZipPhotoSetTask
 
 
+@is_enabled('photos')
 def search(request, template_name="photos/search.html"):
     """ Photos search """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     query = request.GET.get('q', None)
     if get_setting('site', 'global', 'searchindex') and query:
         photos = Image.objects.search(query, user=request.user).order_by('-create_dt')
@@ -60,20 +57,24 @@ def search(request, template_name="photos/search.html"):
     return render_to_response(template_name, {"photos": photos},
         context_instance=RequestContext(request))
 
+
+@is_enabled('photos')
 def sizes(request, id, size_name='', template_name="photos/sizes.html"):
     """ Show all photo sizes """
+    # security-check on size name
+    if not size_name:
+        return redirect('photo_square', id=id)
+
     photo = get_object_or_404(Image, id=id)
     if not has_view_perm(request.user, 'photos.view_image', photo):
         raise Http403
-
-    # security-check on size name
-    if not size_name: return redirect('photo_square', id=id)
 
     # get sizes
     if size_name == 'original':
         sizes = (photo.image.width, photo.image.height)
     else:  # use photos size table
-        if not photo.file_exists(): raise Http404
+        if not photo.file_exists():
+            raise Http404
         sizes = getattr(photo, 'get_%s_size' % size_name)()
 
     # get download url
@@ -102,12 +103,10 @@ def sizes(request, id, size_name='', template_name="photos/sizes.html"):
         "can_view_original": any(view_original_requirments),
     }, context_instance=RequestContext(request))
 
+
+@is_enabled('photos')
 def photo(request, id, set_id=0, partial=False, template_name="photos/details.html"):
     """ photo details """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     photo = get_object_or_404(Image, id=id)
     if not has_perm(request.user, 'photos.view_image', photo):
         raise Http403
@@ -284,13 +283,10 @@ def memberphotos(request, username, template_name="photos/memberphotos.html", gr
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 @login_required
 def edit(request, id, set_id=0, form_class=PhotoEditForm, template_name="photos/edit.html"):
     """ edit photo view """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     # get photo
     photo = get_object_or_404(Image, id=id)
     set_id = int(set_id)
@@ -327,13 +323,11 @@ def edit(request, id, set_id=0, form_class=PhotoEditForm, template_name="photos/
         "set_id": set_id,
     }, context_instance=RequestContext(request))
 
+
+@is_enabled('photos')
 @login_required
 def delete(request, id, set_id=0):
     """ delete photo """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-    
     photo = get_object_or_404(Image, id=id)
 
     # permissions
@@ -357,13 +351,11 @@ def delete(request, id, set_id=0):
         "photo": photo,
     }, context_instance=RequestContext(request))
 
+
+@is_enabled('photos')
 @login_required
 def photoset_add(request, form_class=PhotoSetAddForm, template_name="photos/photo-set/add.html"):
     """ Add a photo set """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     # if no permission; permission exception
     if not has_perm(request.user,'photos.add_photoset'):
         raise Http403
@@ -390,12 +382,9 @@ def photoset_add(request, form_class=PhotoSetAddForm, template_name="photos/phot
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 @login_required
 def photoset_edit(request, id, form_class=PhotoSetEditForm, template_name="photos/photo-set/edit.html"):
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     from tendenci.core.perms.object_perms import ObjectPermission
     photo_set = get_object_or_404(PhotoSet, id=id)
 
@@ -436,12 +425,9 @@ def photoset_edit(request, id, form_class=PhotoSetEditForm, template_name="photo
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 @login_required
 def photoset_delete(request, id, template_name="photos/photo-set/delete.html"):
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-    
     photo_set = get_object_or_404(PhotoSet, id=id)
 
     # if no permission; permission exception
@@ -467,12 +453,9 @@ def photoset_delete(request, id, template_name="photos/photo-set/delete.html"):
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 def photoset_view_latest(request, template_name="photos/photo-set/latest.html"):
     """ View latest photo set """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     query = request.GET.get('q', None)
     if get_setting('site', 'global', 'searchindex') and query:
         photo_sets = PhotoSet.objects.search(query, user=request.user)
@@ -489,19 +472,17 @@ def photoset_view_latest(request, template_name="photos/photo-set/latest.html"):
         context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 @login_required
 def photoset_view_yours(request, template_name="photos/photo-set/yours.html"):
     """ View your photo set """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-    
     photo_sets = PhotoSet.objects.all()
     return render_to_response(template_name, {
         "photo_sets": photo_sets,
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 @login_required
 def photos_batch_add(request, photoset_id=0):
     """
@@ -514,10 +495,6 @@ def photos_batch_add(request, photoset_id=0):
     on http request:
         photoset_id is passed via url
     """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-    
     import uuid
     from tendenci.core.perms.object_perms import ObjectPermission
 
@@ -620,13 +597,10 @@ def photos_batch_add(request, photoset_id=0):
             context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 @login_required
 def photos_batch_edit(request, photoset_id=0, template_name="photos/batch-edit.html"):
     """ change multiple photos with one "save button" click """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-    
     photo_set = get_object_or_404(PhotoSet, id=photoset_id)
     if not photo_set.check_perm(request.user, 'photos.change_photoset'):
         raise Http403
@@ -650,27 +624,27 @@ def photos_batch_edit(request, photoset_id=0, template_name="photos/batch-edit.h
     )
 
     if request.method == "POST":
-        photo_formset = PhotoFormSet(request.POST)
-        if photo_formset.is_valid():
-            photo_formset.save()
+        photo = Image.objects.get(pk=request.POST['id'])
 
-            # event logging
-            for photo, changed in photo_formset.changed_objects:
+        form = PhotoBatchEditForm(request.POST, instance=photo)
 
-                EventLog.objects.log(**{
-                    'event_id' : 990200,
-                    'event_data': 'photo (%s) edited by %s' % (photo.pk, request.user),
-                    'description': '%s edited' % photo._meta.object_name,
-                    'user': request.user,
-                    'request': request,
-                    'instance': photo,
-                })
+        if form.is_valid():
+            photo = form.save()
 
-            #set album cover if specified
-            chosen_cover_id = request.POST.get('album_cover', None)
+            EventLog.objects.log(**{
+                'event_id': 990200,
+                'event_data': 'photo (%s) edited by %s' % (photo.pk, request.user),
+                'description': '%s edited' % photo._meta.object_name,
+                'user': request.user,
+                'request': request,
+                'instance': photo,
+            })
+
+            # set album cover if specified
+            chosen_cover_id = request.POST.get('album_cover')
 
             if chosen_cover_id:
-                #validate chosen cover
+                # validate chosen cover
                 valid_cover = True
                 try:
                     chosen_cover = photo_set.image_set.get(id=chosen_cover_id)
@@ -684,8 +658,6 @@ def photos_batch_edit(request, photoset_id=0, template_name="photos/batch-edit.h
                     cover.photo = chosen_cover
                     cover.save()
 
-            #messages.add_message(request, messages.SUCCESS, 'Photo changes saved')
-            #return HttpResponseRedirect(reverse('photoset_details', args=(photoset_id,)))  
             return HttpResponse('Success')
 
     else:  # if request.method != POST
@@ -710,12 +682,9 @@ def photos_batch_edit(request, photoset_id=0, template_name="photos/batch-edit.h
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('photos')
 def photoset_details(request, id, template_name="photos/photo-set/details.html"):
     """ View photos in photo set """
-    if not get_setting('module', 'photos', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='photo albums')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     photo_set = get_object_or_404(PhotoSet, id=id)
     if not has_view_perm(request.user, 'photos.view_photoset', photo_set):
         raise Http403

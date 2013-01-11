@@ -39,6 +39,7 @@ from django.db import connection
 
 from tendenci.core.base.http import Http403
 from tendenci.core.site_settings.utils import get_setting
+from tendenci.core.perms.decorators import is_enabled
 from tendenci.core.perms.utils import (has_perm, get_notice_recipients,
     get_query_filters, update_perms_and_save, has_view_perm)
 from tendenci.core.event_logs.models import EventLog
@@ -135,12 +136,8 @@ def event_custom_reg_form_list(request, event_id,
     return render_to_response(template_name, context, RequestContext(request))
 
 
+@is_enabled('events')
 def details(request, id=None, template_name="events/view.html"):
-
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not id:
         return HttpResponseRedirect(reverse('event.month'))
 
@@ -182,11 +179,8 @@ def details(request, id=None, template_name="events/view.html"):
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 def view_attendees(request, event_id, template_name='events/attendees.html'):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     if not event.can_view_registrants(request.user):
@@ -230,16 +224,13 @@ def month_redirect(request):
     return HttpResponseRedirect(reverse('event.month'))
 
 
+@is_enabled('events')
 def search(request, redirect=False, template_name="events/search.html"):
     """
     This page lists out all the upcoming events starting
     from today.  If a search index is available, this page
     also provides the option to search through events.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if redirect:
         return HttpResponseRedirect(reverse('events'))
 
@@ -368,11 +359,8 @@ def icalendar_single(request, id):
     return response
 
 
+@is_enabled('events')
 def print_view(request, id, template_name="events/print-view.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=id)
 
     if has_view_perm(request.user,'events.view_event',event):
@@ -384,12 +372,9 @@ def print_view(request, id, template_name="events/print-view.html"):
         raise Http403
 
 
+@is_enabled('events')
 @login_required
 def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=id)
     # custom reg_form queryset
     reg_form_queryset = get_ACRF_queryset(event)
@@ -636,13 +621,10 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
     else:
         raise Http403
 
+
+@is_enabled('events')
 @login_required
 def edit_meta(request, id, form_class=MetaForm, template_name="events/edit-meta.html"):
-
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     # check permission
     event = get_object_or_404(Event, pk=id)
     if not has_perm(request.user,'events.change_event',event):
@@ -707,6 +689,7 @@ def get_place(request):
     return HttpResponse('Requires POST method.')
 
 
+@is_enabled('events')
 @login_required
 def add(request, year=None, month=None, day=None, \
     form_class=EventForm, template_name="events/add.html"):
@@ -714,10 +697,6 @@ def add(request, year=None, month=None, day=None, \
     Add event page.  You can preset the start date of
     the event by traveling to the appropriate URL.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     # custom reg_form queryset
     reg_form_queryset = get_ACRF_queryset()
     regconfpricing_params = {'reg_form_queryset': reg_form_queryset}
@@ -935,48 +914,34 @@ def add(request, year=None, month=None, day=None, \
     else:
         raise Http403
 
+
+@is_enabled('events')
 @login_required
 def delete(request, id, template_name="events/delete.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=id)
 
-    if has_perm(request.user,'events.delete_event'):
+    if has_perm(request.user, 'events.delete_event'):
         if request.method == "POST":
 
             eventlog = EventLog.objects.log(instance=event)
             # send email to admins
             recipients = get_notice_recipients('site', 'global', 'allnoticerecipients')
             if recipients and notification:
-                notification.send_emails(recipients,'event_deleted', {
-                    'event':event,
-                    'request':request,
-                    'user':request.user,
-                    'registrants_paid':event.registrants(with_balance=False),
-                    'registrants_pending':event.registrants(with_balance=True),
+                notification.send_emails(recipients, 'event_deleted', {
+                    'event': event,
+                    'request': request,
+                    'user': request.user,
+                    'registrants_paid': event.registrants(with_balance=False),
+                    'registrants_pending': event.registrants(with_balance=True),
                     'eventlog_url': reverse('event_log', args=[eventlog.pk]),
                     'SITE_GLOBAL_SITEDISPLAYNAME': get_setting('site', 'global', 'sitedisplayname'),
                     'SITE_GLOBAL_SITEURL': get_setting('site', 'global', 'siteurl'),
                 })
 
-            # The one-to-one relationship is on events which
-            # doesn't delete the registration_configuration record.
-            # The delete must occur on registration_configuration
-            # for both to be deleted. An honest accident on
-            # one-to-one fields.
-            try:
-                event.registration_configuration.delete()
-            except:
-                # roll back the transaction to fix the error for postgresql
-                # current transaction is aborted, commands ignored until
-                # end of transaction block"
-                connection._rollback()
-
             if event.image:
                 event.image.delete()
-            event.delete()
+
+            event.delete(log=False)
 
             messages.add_message(request, messages.SUCCESS, 'Successfully deleted %s' % event)
 
@@ -985,13 +950,11 @@ def delete(request, id, template_name="events/delete.html"):
         return render_to_response(template_name, {'event': event},
             context_instance=RequestContext(request))
     else:
-        raise Http403# Create your views here.
+        raise Http403
 
+
+@is_enabled('events')
 def register_pre(request, event_id, template_name="events/reg8n/register_pre2.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     reg_conf=event.registration_configuration
@@ -1033,6 +996,7 @@ def multi_register_redirect(request, event, msg):
     return HttpResponseRedirect(reverse('event', args=(event.pk,),))
 
 
+@is_enabled('events')
 def register(request, event_id=0,
              individual=False,
              is_table=False,
@@ -1042,10 +1006,6 @@ def register(request, event_id=0,
     Handles both table and non-table registrations.
     Table registration requires is_table=True and a valid pricing_id.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     # open,validated or strict
@@ -1122,7 +1082,10 @@ def register(request, event_id=0,
                                                        spots_available=spots_available)
         pricings = pricings.filter(quantity=1)
 
-        event.has_member_price = pricings.filter(allow_member=True).exists()
+        event.has_member_price = pricings.filter(allow_member=True
+                                                 ).exclude(
+                                        Q(allow_user=True) | Q(allow_anonymous=True)
+                                                ).exists()
 
         pricings = pricings.order_by('display_order', '-price')
 
@@ -1130,10 +1093,9 @@ def register(request, event_id=0,
             pricing_id = int(pricing_id)
         except:
             pass
-        if pricing_id:
 
-            if pricing_id:
-                [event.default_pricing] = RegConfPricing.objects.filter(id=pricing_id) or [None]
+        if pricing_id:
+            [event.default_pricing] = RegConfPricing.objects.filter(id=pricing_id) or [None]
 
         event.free_event = not bool([p for p in pricings if p.price > 0])
         pricing = None
@@ -1337,6 +1299,7 @@ def register(request, event_id=0,
     total_price = Decimal('0')
     event_price = pricing and pricing.price or 0
     individual_price = event_price
+
     if is_table:
 #        individual_price_first, individual_price = split_table_price(
 #                                                event_price, pricing.quantity)
@@ -1388,6 +1351,7 @@ def register(request, event_id=0,
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 def multi_register(request, event_id=0, template_name="events/reg8n/multi_register.html"):
     """
     This view has 2 POST states. Instead of a GET and a POST.
@@ -1400,10 +1364,6 @@ def multi_register(request, event_id=0, template_name="events/reg8n/multi_regist
     It is identified by the presense of 'submit' in request.POST and
     absence of 'from_price_form'.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     # check if event allows registration
@@ -1710,11 +1670,8 @@ def multi_register(request, event_id=0, template_name="events/reg8n/multi_regist
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 def registration_edit(request, reg8n_id=0, hash='', template_name="events/reg8n/reg8n_edit.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     reg8n = get_object_or_404(Registration, pk=reg8n_id)
 
     perms = (
@@ -1824,11 +1781,8 @@ def registration_edit(request, reg8n_id=0, hash='', template_name="events/reg8n/
                     context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 def cancel_registration(request, event_id, registration_id, hash='', template_name="events/reg8n/cancel_registration.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     try:
@@ -1924,11 +1878,8 @@ def cancel_registration(request, event_id, registration_id, hash='', template_na
         context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 def cancel_registrant(request, event_id=0, registrant_id=0, hash='', template_name="events/reg8n/cancel_registrant.html"):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     if registrant_id:
@@ -2029,11 +1980,8 @@ def cancel_registrant(request, event_id=0, registrant_id=0, hash='', template_na
         context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 def month_view(request, year=None, month=None, type=None, template_name='events/month-view.html'):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     from datetime import date
     from tendenci.addons.events.utils import next_month, prev_month
 
@@ -2100,11 +2048,9 @@ def month_view(request, year=None, month=None, type=None, template_name='events/
         },
         context_instance=RequestContext(request))
 
-def day_view(request, year=None, month=None, day=None, template_name='events/day-view.html'):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
 
+@is_enabled('events')
+def day_view(request, year=None, month=None, day=None, template_name='events/day-view.html'):
     year = int(year)
     if year <= 1900:
         raise Http404
@@ -2116,6 +2062,7 @@ def day_view(request, year=None, month=None, day=None, template_name='events/day
         'now':datetime.now(),
         'type':None,
     }, context_instance=RequestContext(request))
+
 
 @login_required
 def types(request, template_name='events/types/index.html'):
@@ -2144,6 +2091,7 @@ def types(request, template_name='events/types/index.html'):
     return render_to_response(template_name, {'formset': formset},
         context_instance=RequestContext(request))
 
+
 @login_required
 def reassign_type(request, type_id, form_class=ReassignTypeForm, template_name='events/types/reassign.html'):
     type = get_object_or_404(Type, pk=type_id)
@@ -2159,12 +2107,10 @@ def reassign_type(request, type_id, form_class=ReassignTypeForm, template_name='
     return render_to_response(template_name, {'type': type, 'form': form},
         context_instance=RequestContext(request))
 
+
+@is_enabled('events')
 @login_required
 def registrant_search(request, event_id=0, template_name='events/registrants/search.html'):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     query = request.GET.get('q', None)
 
     event = get_object_or_404(Event, pk=event_id)
@@ -2219,13 +2165,10 @@ def registrant_search(request, event_id=0, template_name='events/registrants/sea
         'query': query,
         }, context_instance=RequestContext(request))
 
-# http://127.0.0.1/events/4/registrants/roster/total
+
+@is_enabled('events')
 @login_required
 def registrant_roster(request, event_id=0, roster_view='', template_name='events/registrants/roster.html'):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     # roster_view in ['total', 'paid', 'non-paid']
     from django.db.models import Sum
     event = get_object_or_404(Event, pk=event_id)
@@ -2457,6 +2400,7 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
         },
         context_instance=RequestContext(request))
 
+
 @csrf_exempt
 @login_required
 def registrant_check_in(request):
@@ -2487,12 +2431,10 @@ def registrant_check_in(request):
 
     return HttpResponse(json.dumps(response_d), mimetype="text/plain")
 
+
+@is_enabled('events')
 @login_required
 def registrant_details(request, id=0, hash='', template_name='events/registrants/details.html'):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     registrant = get_object_or_404(Registrant, pk=id)
 
     if has_perm(request.user,'registrants.view_registrant',registrant):
@@ -2504,6 +2446,7 @@ def registrant_details(request, id=0, hash='', template_name='events/registrants
         raise Http403
 
 
+@is_enabled('events')
 def registration_confirmation(request, id=0, reg8n_id=0, hash='',
     template_name='events/reg8n/register-confirm.html'):
     """
@@ -2511,11 +2454,6 @@ def registration_confirmation(request, id=0, reg8n_id=0, hash='',
     Any registrant (belonging to this registration)
     or administrator can see the entire registration.
     """
-
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=id)
     registrants_count = 1
     registrant_hash = hash
@@ -2699,14 +2637,12 @@ def edit_email(request, event_id, form_class=EmailForm, template_name='events/ed
         'form': form
         },context_instance=RequestContext(request))
 
+
+@is_enabled('events')
 def registrant_export(request, event_id, roster_view=''):
     """
     Export all registration for a specific event
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     event = get_object_or_404(Event, pk=event_id)
 
     # if they can edit it, they can export it
@@ -2815,14 +2751,11 @@ def registrant_export(request, event_id, roster_view=''):
     return response
 
 
+@is_enabled('events')
 def registrant_export_with_custom(request, event_id, roster_view=''):
     """
     Export all registration for a specific event with or without custom registration forms
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     from django.db import connection
     event = get_object_or_404(Event, pk=event_id)
 
@@ -2999,16 +2932,14 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
     book.save(response)
     return response
 
+
+@is_enabled('events')
 @login_required
 def delete_speaker(request, id):
     """
         This delete is designed based on the add and edit view where
         a speaker is considered to only be a speaker for a single event.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not has_perm(request.user,'events.delete_speaker'):
         raise Http403
 
@@ -3021,12 +2952,10 @@ def delete_speaker(request, id):
 
     return redirect('event', id=event.id)
 
+
+@is_enabled('events')
 @login_required
 def delete_group_pricing(request, id):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not has_perm(request.user,'events.delete_registrationconfiguration'): 
         raise Http403
 
@@ -3039,12 +2968,10 @@ def delete_group_pricing(request, id):
 
     return redirect('event', id=event.id)
 
+
+@is_enabled('events')
 @login_required
 def delete_special_pricing(request, id):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not has_perm(request.user,'events.delete_registrationconfiguration'): 
         raise Http403
 
@@ -3057,12 +2984,10 @@ def delete_special_pricing(request, id):
 
     return redirect('event', id=event.id)
 
+
+@is_enabled('events')
 @login_required
 def copy(request, id):
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not has_perm(request.user, 'events.add_event'):
         raise Http403
 
@@ -3075,6 +3000,8 @@ def copy(request, id):
 
     return redirect('event.edit', id=new_event.id)
 
+
+@is_enabled('events')
 @login_required
 def minimal_add(request, form_class=PendingEventForm, template_name="events/minimal_add.html"):
     """
@@ -3082,10 +3009,6 @@ def minimal_add(request, form_class=PendingEventForm, template_name="events/mini
     This does not require users to have the add_event permission.
     The minimaladdform setting must be enabled for this form to be active.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     # check if this form is enabled for use.
     active = get_setting('module', 'events', 'minimaladdform')
     # raise 404 if form not active
@@ -3127,15 +3050,13 @@ def minimal_add(request, form_class=PendingEventForm, template_name="events/mini
         'form_place': form_place,
         }, context_instance=RequestContext(request))
 
+
+@is_enabled('events')
 @login_required
 def pending(request, template_name="events/pending.html"):
     """
     Show a list of pending events to be approved.
     """
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not request.user.profile.is_superuser:
         raise Http403
 
@@ -3146,6 +3067,7 @@ def pending(request, template_name="events/pending.html"):
     return render_to_response(template_name, {
         'events': events,
         }, context_instance=RequestContext(request))
+
 
 @login_required
 def approve(request, event_id, template_name="events/approve.html"):
@@ -3171,6 +3093,7 @@ def approve(request, event_id, template_name="events/approve.html"):
         'event': event,
         }, context_instance=RequestContext(request))
 
+
 @login_required
 def list_addons(request, event_id, template_name="events/addons/list.html"):
     """List addons of an event"""
@@ -3184,6 +3107,7 @@ def list_addons(request, event_id, template_name="events/addons/list.html"):
         'event':event,
         'addons':event.addon_set.all(),
     }, context_instance=RequestContext(request))
+
 
 @login_required
 def add_addon(request, event_id, template_name="events/addons/add.html"):
@@ -3221,6 +3145,7 @@ def add_addon(request, event_id, template_name="events/addons/add.html"):
         'formset': formset,
         'event':event,
     }, context_instance=RequestContext(request))
+
 
 @login_required
 def edit_addon(request, event_id, addon_id, template_name="events/addons/edit.html"):
@@ -3292,13 +3217,10 @@ def enable_addon(request, event_id, addon_id):
     return redirect('event.list_addons', event.id)
 
 
+@is_enabled('events')
 @login_required
 def export(request, template_name="events/export.html"):
     """Export Events"""
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if not request.user.is_superuser:
         raise Http403
 
@@ -3330,14 +3252,10 @@ def create_ics(request, template_name="events/ics.html"):
     }, context_instance=RequestContext(request))
 
 
+@is_enabled('events')
 @login_required
 def myevents(request, template_name='events/myevents.html'):
     """ Logged-in user's registered events"""
-
-    if not get_setting('module', 'events', 'enabled'):
-        redirect = get_object_or_404(Redirect, from_app='events')
-        return HttpResponseRedirect('/' + redirect.to_url)
-
     if 'all' not in request.GET:
         events = Event.objects.filter(registration__registrant__email=request.user.email).exclude(end_dt__lt=datetime.now())
         show = 'True'
@@ -3454,4 +3372,3 @@ def import_process(request, import_id,
         'total': import_i.total_created + import_i.total_invalid,
         "import_i": import_i,
     }, context_instance=RequestContext(request))
-
