@@ -144,7 +144,6 @@ setup(
         """,
     include_package_data=True,
     dependency_links=[
-        "https://github.com/tendenci/django-model-report/tarball/master",
         "http://a.pypi.python.org/",
         "http://g.pypi.python.org/",
     ],
@@ -197,7 +196,7 @@ setup(
         "johnny-cache==1.4",
         "docutils==0.9.1",
         'chardet==2.1.1',
-        "django-model-report",
+        "django-model-report==0.1.4",
         "dj-database-url==0.2.1",
         "psycopg2==2.4.5",
         "gunicorn==0.16.1",
