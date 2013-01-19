@@ -40,6 +40,19 @@ FIELD_CHOICES = (
     #("ModelMultipleChoiceField/django.forms.CheckboxSelectMultiple", _("Multi checkbox")),
 )
 
+USER_FIELD_CHOICES = (
+    ('first_name', _('First Name')),
+    ('last_name', _('Last Name')),
+    ('address', _('Address')),
+    ('city', _('City')),
+    ('state', _('State')),
+    ('zip', _('Zip Code')),
+    ('country', _('Country')),
+    ('phone', _('Phone')),
+    ('email', _('Email')),
+    ('url', _('URL')),
+    ('message', _('Message')) )
+
 FIELD_FUNCTIONS = (
     ("GroupSubscription", _("Subscribe to Group")),
     ("EmailFirstName", _("First Name")),
@@ -97,6 +110,19 @@ class Form(TendenciBaseModel):
     recurring_payment = models.BooleanField(_("Is Recurring Payment"), default=False,
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
     payment_methods = models.ManyToManyField("payments.PaymentMethod", blank=True)
+
+    # user fields to be selected
+    first_name = models.BooleanField(_('First Name'), default=False)
+    last_name = models.BooleanField(_('Last Name'), default=False)
+    address = models.BooleanField(_('Address'), default=False)
+    city = models.BooleanField(_('City'), default=False)
+    state = models.BooleanField(_('State'), default=False)
+    zip = models.BooleanField(_('Zip'), default=False)
+    country = models.BooleanField(_('Country'), default=False)
+    phone = models.BooleanField(_('Phone'), default=False)
+    email = models.BooleanField(_('Email'), default=False)
+    url = models.BooleanField(_('URL'), default=False)
+    message = models.BooleanField(_('Message'), default=False)
 
     perms = generic.GenericRelation(ObjectPermission,
         object_id_field="object_id", content_type_field="content_type")
@@ -167,6 +193,8 @@ class Field(models.Model):
     label = models.CharField(_("Label"), max_length=LABEL_MAX_LENGTH)
     field_type = models.CharField(_("Type"), choices=FIELD_CHOICES,
         max_length=64)
+    map_to_field = models.CharField(_("Map to User Field"), choices=USER_FIELD_CHOICES,
+        max_length=64, blank=True, null=True)
     field_function = models.CharField(_("Special Functionality"),
         choices=FIELD_FUNCTIONS, max_length=64, null=True, blank=True)
     function_params = models.CharField(_("Group Name or Names"),
@@ -338,20 +366,30 @@ class FormEntry(models.Model):
                 return entry.value
         return ''
 
+    def get_user_mapped_value(self, user_field):
+        """
+        Returns the value of the a field entry based
+        on the user field specified specified
+        """
+        for entry in self.fields.all():
+            if entry.field.map_to_field == user_field:
+                return entry.value
+        return ''
+
     def get_first_name(self):
-        return self.get_value_of("EmailFirstName")
+        return self.get_user_mapped_value("first_name")
 
     def get_last_name(self):
-        return self.get_value_of("EmailLastName")
+        return self.get_user_mapped_value("last_name")
 
     def get_full_name(self):
         return self.get_value_of("EmailFullName")
 
     def get_phone_number(self):
-        return self.get_value_of("EmailPhoneNumber")
+        return self.get_user_mapped_value("phone")
 
     def get_email_address(self):
-        return self.get_type_of("emailverificationfield")
+        return self.get_user_mapped_value("email")
 
      # Called by payments_pop_by_invoice_user in Payment model.
     def get_payment_description(self, inv):

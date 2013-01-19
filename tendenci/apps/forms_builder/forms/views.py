@@ -397,6 +397,13 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                     firstnamefield = entry.get_first_name()
                     lastnamefield = entry.get_last_name()
                     phonefield = entry.get_phone_number()
+                    countryfield = entry.get_user_mapped_value('country')
+                    statefield = entry.get_user_mapped_value('state')
+                    zipfield = entry.get_user_mapped_value('zip')
+                    cityfield = entry.get_user_mapped_value('city')
+                    addressfield = entry.get_user_mapped_value('address')
+                    urlfield = entry.get_user_mapped_value('url')
+
                     password = ''
                     for i in range(0, 10):
                         password += random.choice(string.ascii_lowercase + string.ascii_uppercase)
@@ -411,7 +418,10 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                         anonymous_creator.is_active = False
                         anonymous_creator.save()
                         anonymous_profile = Profile(user=anonymous_creator, owner=anonymous_creator,
-                                                    creator=User.objects.get(pk=1), phone=phonefield)
+                                                    creator=User.objects.get(pk=1), phone=phonefield,
+                                                    country=countryfield, address=addressfield,
+                                                    city=cityfield, state=statefield, zipcode=zipfield,
+                                                    url=urlfield)
                         anonymous_profile.save()
                     entry.creator = anonymous_creator
             else:

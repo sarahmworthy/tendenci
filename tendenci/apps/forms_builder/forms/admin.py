@@ -50,10 +50,11 @@ class FieldAdmin(admin.TabularInline):
     form = FieldAdminForm
     extra = 0
     ordering = ("position",)
+    template = "forms/admin/tabular.html"
 
 class FormAdmin(TendenciBaseModelAdmin):
 
-    inlines = (PricingAdmin, FieldAdmin,)
+    inlines = (FieldAdmin, PricingAdmin,)
     list_display = ("title", "id", "intro", "email_from", "email_copies",
         "admin_link_export", "admin_link_view")
     list_display_links = ("title",)
@@ -76,6 +77,17 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status_detail'
         )}),
         (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods")}),
+        (_('Add fields to your form'), {'fields': (('first_name', 'last_name', 'email', ),
+                                                 ('phone', 'address', 'city', ),
+                                                 ('state', 'zip', 'country', ),
+                                                 ('url', 'message', )),
+                                     'classes': ('mapped-fields',),
+                                     'description': _('The fields you selected will be automatically added to ' +
+                                     'your form. These fields are mapped to the user fields. ' +
+                                     'To delete a mapped field, uncheck its corresponding ' +
+                                     'check box here. Please do not add another custom field ' +
+                                     'if you can find the field here. To add a custom field, click Add a ' +
+                                     'Field in the Fields section below.')})
     )
 
     form = FormAdminForm

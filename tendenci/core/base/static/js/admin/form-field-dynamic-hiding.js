@@ -73,7 +73,7 @@ jQuery(function($) {
     	var selected_text = $dd.find(":selected").text();
     	var fieldset = $dd.parents(".dynamic-fields");
 
-        triggers = ['CharField/tendenci.apps.forms_builder.forms.widgets.Header', 'CharField/tendenci.apps.forms_builder.forms.widgets.Description', 'FileField', 'DateField/django.forms.extras.SelectDateWidget', 'DateField/django.forms.DateInput', 'DateTimeField', 'EmailField', 'CharField', 'CharField/django.forms.Textarea']
+        triggers = ['CharField/tendenci.apps.forms_builder.forms.widgets.Header', 'CharField/tendenci.apps.forms_builder.forms.widgets.Description', 'FileField', 'DateField/django.forms.extras.SelectDateWidget', 'DateField/django.forms.DateInput', 'DateTimeField', 'EmailVerificationField', 'CharField', 'CharField/django.forms.Textarea']
 
     	// toggle help text field 
         if (in_list(selected_value, triggers)){
