@@ -2130,8 +2130,10 @@ def global_registrant_search(request, template_name='events/registrants/global-s
         registrants = registrants.filter(registration__event__start_dt__gte=start_dt)
     if end_dt:
         registrants = registrants.filter(registration__event__end_dt__lte=end_dt)
-    if user_id:
+    try:
         registrants = registrants.filter(user=user_id)
+    except ValueError:
+        pass
 
     registrants = (registrants.filter(first_name__contains=first_name)
                               .filter(last_name__contains=last_name)

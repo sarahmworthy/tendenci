@@ -1601,7 +1601,7 @@ class RegistrantSearchForm(forms.Form):
     start_dt = forms.DateField(label=_('Start Date'), required=False)
     end_dt = forms.DateField(label=_('End Date'), required=False)
 
-    user_id = forms.ChoiceField(label=_('User ID'), required=False, choices=[])
+    user_id = forms.CharField(label=_('User ID'), required=False)
     first_name = forms.CharField(label=('First Name'), required=False)
     last_name = forms.CharField(label=('Last Name'), required=False)
     email = forms.CharField(label=('Email'), required=False)
@@ -1618,10 +1618,3 @@ class RegistrantSearchForm(forms.Form):
             self.fields.get('end_dt').widget.attrs = {
                 'class': 'datepicker',
             }
-
-        # Set user_id choices
-        users = Registrant.objects.filter(user__isnull=False).distinct('user')
-        choices = [('', 'All users')]
-        for user in users:
-            choices.append((user.user_id, user.user_id))
-        self.fields['user_id'].choices = choices

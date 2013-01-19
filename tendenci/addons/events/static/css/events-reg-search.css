@@ -77,3 +77,7 @@
 .global-reg-search .search-form fieldset.registrant-filters input {
     width: 180px;
 }
+
+.global-reg-search .search-form fieldset.registrant-filters input#id_user_id {
+    width: 70px;
+}
