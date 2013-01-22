@@ -1,4 +1,5 @@
 {% extends "jobs/base-print.html" %}
+{% load base_filters %}
 {% load job_tags %}
 {% load i18n %}
 
@@ -53,14 +54,6 @@
 		<div class="section-line">
 			<div class="label">{% trans "Location" %}</div>
 			<div class="value">{{ job.location }}</div>
-			<div class="clear"></div>
-		</div>
-{% endif %}
-
-{% if job.percent_travel %}
-		<div class="section-line">
-			{% blocktrans with job.percent_travel as travper %}<div class="label">Travel Required</div>
-			<div class="value">{{ travper }} of the time (approximate)</div>{% endblocktrans %}
 			<div class="clear"></div>
 		</div>
 {% endif %}
@@ -129,7 +122,7 @@
 {% if job.contact_name %}
 		<div class="contact-wrap">
 			<div>{{ job.contact_name }}</div>
-			<div>{{ job.contact_phone }}</div>
+			<div>{{ job.contact_phone|phonenumber }}</div>
 			<div>{{ job.contact_fax }}</div>
 			<div><a href="">{{ job.contact_email|urlize }}</a></div>
 		</div>

@@ -97,7 +97,7 @@
 .t form.search-form input[type="text"] {
 	width: 60%;
 	margin-bottom: 5px;
-	padding: 5px;	
+	padding: 5px;
 }
 
 .t form.search-form input[type="submit"] {
@@ -330,7 +330,7 @@ div.pending-entries {
 }
 .item .field .mceLayout {
 	/* WYSIWYG; .1 keeps border intact */
-	width: 100.1% !important; 
+	width: 100.1% !important;
 }
 .item .field-short input,
 .item .field-short select {
@@ -684,4 +684,19 @@ form.connect-with li {
     cursor: pointer;
     color: darkred;
     background-color: #fff;
+}
+/* Member Roster */
+.member-roster-membership {
+    border: 1px #000 solid;
+    margin: 5px;
+    padding: 5px;
+    float: left;
+    height: 200px;
+    width: 350px;
+    line-height: 20px;
+}
+
+/* Members YTD by Type */
+.totals-row {
+    background: #ccc;
 }

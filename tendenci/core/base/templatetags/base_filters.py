@@ -10,6 +10,7 @@ from django.utils import formats
 from django.utils.safestring import mark_safe
 from django.utils.html import conditional_escape, strip_tags, urlize
 from django.contrib.auth.models import AnonymousUser
+from django.core.files.storage import default_storage
 
 register = Library()
 
@@ -290,28 +291,40 @@ def twitterdate(value):
     dt = datetime.strptime(time, "%a, %d %b %Y %H:%M:%S")
     return dt + timedelta(hours=-6)
 
+
 @register.filter
 def thumbnail(file, size='200x200'):
     # defining the size
     x, y = [int(x) for x in size.split('x')]
     # defining the filename and the miniature filename
-    filehead, filetail = os.path.split(file.path)
+    filehead, filetail = os.path.split(file.name)
     basename, format = os.path.splitext(filetail)
     miniature = basename + '_' + size + format
-    filename = file.path
+    filename = file.name
     miniature_filename = os.path.join(filehead, miniature)
     filehead, filetail = os.path.split(file.url)
     miniature_url = filehead + '/' + miniature
-    if os.path.exists(miniature_filename) and os.path.getmtime(filename) > os.path.getmtime(miniature_filename):
-        os.unlink(miniature_filename)
+
+    thumbnail_exist = False
+    if default_storage.exists(miniature_filename):
+        mt_filename = default_storage.modified_time(filename)
+        mt_miniature_filename = default_storage.modified_time(
+                                                miniature_filename)
+        if mt_filename > mt_miniature_filename:
+            # remove the miniature
+            default_storage.delete(miniature_filename)
+        else:
+            thumbnail_exist = True
+
     # if the image wasn't already resized, resize it
-    if not os.path.exists(miniature_filename):
-        image = Image.open(filename)
+    if not thumbnail_exist:
+        #image = Image.open(filename)
+        image = Image.open(default_storage.open(filename))
         image.thumbnail([x, y], Image.ANTIALIAS)
-        try:
-            image.save(miniature_filename, image.format, quality=90, optimize=1)
-        except:
-            image.save(miniature_filename, image.format, quality=90)
+
+        f = default_storage.open(miniature_filename, 'w')
+        image.save(f, image.format, quality=90, optimize=1)
+        f.close()
 
     return miniature_url
 
@@ -381,3 +394,30 @@ def md5_gs(value, arg=None):
 @register.filter
 def multiply(value, arg):
     return Decimal(str(value)) * Decimal(str(arg))
+
+@register.filter
+def phonenumber(value):
+    if value:
+        # split number from extension or any text
+        x = re.split(r'([a-zA-Z]+)', value)
+        # clean number
+        y = ''.join(i for i in x[0] if i.isdigit())
+
+        if len(y) > 10:    # has country code
+            code = y[:len(y)-10]
+            number = y[len(y)-10:]
+            if code == '1':
+                number = "(%s) %s-%s" %(number[:3], number[3:6], number[6:])
+            else:
+                number = "+%s %s %s %s" %(code, number[:3], number[3:6], number[6:])
+        else:    # no country code
+            number = "(%s) %s-%s" %(y[:3], y[3:6], y[6:])
+
+        # attach additional text extension
+        ext = ''
+        for i in range(1, len(x)):
+            ext = ''.join((ext, x[i]))
+        if ext:
+            return ' '.join((number, ext))
+        else:
+            return number

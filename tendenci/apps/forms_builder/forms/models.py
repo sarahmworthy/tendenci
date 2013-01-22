@@ -11,6 +11,10 @@ from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.apps.user_groups.models import Group, GroupMembership
 from tendenci.core.site_settings.utils import get_setting
+from tendenci.core.base.fields import EmailVerificationField
+from tendenci.apps.redirects.models import Redirect
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 
 #STATUS_DRAFT = 1
 #STATUS_PUBLISHED = 2
@@ -26,7 +30,7 @@ FIELD_CHOICES = (
     ("ChoiceField", _("Choose from a list")),
     ("MultipleChoiceField/django.forms.CheckboxSelectMultiple", _("Multi-select - Checkboxes")),
     ("MultipleChoiceField", _("Multi-select - Select Many")),
-    ("EmailField", _("Email")),
+    ("EmailVerificationField", _("Email")),
     ("FileField", _("File upload")),
     ("DateField/django.forms.extras.SelectDateWidget", _("Date - Select")),
     ("DateField/django.forms.DateInput", _("Date - Text Input")),
@@ -131,6 +135,14 @@ class Form(TendenciBaseModel):
     admin_link_export.allow_tags = True
     admin_link_export.short_description = ""
 
+    def has_files(self):
+        for entry in self.entries.all():
+            for field in entry.fields.all():
+                if field.field.field_type == 'FileField':
+                    return True
+        return False
+
+
 class FieldManager(models.Manager):
     """
     Only show visible fields when displaying actual form..
@@ -221,7 +233,7 @@ class FormEntry(models.Model):
     entry_path = models.CharField(max_length=200, blank=True, default="")
     payment_method = models.ForeignKey('payments.PaymentMethod', null=True)
     pricing = models.ForeignKey('Pricing', null=True)
-    creator = models.ForeignKey(User, related_name="formentry_creator",  null=True)
+    creator = models.ForeignKey(User, related_name="formentry_creator",  null=True, on_delete=models.SET_NULL)
     create_dt = models.DateTimeField(auto_now_add=True)
     update_dt = models.DateTimeField(auto_now=True)
 
@@ -262,6 +274,9 @@ class FormEntry(models.Model):
         except GS.DoesNotExist:
             pass
 
+    def entry_fields(self):
+        return self.fields.all().order_by('field__position')
+
     def get_name_email(self):
         """Try to figure out the name and email from this entry
             Assume: 1) email field type is EmailField
@@ -281,6 +296,8 @@ class FormEntry(models.Model):
         for entry in field_entries:
             field = entry.field
             if field.field_type.lower() == 'emailfield':
+                email = entry.value
+            if field.field_type.lower() == 'emailverificationfield':
                 email = entry.value
             if field.label.lower() in ['name']:
                 name = entry.value
@@ -334,7 +351,7 @@ class FormEntry(models.Model):
         return self.get_value_of("EmailPhoneNumber")
 
     def get_email_address(self):
-        return self.get_type_of("emailfield")
+        return self.get_type_of("emailverificationfield")
 
      # Called by payments_pop_by_invoice_user in Payment model.
     def get_payment_description(self, inv):
