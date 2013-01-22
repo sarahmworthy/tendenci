@@ -228,6 +228,17 @@ class FormAdminForm(TendenciBaseForm):
                   'custom_payment',
                   'recurring_payment',
                   'payment_methods',
+                  'first_name',
+                  'last_name',
+                  'address',
+                  'city',
+                  'state',
+                  'zip',
+                  'country',
+                  'phone',
+                  'email',
+                  'url',
+                  'message',
                  )
 
     def __init__(self, *args, **kwargs): 
