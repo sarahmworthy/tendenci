@@ -25,8 +25,8 @@ from tendenci.core.event_logs.views import event_colors
 from tendenci.apps.user_groups.models import Group, GroupMembership
 from tendenci.apps.user_groups.forms import GroupForm, GroupMembershipForm
 from tendenci.apps.user_groups.forms import GroupPermissionForm, GroupMembershipBulkForm
-from tendenci.apps.user_groups.importer.forms import UploadForm
-from tendenci.apps.user_groups.importer.tasks import ImportSubscribersTask
+# from tendenci.apps.user_groups.importer.forms import UploadForm
+# from tendenci.apps.user_groups.importer.tasks import ImportSubscribersTask
 from tendenci.apps.notifications import models as notification
 
 
@@ -48,15 +48,7 @@ def search(request, template_name="user_groups/search.html"):
             groups = groups.select_related()
         groups = groups.order_by('slug')
 
-    log_defaults = {
-        'event_id' : 164000,
-        'event_data': '%s searched by %s' % ('Group', request.user),
-        'description': '%s searched' % 'Group',
-        'user': request.user,
-        'request': request,
-        'source': 'user_groups'
-    }
-    EventLog.objects.log(**log_defaults)
+    EventLog.objects.log()
 
     return render_to_response(template_name, {'groups':groups}, 
         context_instance=RequestContext(request))
@@ -73,15 +65,7 @@ def group_detail(request, group_slug, template_name="user_groups/detail.html"):
 
     if not has_view_perm(request.user,'user_groups.view_group',group): raise Http403
     
-    log_defaults = {
-        'event_id' : 165000,
-        'event_data': '%s (%d) viewed by %s' % (group._meta.object_name, group.pk, request.user),
-        'description': '%s viewed' % group._meta.object_name,
-        'user': request.user,
-        'request': request,
-        'instance': group,
-    }
-    EventLog.objects.log(**log_defaults)
+    EventLog.objects.log(instance=group)
     
     groupmemberships = GroupMembership.objects.filter(group=group, 
                                                       status=True, 
@@ -139,25 +123,7 @@ def group_add_edit(request, group_slug=None,
                         }
                         notification.send_emails(recipients,'group_added', extra_context)
                     
-                log_defaults = {
-                    'event_id' : 161000,
-                    'event_data': '%s (%d) added by %s' % (group._meta.object_name, group.pk, request.user),
-                    'description': '%s added' % group._meta.object_name,
-                    'user': request.user,
-                    'request': request,
-                    'instance': group,
-                }
-                EventLog.objects.log(**log_defaults)                
-            if edit:
-                log_defaults = {
-                    'event_id' : 162000,
-                    'event_data': '%s (%d) edited by %s' % (group._meta.object_name, group.pk, request.user),
-                    'description': '%s edited' % group._meta.object_name,
-                    'user': request.user,
-                    'request': request,
-                    'instance': group,
-                }
-                EventLog.objects.log(**log_defaults)
+            EventLog.objects.log(instance=group)
                 
             return HttpResponseRedirect(group.get_absolute_url())
     else:
@@ -201,16 +167,6 @@ def group_delete(request, id, template_name="user_groups/delete.html"):
                     'request': request,
                 }
                 notification.send_emails(recipients,'group_deleted', extra_context)
-                    
-        log_defaults = {
-            'event_id' : 163000,
-            'event_data': '%s (%d) deleted by %s' % (group._meta.object_name, group.pk, request.user),
-            'description': '%s deleted' % group._meta.object_name,
-            'user': request.user,
-            'request': request,
-            'instance': group,
-        }
-        EventLog.objects.log(**log_defaults)
 
         group.delete()
         return HttpResponseRedirect(reverse('group.search'))
@@ -238,16 +194,8 @@ def group_membership_self_add(request, slug, user_id):
         group_membership.owner_username = user.username   
         
         group_membership.save()
-    
-        log_defaults = {
-            'event_id' : 221000,
-            'event_data': '%s (%d) added by %s' % (group_membership._meta.object_name, group_membership.pk, request.user),
-            'description': '%s added' % group_membership._meta.object_name,
-            'user': request.user,
-            'request': request,
-            'instance': group_membership,
-        }
-        EventLog.objects.log(**log_defaults)     
+
+        EventLog.objects.log(instance=group_membership)     
         
         messages.add_message(request, messages.SUCCESS, 'Successfully added yourself to group %s' % group)
     else:
@@ -268,15 +216,8 @@ def group_membership_self_remove(request, slug, user_id):
     if group_membership:
         group_membership = group_membership[0]
         if group_membership.member == user:
-            log_defaults = {
-                'event_id' : 223000,
-                'event_data': '%s (%d) deleted by %s' % (group_membership._meta.object_name, group_membership.pk, request.user),
-                'description': '%s deleted' % group_membership._meta.object_name,
-                'user': request.user,
-                'request': request,
-                'instance': group_membership,
-            }
-            EventLog.objects.log(**log_defaults)
+
+            EventLog.objects.log(instance=group_membership)
             group_membership.delete()
             messages.add_message(request, messages.SUCCESS, 'Successfully removed yourself from group %s' % group)
     else:
@@ -306,27 +247,11 @@ def groupmembership_bulk_add(request, group_slug,
                     try:
                         members.get(pk=old_m.member.pk)
                     except User.DoesNotExist:
-                        log_defaults = {
-                            'event_id' : 223000,
-                            'event_data': '%s (%d) deleted by %s' % (old_m._meta.object_name, old_m.pk, request.user),
-                            'description': '%s deleted' % old_m._meta.object_name,
-                            'user': request.user,
-                            'request': request,
-                            'instance': old_m,
-                        }
-                        EventLog.objects.log(**log_defaults)
+                        EventLog.objects.log(instance=old_m)
                         old_m.delete()
             else: #when members is None
                 for old_m in old_members:
-                    log_defaults = {
-                        'event_id' : 223000,
-                        'event_data': '%s (%d) deleted by %s' % (old_m._meta.object_name, old_m.pk, request.user),
-                        'description': '%s deleted' % old_m._meta.object_name,
-                        'user': request.user,
-                        'request': request,
-                        'instance': old_m,
-                    }
-                    EventLog.objects.log(**log_defaults)
+                    EventLog.objects.log(instance=old_m)
                     old_m.delete()
                     
             for m in members:
@@ -345,15 +270,7 @@ def groupmembership_bulk_add(request, group_slug,
                 
                 group_membership.save()
 
-                log_defaults = {
-                    'event_id' : 221000,
-                    'event_data': '%s (%d) added by %s' % (group_membership._meta.object_name, group_membership.pk, request.user),
-                    'description': '%s added' % group_membership._meta.object_name,
-                    'user': request.user,
-                    'request': request,
-                    'instance': group_membership,
-                }
-                EventLog.objects.log(**log_defaults)
+                EventLog.objects.log(instance=group_membership)
             return HttpResponseRedirect(group.get_absolute_url())
     else:
         member_label = request.GET.get('member_label', 'username')
@@ -391,27 +308,8 @@ def groupmembership_add_edit(request, group_slug, user_id=None,
             group_membership.owner_username = request.user.username
 
             group_membership.save()
-            if add:
-                log_defaults = {
-                    'event_id' : 221000,
-                    'event_data': '%s (%d) added by %s' % (group_membership._meta.object_name, group_membership.pk, request.user),
-                    'description': '%s added' % group_membership._meta.object_name,
-                    'user': request.user,
-                    'request': request,
-                    'instance': group_membership,
-                }
-                EventLog.objects.log(**log_defaults)                
-            if edit:
-                log_defaults = {
-                    'event_id' : 222000,
-                    'event_data': '%s (%d) edited by %s' % (group_membership._meta.object_name, group_membership.pk, request.user),
-                    'description': '%s edited' % group_membership._meta.object_name,
-                    'user': request.user,
-                    'request': request,
-                    'instance': group_membership,
-                }
-                EventLog.objects.log(**log_defaults)
-                            
+
+            EventLog.objects.log(instance=group_membership)       
             
             return HttpResponseRedirect(group.get_absolute_url())
     else:
@@ -428,15 +326,8 @@ def groupmembership_delete(request, group_slug, user_id, template_name="user_gro
         raise Http403
     
     if request.method == 'POST':
-        log_defaults = {
-            'event_id' : 223000,
-            'event_data': '%s (%d) deleted by %s' % (group_membership._meta.object_name, group_membership.pk, request.user),
-            'description': '%s deleted' % group_membership._meta.object_name,
-            'user': request.user,
-            'request': request,
-            'instance': group_membership,
-        }
-        EventLog.objects.log(**log_defaults)
+
+        EventLog.objects.log(instance=group_membership)
         group_membership.delete()
         messages.add_message(request, messages.SUCCESS, 'Successfully removed %s from group %s' % (user.get_full_name(), group))
         return HttpResponseRedirect(group.get_absolute_url())
@@ -775,46 +666,49 @@ def group_all_export(request, group_slug):
     book.save(response)
     return response
 
-def group_subscriber_import(request, group_slug, form_class=UploadForm, template="user_groups/import_subscribers.html"):
+def group_subscriber_import(request, group_slug, template="user_groups/import_subscribers.html"):
     """
     Import subscribers for a specific group
     """
-    group = get_object_or_404(Group, slug=group_slug)
-    
-    # if they can edit, they can export
-    if not has_perm(request.user,'user_groups.change_group', group):
-        raise Http403
+    raise Http404
 
-    if request.method == 'POST':
-        form = form_class(request.POST, request.FILES)
-        if form.is_valid():
-            csv = form.save(commit=False)
-            csv.group = group
-            csv.creator = request.user
-            csv.creator_username = request.user.username
-            csv.owner = request.user
-            csv.owner_username = request.user.username
-            csv.save()
-            
-            if not settings.CELERY_IS_ACTIVE:
-                # if celery server is not present 
-                # evaluate the result and render the results page
-                result = ImportSubscribersTask()
-                subs = result.run(group, csv.file.path)
-                return render_to_response('user_groups/import_subscribers_result.html', {
-                    'group':group,
-                    'subs':subs,
-                }, context_instance=RequestContext(request))
-            else:
-                result = ImportSubscribersTask.delay(group, csv.file.path)
-                return redirect('subscribers_import_status', group.slug, result.task_id)
-    else:
-        form = form_class()
+    # form_class=UploadForm
+    # group = get_object_or_404(Group, slug=group_slug)
     
-    return render_to_response(template, {
-        'group':group,
-        'form':form,
-    }, context_instance=RequestContext(request))
+    # # if they can edit, they can export
+    # if not has_perm(request.user,'user_groups.change_group', group):
+    #     raise Http403
+
+    # if request.method == 'POST':
+    #     form = form_class(request.POST, request.FILES)
+    #     if form.is_valid():
+    #         csv = form.save(commit=False)
+    #         csv.group = group
+    #         csv.creator = request.user
+    #         csv.creator_username = request.user.username
+    #         csv.owner = request.user
+    #         csv.owner_username = request.user.username
+    #         csv.save()
+            
+    #         if not settings.CELERY_IS_ACTIVE:
+    #             # if celery server is not present 
+    #             # evaluate the result and render the results page
+    #             result = ImportSubscribersTask()
+    #             subs = result.run(group, csv.file.path)
+    #             return render_to_response('user_groups/import_subscribers_result.html', {
+    #                 'group':group,
+    #                 'subs':subs,
+    #             }, context_instance=RequestContext(request))
+    #         else:
+    #             result = ImportSubscribersTask.delay(group, csv.file.path)
+    #             return redirect('subscribers_import_status', group.slug, result.task_id)
+    # else:
+    #     form = form_class()
+    
+    # return render_to_response(template, {
+    #     'group':group,
+    #     'form':form,
+    # }, context_instance=RequestContext(request))
 
 @login_required
 def subscribers_import_status(request, group_slug, task_id, template_name='user_groups/import_status.html'):

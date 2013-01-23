@@ -45,6 +45,7 @@ from tendenci.core.perms.utils import (has_perm, get_notice_recipients,
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.meta.models import Meta as MetaTags
 from tendenci.core.meta.forms import MetaForm
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from tendenci.core.files.models import File
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.exports.utils import run_export_task
@@ -920,45 +921,28 @@ def add(request, year=None, month=None, day=None, \
 def delete(request, id, template_name="events/delete.html"):
     event = get_object_or_404(Event, pk=id)
 
-    if has_perm(request.user,'events.delete_event'):
+    if has_perm(request.user, 'events.delete_event'):
         if request.method == "POST":
 
             eventlog = EventLog.objects.log(instance=event)
             # send email to admins
             recipients = get_notice_recipients('site', 'global', 'allnoticerecipients')
             if recipients and notification:
-                notification.send_emails(recipients,'event_deleted', {
-                    'event':event,
-                    'request':request,
-                    'user':request.user,
-                    'registrants_paid':event.registrants(with_balance=False),
-                    'registrants_pending':event.registrants(with_balance=True),
+                notification.send_emails(recipients, 'event_deleted', {
+                    'event': event,
+                    'request': request,
+                    'user': request.user,
+                    'registrants_paid': event.registrants(with_balance=False),
+                    'registrants_pending': event.registrants(with_balance=True),
                     'eventlog_url': reverse('event_log', args=[eventlog.pk]),
                     'SITE_GLOBAL_SITEDISPLAYNAME': get_setting('site', 'global', 'sitedisplayname'),
                     'SITE_GLOBAL_SITEURL': get_setting('site', 'global', 'siteurl'),
                 })
 
-            # The one-to-one relationship is on events which
-            # doesn't delete the registration_configuration record.
-            # The delete must occur on registration_configuration
-            # for both to be deleted. An honest accident on
-            # one-to-one fields.
-            try:
-                event.registration_configuration.delete()
-            except:
-                # roll back the transaction to fix the error for postgresql
-                # current transaction is aborted, commands ignored until
-                # end of transaction block"
-                connection._rollback()
-
             if event.image:
+                event.image.delete()
 
-                try:
-                    event.image.delete()
-                except:
-                    connection._rollback()
-
-            event.delete()
+            event.delete(log=False)
 
             messages.add_message(request, messages.SUCCESS, 'Successfully deleted %s' % event)
 
@@ -967,7 +951,7 @@ def delete(request, id, template_name="events/delete.html"):
         return render_to_response(template_name, {'event': event},
             context_instance=RequestContext(request))
     else:
-        raise Http403# Create your views here.
+        raise Http403
 
 
 @is_enabled('events')
@@ -1099,7 +1083,10 @@ def register(request, event_id=0,
                                                        spots_available=spots_available)
         pricings = pricings.filter(quantity=1)
 
-        event.has_member_price = pricings.filter(allow_member=True).exists()
+        event.has_member_price = pricings.filter(allow_member=True
+                                                 ).exclude(
+                                        Q(allow_user=True) | Q(allow_anonymous=True)
+                                                ).exists()
 
         pricings = pricings.order_by('display_order', '-price')
 
@@ -1107,10 +1094,9 @@ def register(request, event_id=0,
             pricing_id = int(pricing_id)
         except:
             pass
-        if pricing_id:
 
-            if pricing_id:
-                [event.default_pricing] = RegConfPricing.objects.filter(id=pricing_id) or [None]
+        if pricing_id:
+            [event.default_pricing] = RegConfPricing.objects.filter(id=pricing_id) or [None]
 
         event.free_event = not bool([p for p in pricings if p.price > 0])
         pricing = None
@@ -1314,6 +1300,7 @@ def register(request, event_id=0,
     total_price = Decimal('0')
     event_price = pricing and pricing.price or 0
     individual_price = event_price
+
     if is_table:
 #        individual_price_first, individual_price = split_table_price(
 #                                                event_price, pricing.quantity)
@@ -2126,6 +2113,7 @@ def reassign_type(request, type_id, form_class=ReassignTypeForm, template_name='
 @login_required
 def registrant_search(request, event_id=0, template_name='events/registrants/search.html'):
     query = request.GET.get('q', None)
+    page = request.GET.get('page', 1)
 
     event = get_object_or_404(Event, pk=event_id)
 
@@ -2145,23 +2133,20 @@ def registrant_search(request, event_id=0, template_name='events/registrants/sea
         active_registrants = Registrant.objects.filter(registration__event=event).filter(cancel_dt=None).order_by("-update_dt")
         canceled_registrants = Registrant.objects.filter(registration__event=event).exclude(cancel_dt=None).order_by("-update_dt")
 
+    all_registrants = registrants
 
+    if page:
+        registrants_paginator = Paginator(registrants, 10)
+        try:
+            registrants = registrants_paginator.page(page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            registrants = registrants_paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            registrants = registrants_paginator.page(registrants_paginator.num_pages)
 
     for reg in registrants:
-        if hasattr(reg, 'object'): reg = reg.object
-        if reg.custom_reg_form_entry:
-            reg.assign_mapped_fields()
-            reg.non_mapped_field_entries = reg.custom_reg_form_entry.get_non_mapped_field_entry_list()
-            if not reg.name:
-                reg.name = reg.custom_reg_form_entry.__unicode__()
-    for reg in active_registrants:
-        if hasattr(reg, 'object'): reg = reg.object
-        if reg.custom_reg_form_entry:
-            reg.assign_mapped_fields()
-            reg.non_mapped_field_entries = reg.custom_reg_form_entry.get_non_mapped_field_entry_list()
-            if not reg.name:
-                reg.name = reg.custom_reg_form_entry.__unicode__()
-    for reg in canceled_registrants:
         if hasattr(reg, 'object'): reg = reg.object
         if reg.custom_reg_form_entry:
             reg.assign_mapped_fields()
@@ -2174,6 +2159,7 @@ def registrant_search(request, event_id=0, template_name='events/registrants/sea
     return render_to_response(template_name, {
         'event':event,
         'registrants':registrants,
+        'all_registrants': all_registrants,
         'active_registrants':active_registrants,
         'canceled_registrants':canceled_registrants,
         'query': query,
