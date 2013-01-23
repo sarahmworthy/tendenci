@@ -162,6 +162,7 @@ def add(request, form_class=JobForm, template_name="jobs/add.html",
 
         # adjust the fields depending on user type
         if not require_payment:
+            del form.fields['payment_gateway']
             del form.fields['payment_method']
             del form.fields['list_type']
 
@@ -248,6 +249,7 @@ def add(request, form_class=JobForm, template_name="jobs/add.html",
             if require_payment:
                 if job.payment_method.lower() in ['credit card', 'cc']:
                     if job.invoice and job.invoice.balance > 0:
+                        request.session['payment_gateway'] = form.cleaned_data['payment_gateway']
                         return HttpResponseRedirect(reverse(
                             'payment.pay_online',
                             args=[job.invoice.id, job.invoice.guid])
@@ -279,6 +281,7 @@ def add(request, form_class=JobForm, template_name="jobs/add.html",
 
         # adjust the fields depending on user type
         if not require_payment:
+            del form.fields['payment_gateway']
             del form.fields['payment_method']
             del form.fields['list_type']
 
@@ -333,6 +336,7 @@ def edit(request, id, form_class=JobForm, template_name="jobs/edit.html", object
         if form.fields.has_key('entity'):
             del form.fields['entity']
     del form.fields['payment_method']
+    del form.fields['payment_gateway']
 
     if request.method == "POST":
         if form.is_valid() and categoryform.is_valid():

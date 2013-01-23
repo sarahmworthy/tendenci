@@ -1252,6 +1252,7 @@ def register(request, event_id=0,
                         # email the admins as well
                         email_admins(event, reg8n.invoice.total, self_reg8n, reg8n, registrants)
 
+                        request.session['payment_gateway'] = reg8n.payment_gateway
                         return HttpResponseRedirect(reverse(
                             'payment.pay_online',
                             args=[reg8n.invoice.id, reg8n.invoice.guid]
@@ -1581,6 +1582,7 @@ def multi_register(request, event_id=0, template_name="events/reg8n/multi_regist
                         # email the admins as well
                         email_admins(event, event_price, self_reg8n, reg8n, registrants)
 
+                        request.session['payment_gateway'] = reg8n.payment_gateway
                         return HttpResponseRedirect(reverse(
                             'payment.pay_online',
                             args=[reg8n.invoice.id, reg8n.invoice.guid]

@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
+from tendenci.core.payments.models import PaymentGateway
+
 class MakePayment(models.Model):
     guid = models.CharField(max_length=50)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
@@ -22,6 +24,7 @@ class MakePayment(models.Model):
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_count = models.IntegerField(blank=True, null=True)
     payment_method = models.CharField(max_length=50, default='cc')
+    payment_gateway = models.ForeignKey(PaymentGateway)
     invoice_id = models.IntegerField(blank=True, null=True)
     create_dt = models.DateTimeField(auto_now_add=True)
     creator = models.ForeignKey(User, null=True,  related_name="make_payment_creator", on_delete=models.SET_NULL)

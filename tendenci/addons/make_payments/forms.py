@@ -4,12 +4,20 @@ from django.utils.translation import ugettext_lazy as _
 
 from tendenci.addons.make_payments.models import MakePayment
 from tendenci.core.base.fields import EmailVerificationField
+from tendenci.core.payments.models import PaymentGateway
 from captcha.fields import CaptchaField
 
 class MakePaymentForm(forms.ModelForm):
     captcha = CaptchaField(help_text=_("Please fill in the letters in the image"))
     # TODO: Make check-paid an admin only option
     payment_method = forms.CharField(widget=forms.RadioSelect(choices=(('cc', 'Make Online Payment'),)), initial='cc',)
+    payment_gateway = forms.ModelChoiceField(
+                    label=_('Payment Gateway'),
+                    empty_label=None,
+                    queryset=PaymentGateway.objects.all(),
+                    widget=forms.RadioSelect,
+                    initial=1,
+                )
     company = forms.CharField(max_length=50, required=False, widget=forms.TextInput(attrs={'size':'30'}))
     address = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'size':'35'}))
     state = forms.CharField(max_length=50, required=False,  widget=forms.TextInput(attrs={'size':'5'}))
@@ -22,6 +30,7 @@ class MakePaymentForm(forms.ModelForm):
         model = MakePayment
         fields = ('payment_amount',
                   'payment_method',
+                  'payment_gateway',
                   'first_name',
                   'last_name',
                   'company',

@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.contenttypes.models import ContentType
 from tendenci.addons.jobs.models import Job, JobPricing
 from tendenci.apps.invoices.models import Invoice
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.site_settings.utils import get_setting
 
 def get_payment_method_choices(user):
@@ -98,7 +98,8 @@ def job_set_inv_payment(user, job, pricing):
                     boo_inv = inv.tender(user) 
                     
                     # payment
-                    payment = Payment()
+                    merchant_account = PaymentGateway.objects.all()[0]
+                    payment = Payment(merchant_account=merchant_account)
                     boo = payment.payments_pop_by_invoice_user(user, inv, inv.guid)
                     payment.mark_as_paid()
                     payment.method = job.payment_method

@@ -12,6 +12,7 @@ from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.apps.user_groups.models import Group, GroupMembership
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.base.fields import EmailVerificationField
+from tendenci.core.payments.models import PaymentMethod, PaymentGateway
 from tendenci.apps.redirects.models import Redirect
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -96,7 +97,8 @@ class Form(TendenciBaseModel):
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
     recurring_payment = models.BooleanField(_("Is Recurring Payment"), default=False,
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
-    payment_methods = models.ManyToManyField("payments.PaymentMethod", blank=True)
+    payment_methods = models.ManyToManyField(PaymentMethod, blank=True)
+    payment_gateways = models.ManyToManyField(PaymentGateway, blank=True)
 
     perms = generic.GenericRelation(ObjectPermission,
         object_id_field="object_id", content_type_field="content_type")
@@ -231,7 +233,8 @@ class FormEntry(models.Model):
     form = models.ForeignKey("Form", related_name="entries")
     entry_time = models.DateTimeField(_("Date/time"))
     entry_path = models.CharField(max_length=200, blank=True, default="")
-    payment_method = models.ForeignKey('payments.PaymentMethod', null=True)
+    payment_method = models.ForeignKey(PaymentMethod, null=True)
+    payment_gateway = models.ForeignKey(PaymentGateway, null=True)
     pricing = models.ForeignKey('Pricing', null=True)
     creator = models.ForeignKey(User, related_name="formentry_creator",  null=True, on_delete=models.SET_NULL)
     create_dt = models.DateTimeField(auto_now_add=True)

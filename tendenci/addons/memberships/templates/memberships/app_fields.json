@@ -679,7 +679,21 @@
     "admin_only": "false"
     },
     {
-    "label": "Section 5. Join User Groups",
+    "label": "Section 5. Payment Gateway",
+    "field_name": "",
+    "display": "true",
+    "required": "false",
+    "admin_only": "false"
+    },
+    {
+    "label": "Payment Gateway",
+    "field_name": "payment_gateway",
+    "display": "true",
+    "required": "true",
+    "admin_only": "false"
+    },
+    {
+    "label": "Section 6. Join User Groups",
     "field_name": "",
     "display": "true",
     "required": "false",
@@ -693,7 +707,7 @@
     "admin_only": "false"
     },
     {
-    "label": "Section 6. Industry",
+    "label": "Section 7. Industry",
     "field_name": "",
     "display": "true",
     "required": "false",
@@ -707,7 +721,7 @@
     "admin_only": "false"
     },
     {
-    "label": "Section 7. Region",
+    "label": "Section 8. Region",
     "field_name": "",
     "display": "true",
     "required": "false",
@@ -721,7 +735,7 @@
     "admin_only": "false"
     },
     {
-    "label": "Section 8. Admin Only",
+    "label": "Section 9. Admin Only",
     "field_name": "",
     "display": "false",
     "required": "false",

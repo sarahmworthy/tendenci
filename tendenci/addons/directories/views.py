@@ -120,6 +120,7 @@ def add(request, form_class=DirectoryForm, template_name="directories/add.html")
     
     if not require_payment:
         del form.fields['payment_method']
+        del form.fields['payment_gateway']
         del form.fields['list_type']
 
     if request.method == "POST":   
@@ -180,6 +181,7 @@ def add(request, form_class=DirectoryForm, template_name="directories/add.html")
                     
             if directory.payment_method.lower() in ['credit card', 'cc']:
                 if directory.invoice and directory.invoice.balance > 0:
+                    request.session['payment_gateway'] = form.cleaned_data['payment_gateway']
                     return HttpResponseRedirect(reverse('payment.pay_online', args=[directory.invoice.id, directory.invoice.guid])) 
             if can_add_active:  
                 return HttpResponseRedirect(reverse('directory', args=[directory.slug])) 
@@ -203,6 +205,7 @@ def edit(request, id, form_class=DirectoryForm, template_name="directories/edit.
                       user=request.user)
     
     del form.fields['payment_method']
+    del form.fields['payment_gateway']
     if not request.user.profile.is_superuser:
         del form.fields['pricing']
         del form.fields['list_type']
@@ -536,6 +539,7 @@ def renew(request, id, form_class=DirectoryRenewForm, template_name="directories
     form = form_class(request.POST or None, request.FILES or None, instance=directory, user=request.user)
     if not require_payment:
         del form.fields['payment_method']
+        del form.fields['payment_gateway']
         del form.fields['list_type']
     
     if request.method == "POST":
@@ -583,6 +587,7 @@ def renew(request, id, form_class=DirectoryRenewForm, template_name="directories
                     
             if directory.payment_method.lower() in ['credit card', 'cc']:
                 if directory.invoice and directory.invoice.balance > 0:
+                    request.session['payment_gateway'] = form.cleaned_data['payment_gateway']
                     return HttpResponseRedirect(reverse('payments.views.pay_online', args=[directory.invoice.id, directory.invoice.guid])) 
             if can_add_active:  
                 return HttpResponseRedirect(reverse('directory', args=[directory.slug])) 

@@ -75,7 +75,7 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status',
             'status_detail'
         )}),
-        (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods")}),
+        (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods", "payment_gateways")}),
     )
 
     form = FormAdminForm

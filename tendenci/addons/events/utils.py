@@ -751,6 +751,7 @@ def add_registration(*args, **kwargs):
     reg8n_attrs = {
         "event": event,
         "payment_method": reg_form.cleaned_data.get('payment_method'),
+        "payment_gateway": reg_form.cleaned_data.get('payment_gateway'),
         "amount_paid": str(total_amount),
         "reg_conf_price": price,
         'is_table': event.is_table,

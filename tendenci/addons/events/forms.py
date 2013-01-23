@@ -25,7 +25,7 @@ from tendenci.addons.events.models import (
 
 from form_utils.forms import BetterModelForm
 from tinymce.widgets import TinyMCE
-from tendenci.core.payments.models import PaymentMethod
+from tendenci.core.payments.models import PaymentMethod, PaymentGateway
 from tendenci.core.perms.forms import TendenciBaseForm
 from tinymce.widgets import TinyMCE
 from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
@@ -825,6 +825,10 @@ class Reg8nEditForm(BetterModelForm):
         widget=forms.CheckboxSelectMultiple(),
         required=False,
         initial=[1,2,3]) # first three items (inserted via fixture)
+    payment_gateway = forms.ModelMultipleChoiceField(
+        queryset=PaymentGateway.objects.all(),
+        widget=forms.CheckboxSelectMultiple(),
+        required=False)
     use_custom_reg = UseCustomRegField(label="Custom Registration Form")
 
 
@@ -835,6 +839,7 @@ class Reg8nEditForm(BetterModelForm):
             'enabled',
             'limit',
             'payment_method',
+            'payment_gateway',
             'payment_required',
             'require_guests_info',
             'discount_eligible',
@@ -848,6 +853,7 @@ class Reg8nEditForm(BetterModelForm):
           'fields': ['enabled',
                     'limit',
                     'payment_method',
+                    'payment_gateway',
                     'payment_required',
                     'require_guests_info',
                     'discount_eligible',
@@ -1108,9 +1114,12 @@ class RegistrationForm(forms.Form):
         if not event.free_event:
             if reg_conf.can_pay_online:
                 payment_methods = reg_conf.payment_method.all()
+                payment_gateways = reg_conf.payment_gateway.all()
+                self.fields['payment_gateway'] = forms.ModelChoiceField(
+                    empty_label=None, queryset=payment_gateways, widget=forms.RadioSelect(), initial=1, required=True)
             else:
                 payment_methods = reg_conf.payment_method.exclude(
-                    machine_name='credit card').order_by('pk')
+                    machine_name='credit-card').order_by('pk')
 
             self.fields['payment_method'] = forms.ModelChoiceField(
                 empty_label=None, queryset=payment_methods, widget=forms.RadioSelect(), initial=1, required=True)

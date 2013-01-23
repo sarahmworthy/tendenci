@@ -35,7 +35,7 @@ class FormForForm(forms.ModelForm):
 
     class Meta:
         model = FormEntry
-        exclude = ("form", "entry_time", "entry_path", "payment_method", "pricing", "creator")
+        exclude = ("form", "entry_time", "entry_path", "payment_method", "payment_gateway", "pricing", "creator")
     
     def __init__(self, form, user, *args, **kwargs):
         """
@@ -122,6 +122,14 @@ class FormForForm(forms.ModelForm):
                     widget=forms.RadioSelect,
                     initial=1,
                 )
+
+            self.fields['payment_gateway'] = forms.ModelChoiceField(
+                    label=_('Payment Gateway'),
+                    empty_label=None,
+                    queryset=self.form.payment_gateways.all(),
+                    widget=forms.RadioSelect,
+                    initial=1,
+                )
         
         if not self.user.is_authenticated() and get_setting('site', 'global', 'captcha'): # add captcha if not logged in
             self.fields['captcha'] = CaptchaField(label=_('Type the code below'))
@@ -174,6 +182,7 @@ class FormForForm(forms.ModelForm):
         # save selected pricing and payment method if any
         if (self.form.custom_payment or self.form.recurring_payment) and self.form.pricing_set.all():
             entry.payment_method = self.cleaned_data['payment_option']
+            entry.payment_gateway = self.cleaned_data['payment_gateway']
             entry.pricing = self.cleaned_data['pricing_option']
             entry.save()
             
@@ -228,6 +237,7 @@ class FormAdminForm(TendenciBaseForm):
                   'custom_payment',
                   'recurring_payment',
                   'payment_methods',
+                  'payment_gateways',
                  )
 
     def __init__(self, *args, **kwargs): 

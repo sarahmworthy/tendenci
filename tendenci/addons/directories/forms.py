@@ -15,6 +15,7 @@ from tendenci.addons.directories.utils import (get_payment_method_choices,
 from tendenci.addons.directories.choices import (DURATION_CHOICES, ADMIN_DURATION_CHOICES,
     STATUS_CHOICES)
 from tendenci.core.base.fields import EmailVerificationField
+from tendenci.core.payments.models import PaymentGateway
 
 ALLOWED_LOGO_EXT = (
     '.jpg',
@@ -35,6 +36,13 @@ class DirectoryForm(TendenciBaseForm):
     list_type = forms.ChoiceField(initial='regular', choices=(('regular','Regular'),
                                                               ('premium', 'Premium'),))
     payment_method = forms.CharField(error_messages={'required': 'Please select a payment method.'})
+    payment_gateway = forms.ModelChoiceField(
+                    label=_('Payment Gateway (for online payment)'),
+                    empty_label=None,
+                    queryset=PaymentGateway.objects.all(),
+                    widget=forms.RadioSelect,
+                    initial=1,
+                )
     remove_photo = forms.BooleanField(label=_('Remove the current logo'), required=False)
 
     activation_dt = SplitDateTimeField(initial=datetime.now())
@@ -104,7 +112,8 @@ class DirectoryForm(TendenciBaseForm):
                       }),
                       ('Payment', {
                       'fields': ['list_type',
-                                 'payment_method'
+                                 'payment_method',
+                                 'payment_gateway',
                                  ],
                         'classes': ['payment_method'],
                       }),
@@ -238,7 +247,13 @@ class DirectoryRenewForm(TendenciBaseForm):
     list_type = forms.ChoiceField(initial='regular', choices=(('regular','Regular'),
                                                               ('premium', 'Premium'),))
     payment_method = forms.CharField(error_messages={'required': 'Please select a payment method.'})
-    
+    payment_gateway = forms.ModelChoiceField(
+                    label=_('Payment Gateway (for online payment)'),
+                    empty_label=None,
+                    queryset=PaymentGateway.objects.all(),
+                    widget=forms.RadioSelect,
+                    initial=1,
+                )
     pricing = forms.ModelChoiceField(label=_('Requested Duration'), 
                     queryset=DirectoryPricing.objects.filter(status=True).order_by('duration'))
     
@@ -253,7 +268,8 @@ class DirectoryRenewForm(TendenciBaseForm):
         fieldsets = [('Payment', {
                       'fields': ['list_type',
                                  'pricing',
-                                 'payment_method'
+                                 'payment_method',
+                                 'payment_gateway',
                                  ],
                         'classes': ['payment_method'],
                     })]

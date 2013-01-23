@@ -327,6 +327,15 @@
                     <div class="field">{{ reg_form.payment_method }}</div>
                 </div>
             {% endif %}
+
+            <div class="clear"></div>
+            {% if event.registration_configuration.can_pay_online %}
+                <div class="form-field">
+                    <div class="error">{{ reg_form.payment_gateway.errors }}</div>
+                    <div class="required">{% trans "Payment Gateway (for online payments)" %}</div>
+                    <div class="field">{{ reg_form.payment_gateway }}</div>
+                </div>
+            {% endif %}
             
             {% if reg_form.captcha %}
                 <div class="form-field">

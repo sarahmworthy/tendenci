@@ -1402,6 +1402,7 @@ def membership_default_add(request,
 
             # redirect: payment gateway
             if membership.is_paid_online():
+                request.session['payment_gateway'] = membership.payment_gateway
                 return HttpResponseRedirect(reverse(
                     'payment.pay_online',
                     args=[membership.get_invoice().pk,

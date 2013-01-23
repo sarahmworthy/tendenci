@@ -2,7 +2,6 @@
 {% load i18n %}
 
 {% block body %}
-{% if gateway_chosen %}
     {% if form %}
     <form action="{{ post_url }}" method="POST" name="myform99">
         {{ form.as_p }}
@@ -18,10 +17,4 @@
     {% else %}
     <p>{% trans "The online payment is not setup for the site. Check out later." %}</p>
     {% endif %}
-{% else %}
-    <form action="" method="POST">{% csrf_token %}
-        {{ gateway_form.as_p }}
-        <input type="submit" value="Select Gateway" />
-    </form>
-{% endif %}
 {% endblock %}

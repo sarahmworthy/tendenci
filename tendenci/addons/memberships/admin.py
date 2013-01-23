@@ -408,7 +408,8 @@ class MembershipAppAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {'fields': ('name', 'slug', 'description',
                            'confirmation_text', 'notes',
-                           'membership_types', 'payment_methods',
+                           'membership_types', 'payment_methods', 
+                           'payment_gateways',
                            'use_for_corp', 'use_captcha',)},),
         ('Permissions', {'fields': ('allow_anonymous_view',)}),
         ('Advanced Permissions', {'classes': ('collapse',), 'fields': (

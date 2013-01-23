@@ -124,6 +124,7 @@ class RegistrationConfiguration(models.Model):
     # TODO: do not use fixtures, use RAWSQL to prepopulate
     # TODO: set widget here instead of within form class
     payment_method = models.ManyToManyField(GlobalPaymentMethod)
+    payment_gateway = models.ManyToManyField(PaymentGateway)
     payment_required = models.BooleanField(help_text='A payment required before registration is accepted.', default=True)
 
     limit = models.IntegerField(_('Registration Limit'), default=0)
@@ -167,8 +168,8 @@ class RegistrationConfiguration(models.Model):
         Check online payment dependencies.
         Return boolean.
         """
-        has_method = GlobalPaymentMethod.objects.filter(is_online=True).exists()
-        has_account = PaymentGateway.objects.count() > 0
+        has_method = self.payment_method.filter(is_online=True).exists()
+        has_account = self.payment_gateway.count() > 0
         #has_api = settings.MERCHANT_LOGIN is not ''
 
         return all([has_method, has_account])
@@ -377,6 +378,7 @@ class Registration(models.Model):
     # TODO: Payment-Method must be soft-deleted
     # so that it may always be referenced
     payment_method = models.ForeignKey(GlobalPaymentMethod, null=True)
+    payment_gateway = models.ForeignKey(PaymentGateway, null=True)
     amount_paid = models.DecimalField(_('Amount Paid'), max_digits=21, decimal_places=2)
     
     is_table = models.BooleanField(_('Is table registration'), default=False)

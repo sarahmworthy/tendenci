@@ -5,7 +5,7 @@ from PIL import Image
 from django.contrib.contenttypes.models import ContentType
 from tendenci.addons.directories.models import DirectoryPricing
 from tendenci.apps.invoices.models import Invoice
-from tendenci.core.payments.models import Payment
+from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.libs.storage import get_default_storage
 
@@ -120,7 +120,8 @@ def directory_set_inv_payment(user, directory, pricing):
                     boo_inv = inv.tender(user) 
                     
                     # payment
-                    payment = Payment()
+                    merchant_account = PaymentGateway.objects.all()[0]
+                    payment = Payment(merchant_account=merchant_account)
                     boo = payment.payments_pop_by_invoice_user(user, inv, inv.guid)
                     payment.mark_as_paid()
                     payment.method = directory.payment_method

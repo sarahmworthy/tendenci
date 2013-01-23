@@ -29,7 +29,7 @@ from tendenci.addons.memberships.managers import MembershipManager, \
     MembershipDefaultManager, MembershipAppManager, MemberAppManager, MemberAppEntryManager
 from tendenci.core.base.utils import fieldify
 from tinymce import models as tinymce_models
-from tendenci.core.payments.models import PaymentMethod
+from tendenci.core.payments.models import PaymentMethod, PaymentGateway
 from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.profiles.models import Profile
@@ -329,6 +329,7 @@ class MembershipDefault(TendenciBaseModel):
     personnel_notified_dt = models.DateTimeField(null=True)
     payment_received_dt = models.DateTimeField(null=True)
     payment_method = models.ForeignKey(PaymentMethod, null=True)
+    payment_gateway = models.ForeignKey(PaymentGateway, null=True)
     override = models.BooleanField(default=False)
     override_price = models.FloatField(null=True)
     exported = models.BooleanField()
@@ -1142,6 +1143,7 @@ class MembershipDefault(TendenciBaseModel):
         good = (
             self.get_invoice().total > 0,
             self.payment_method and self.payment_method.is_online,
+            self.payment_gateway,
         )
 
         return all(good)
@@ -1819,6 +1821,8 @@ class MembershipApp(TendenciBaseModel):
                                               verbose_name="Membership Types")
     payment_methods = models.ManyToManyField(PaymentMethod,
                                              verbose_name="Payment Methods")
+    payment_gateways = models.ManyToManyField(PaymentGateway,
+                                             verbose_name="Payment Gateways")
 
     use_for_corp = models.BooleanField(_("Use for Corporate Individuals"),
                                        default=True)

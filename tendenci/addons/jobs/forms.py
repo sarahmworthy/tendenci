@@ -15,6 +15,7 @@ from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
 from tendenci.addons.jobs.models import JobPricing
 from tendenci.addons.jobs.utils import get_payment_method_choices, pricing_choices
 from tendenci.apps.user_groups.models import Group
+from tendenci.core.payments.models import PaymentGateway
 
 
 request_duration_defaults = {
@@ -72,7 +73,13 @@ class JobForm(TendenciBaseForm):
     list_type = forms.ChoiceField(initial='regular', choices=(('regular', 'Regular'),
                                                               ('premium', 'Premium'),))
     payment_method = forms.CharField(error_messages={'required': 'Please select a payment method.'})
-    
+    payment_gateway = forms.ModelChoiceField(
+                    label=_('Payment Gateway (for online payment)'),
+                    empty_label=None,
+                    queryset=PaymentGateway.objects.all(),
+                    widget=forms.RadioSelect,
+                    initial=1,
+                )
     contact_email = EmailVerificationField(label=_("Contact email"), required=False)
 
     group = forms.ModelChoiceField(queryset=Group.objects.filter(status=True, status_detail="active"), required=True, empty_label=None)
@@ -160,7 +167,8 @@ class JobForm(TendenciBaseForm):
                       }),
                       ('Payment', {
                       'fields': ['list_type',
-                                 'payment_method'
+                                 'payment_method',
+                                 'payment_gateway',
                                  ],
                         'classes': ['payment_method'],
                       }),

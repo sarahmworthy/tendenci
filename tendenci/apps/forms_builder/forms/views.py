@@ -545,6 +545,7 @@ def form_entry_payment(request, invoice_id, invoice_guid, form_class=BillingForm
             update_invoice_for_entry(invoice, form)
             # redirect to online payment
             if (entry.payment_method.machine_name).lower() == 'credit-card':
+                request.session['payment_gateway'] = entry.payment_gateway
                 return redirect('payment.pay_online', invoice.id, invoice.guid)
             # redirect to invoice page
             return redirect('invoice.view', invoice.id, invoice.guid)

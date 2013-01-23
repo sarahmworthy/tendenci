@@ -442,6 +442,7 @@ class MembershipAppForm(TendenciBaseForm):
             'notes',
             'membership_types',
             'payment_methods',
+            'payment_gateways',
             'use_for_corp',
             'use_captcha',
             'allow_anonymous_view',
@@ -534,7 +535,8 @@ def assign_fields(form, app_field_objs):
             elif obj.field_stype == 'datetimeinput':
                 field.widget.attrs.update({'class': 'datepicker'})
             label_type = []
-            if obj.field_name not in ['payment_method',
+            if obj.field_name not in ['payment_gateway',
+                                      'payment_method',
                                       'membership_type',
                                       'groups']:
                 obj.field_div_class = 'inline-block'
@@ -746,12 +748,19 @@ class MembershipDefault2Form(forms.ModelForm):
 
         if not require_payment:
             del self.fields['payment_method']
+            del self.fields['payment_gateway']
         else:
             payment_method_choices = [(p.pk, p.human_name) for p in membership_app.payment_methods.all()]
             self.fields['payment_method'].empty_label = None
             self.fields['payment_method'].widget = forms.widgets.RadioSelect(
                         choices=payment_method_choices,
                         attrs=self.fields['payment_method'].widget.attrs)
+
+            payment_gateway_choices = [(p.pk, p.name) for p in membership_app.payment_gateways.all()]
+            self.fields['payment_gateway'].empty_label = None
+            self.fields['payment_gateway'].widget = forms.widgets.RadioSelect(
+                        choices=payment_gateway_choices,
+                        attrs=self.fields['payment_gateway'].widget.attrs)
 
         self_fields_keys = self.fields.keys()
 

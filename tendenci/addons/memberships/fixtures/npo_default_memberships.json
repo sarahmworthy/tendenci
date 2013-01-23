@@ -1647,13 +1647,13 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Section 5. Join User Groups",
+            "label": "Section 5. Payment Gateway",
             "order": 73,
             "content_type": null,
             "help_text": "",
             "choices": "",
             "field_name": "",
-            "display": false
+            "display": true
         }
     },
     {
@@ -1666,14 +1666,14 @@
             "description": "",
             "css_class": "",
             "membership_app": 1,
-            "required": false,
-            "label": "User Groups",
+            "required": true,
+            "label": "Payment Gateway",
             "order": 74,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "groups",
-            "display": false
+            "field_name": "payment_gateway",
+            "display": true
         }
     },
     {
@@ -1687,7 +1687,7 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Section 6. Industry",
+            "label": "Section 5. Join User Groups",
             "order": 75,
             "content_type": null,
             "help_text": "",
@@ -1707,12 +1707,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Industry",
+            "label": "User Groups",
             "order": 76,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "industry",
+            "field_name": "groups",
             "display": false
         }
     },
@@ -1727,7 +1727,7 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Section 7. Region",
+            "label": "Section 6. Industry",
             "order": 77,
             "content_type": null,
             "help_text": "",
@@ -1747,12 +1747,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Region",
+            "label": "Industry",
             "order": 78,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "region",
+            "field_name": "industry",
             "display": false
         }
     },
@@ -1767,7 +1767,7 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Section 8. Admin Only",
+            "label": "Section 7. Region",
             "order": 79,
             "content_type": null,
             "help_text": "",
@@ -1787,12 +1787,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Admin Notes",
+            "label": "Region",
             "order": 80,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "admin_notes",
+            "field_name": "region",
             "display": false
         }
     },
@@ -1807,12 +1807,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Member Number",
+            "label": "Section 8. Admin Only",
             "order": 81,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "member_number",
+            "field_name": "",
             "display": false
         }
     },
@@ -1827,12 +1827,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Status",
+            "label": "Admin Notes",
             "order": 82,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "status",
+            "field_name": "admin_notes",
             "display": false
         }
     },
@@ -1847,12 +1847,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Status Detail",
+            "label": "Member Number",
             "order": 83,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "status_detail",
+            "field_name": "member_number",
             "display": false
         }
     },
@@ -1867,12 +1867,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Join Date",
+            "label": "Status",
             "order": 84,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "join_dt",
+            "field_name": "status",
             "display": false
         }
     },
@@ -1887,12 +1887,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Expiration Date",
+            "label": "Status Detail",
             "order": 85,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "expire_dt",
+            "field_name": "status_detail",
             "display": false
         }
     },
@@ -1907,12 +1907,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Renew Date",
+            "label": "Join Date",
             "order": 86,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "renew_dt",
+            "field_name": "join_dt",
             "display": false
         }
     },
@@ -1927,12 +1927,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "application_approved",
+            "label": "Expiration Date",
             "order": 87,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "application_approved",
+            "field_name": "expire_dt",
             "display": false
         }
     },
@@ -1947,12 +1947,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Application Approved Date",
+            "label": "Renew Date",
             "order": 88,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "application_approved_dt",
+            "field_name": "renew_dt",
             "display": false
         }
     },
@@ -1967,12 +1967,12 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Application Denied",
+            "label": "application_approved",
             "order": 89,
             "content_type": null,
             "help_text": "",
             "choices": "",
-            "field_name": "application_denied",
+            "field_name": "application_approved",
             "display": false
         }
     },
@@ -1987,8 +1987,48 @@
             "css_class": "",
             "membership_app": 1,
             "required": false,
-            "label": "Application Approved Denied Date",
+            "label": "Application Approved Date",
             "order": 90,
+            "content_type": null,
+            "help_text": "",
+            "choices": "",
+            "field_name": "application_approved_dt",
+            "display": false
+        }
+    },
+    {
+        "pk": 91,
+        "model": "memberships.membershipappfield",
+        "fields": {
+            "default_value": "",
+            "field_type": "",
+            "admin_only": false,
+            "description": "",
+            "css_class": "",
+            "membership_app": 1,
+            "required": false,
+            "label": "Application Denied",
+            "order": 91,
+            "content_type": null,
+            "help_text": "",
+            "choices": "",
+            "field_name": "application_denied",
+            "display": false
+        }
+    },
+    {
+        "pk": 92,
+        "model": "memberships.membershipappfield",
+        "fields": {
+            "default_value": "",
+            "field_type": "",
+            "admin_only": false,
+            "description": "",
+            "css_class": "",
+            "membership_app": 1,
+            "required": false,
+            "label": "Application Approved Denied Date",
+            "order": 92,
             "content_type": null,
             "help_text": "",
             "choices": "",
