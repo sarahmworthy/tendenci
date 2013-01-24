@@ -81,6 +81,9 @@ class Type(models.Model):
     def __unicode__(self):
         return self.name
 
+    def event_count(self):
+        return self.event_set.count()
+
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         super(Type, self).save(*args, **kwargs)
@@ -254,6 +257,16 @@ class RegConfPricing(models.Model):
     @property
     def registration_has_ended(self):
         if localize_date(datetime.now()) >= localize_date(self.end_dt, from_tz=self.timezone):
+            return True
+        return False
+        
+    @property
+    def registration_has_recently_ended(self):
+        if localize_date(datetime.now()) >= localize_date(self.end_dt, from_tz=self.timezone):
+            delta = localize_date(datetime.now()) - localize_date(self.end_dt, from_tz=self.timezone)
+            # Only include events that is within the 1-2 days window.
+            if delta > timedelta(days=2):
+                return False
             return True
         return False
     
@@ -682,6 +695,10 @@ class Registrant(models.Model):
         else:
             if self.first_name or self.last_name:
                 return self.first_name + ' ' + self.last_name
+
+        if self.name:
+            return self.name
+
         return None
 
     @classmethod
@@ -872,6 +889,7 @@ class Event(TendenciBaseModel):
     timezone = TimeZoneField(_('Time Zone'))
     place = models.ForeignKey('Place', null=True)
     registration_configuration = models.OneToOneField('RegistrationConfiguration', null=True, editable=False)
+    mark_registration_ended = models.BooleanField(_('Registration Ended'), default=False)
     private = models.BooleanField() # hide from lists
     password = models.CharField(max_length=50, blank=True)
     on_weekend = models.BooleanField(default=True, help_text=_("This event occurs on weekends"))
@@ -967,7 +985,10 @@ class Event(TendenciBaseModel):
         )['invoice__total__sum']
 
         # total_sum is the amount of money received when all is said and done
-        return total_sum - self.money_outstanding
+        if total_sum and self.money_outstanding:
+            return total_sum - self.money_outstanding
+        else:
+            return 0
 
     @property
     def money_outstanding(self):
@@ -981,7 +1002,10 @@ class Event(TendenciBaseModel):
         balance_sum = figures['invoice__balance__sum']
         total_sum = figures['invoice__total__sum']
 
-        return total_sum - balance_sum
+        if total_sum and balance_sum:
+            return total_sum - balance_sum
+        else:
+            return 0
 
     def registrants(self, **kwargs):
         """

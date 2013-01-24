@@ -26,8 +26,6 @@ class Group(TendenciBaseModel):
     sync_newsletters = models.BooleanField(_('Sync for newsletters'), default=1)
     description = models.TextField(blank=True)
     auto_respond = models.BooleanField(_('Auto Responder'), default=0)
-    auto_respond_template = models.CharField(_('Auto Responder Template'),
-        help_text=_("Auto Responder Template URL"), max_length=100, blank=True)
     auto_respond_priority = models.FloatField(_('Priority'), blank=True, default=0)
     notes = models.TextField(blank=True)
     members = models.ManyToManyField(User, through='GroupMembership')
@@ -95,6 +93,7 @@ class Group(TendenciBaseModel):
         return (user, created)
         """
         from django.db import IntegrityError
+        from django.db import transaction, connection
 
         try:
             GroupMembership.objects.create(**{
@@ -109,7 +108,12 @@ class Group(TendenciBaseModel):
             })
             return user, True  # created
         except IntegrityError:
+            connection._rollback()
             return user, False
+        except Exception:
+            transaction.rollback()
+            return user, False
+
 
 class GroupMembership(models.Model):
     group = models.ForeignKey(Group)
@@ -141,7 +145,7 @@ class GroupMembership(models.Model):
         verbose_name_plural = "Group Memberships"
 
     @classmethod
-    def add_to_group(cls, *kwargs):
+    def add_to_group(cls, **kwargs):
         """
         Easily add someone to a group, we're setting basic defaults
         e.g. GroupMembership.add_to_group(member=member, group=group)
@@ -155,9 +159,9 @@ class GroupMembership(models.Model):
         return cls.objects.create(
             group=group,
             member=member,
-            creator=editor,
+            creator_id=editor.pk,
             creator_username=editor.username,
-            owner=editor,
+            owner_id=editor.pk,
             owner_username=editor.username,
             status=status,
             status_detail=status_detail
