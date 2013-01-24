@@ -24,7 +24,10 @@ from tendenci.addons.memberships.models import (App,
                                                 AppEntry,
                                                 Membership,
                                                 MembershipType,
-                                                MembershipDefault)
+                                                MembershipDefault,
+                                                MembershipDemographic,
+                                                MembershipApp,
+                                                MembershipAppField)
 from tendenci.core.base.utils import normalize_newline
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.imports.utils import get_unique_username
@@ -148,6 +151,104 @@ def get_membership_type_choices(user, membership_app, renew=False,
         mt_list.append((mt.id, price_display))
 
     return mt_list
+
+
+def get_selected_demographic_fields(membership_app, forms):
+    """
+    Get the selected demographic fields for the app.
+    """
+    demographic_field_dict = dict([(field.name, field) \
+                        for field in MembershipDemographic._meta.fields \
+                        if field.get_internal_type() != 'AutoField'])
+    demographic_field_names = demographic_field_dict.keys()
+    app_fields = MembershipAppField.objects.filter(
+                                membership_app=membership_app,
+                                display=True
+                                ).values(
+                        'label', 'field_name', 'required')
+    selected_fields = []
+    for app_field in app_fields:
+        if app_field['field_name'] in demographic_field_names:
+            field = forms.CharField(
+                    widget=forms.TextInput({'size': 30}),
+                    label=app_field['label'],
+                    required=app_field['required'])
+            selected_fields.append((app_field['field_name'], field))
+    return selected_fields
+
+
+def get_selected_demographic_field_names(membership_app=None):
+    """
+    Get the selected demographic field names.
+    """
+    if not membership_app:
+        membership_app = MembershipApp.objects.current_app()
+    demographic_field_names = [field.name \
+                        for field in MembershipDemographic._meta.fields \
+                        if field.get_internal_type() != 'AutoField']
+    app_field_names = MembershipAppField.objects.filter(
+                                membership_app=membership_app,
+                                display=True
+                                ).values_list('field_name', flat=True)
+    selected_field_names = []
+    for field_name in app_field_names:
+        if field_name in demographic_field_names:
+            selected_field_names.append(field_name)
+    return selected_field_names
+
+
+def membership_rows(user_field_list,
+                    profile_field_list,
+                    demographic_field_list,
+                    membership_field_list,
+                    foreign_keys,
+                    export_status_detail=''):
+    # grab all except the archived
+    memberships = MembershipDefault.objects.filter(
+                                status=True
+                                ).exclude(
+                                status_detail='archive'
+                                )
+    if export_status_detail:
+        if export_status_detail == 'pending':
+            memberships = memberships.filter(
+                        status_detail__icontains='pending'
+                                )
+        else:
+            memberships = memberships.filter(
+                        status_detail=export_status_detail)
+
+    for membership in memberships:
+        row_dict = {}
+        user = membership.user
+        [profile] = Profile.objects.filter(user=user)[:1] or [None]
+        [demographic] = MembershipDemographic.objects.filter(user=user)[:1] or [None]
+
+        for field_name in user_field_list:
+            row_dict[field_name] = get_obj_field_value(field_name, user)
+        if profile:
+            for field_name in profile_field_list:
+                row_dict[field_name] = get_obj_field_value(
+                                                field_name, profile,
+                                                field_name in foreign_keys)
+        if demographic:
+            for field_name in demographic_field_list:
+                row_dict[field_name] = get_obj_field_value(
+                                                field_name, demographic,
+                                                field_name in foreign_keys)
+        for field_name in membership_field_list:
+            row_dict[field_name] = get_obj_field_value(
+                                            field_name, membership,
+                                            field_name in foreign_keys)
+
+        yield row_dict
+
+
+def get_obj_field_value(field_name, obj, is_foreign_key=False):
+    value = getattr(obj, field_name)
+    if value and is_foreign_key:
+        value = value.id
+    return value
 
 
 def has_null_byte(file_path):

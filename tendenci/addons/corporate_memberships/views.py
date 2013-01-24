@@ -76,6 +76,7 @@ from tendenci.addons.corporate_memberships.utils import (
                                          get_indiv_memberships_choices,
                                          corp_membership_rows,
                                          corp_membership_update_perms,
+                                         get_corp_memb_summary,
                                          corp_memb_inv_add, 
                                          dues_rep_emails_list,
                                          corp_memb_update_perms,
@@ -432,6 +433,14 @@ def corpmembership_view(request, id,
     app_fields = list(app_fields.order_by('order'))
 
     if can_edit:
+        app_field = CorpMembershipAppField(label='Join Date',
+                                            field_name='join_dt',
+                                            required=True)
+        app_fields.append(app_field)
+        app_field = CorpMembershipAppField(label='Expiration Date',
+                                            field_name='expiration_dt',
+                                            required=True)
+        app_fields.append(app_field)
         app_field = CorpMembershipAppField(label='Representatives',
                                     field_type='section_break',
                                     admin_only=False)
@@ -510,19 +519,13 @@ def corpmembership_search(request,
             else:
                 q_obj = q_obj_or
 
-        if get_setting('site', 'global', 'searchindex') and query:
-            corp_members = CorpMembership.objects.search(query,
-                                                         user=request.user)
-            if q_obj:
-                corp_members = corp_members.filter(q_obj)
+        if query:
+            corp_members = CorpMembership.objects.filter(
+                                corp_profile__name__icontains=query)
         else:
-            if q_obj:
-                corp_members = CorpMembership.objects.filter(q_obj)
-            else:
-                corp_members = CorpMembership.objects.all()
-            if query:
-                corp_members = corp_members.filter(
-                            corp_profile__name__contains=query)
+            corp_members = CorpMembership.objects.all()
+        if q_obj:
+            corp_members = corp_members.filter(q_obj)
 
     if cm_id:
         corp_members = corp_members.filter(id=cm_id)
@@ -654,8 +657,9 @@ def corpmembership_approve(request, id,
 
             return HttpResponseRedirect(reverse('corpmembership.view',
                                                 args=[corporate_membership.id]))
-
+    field_labels = corporate_membership.get_labels()
     context = {"corporate_membership": corporate_membership,
+               'field_labels': field_labels,
                'indiv_renew_entries': indiv_renew_entries,
                'new_expiration_dt': new_expiration_dt,
                'approve_form': approve_form,
@@ -847,6 +851,7 @@ def roster_search(request,
                   template_name='corporate_memberships/roster_search.html'):
     form = RosterSearchAdvancedForm(request.GET or None)
     if form.is_valid():
+        # cm_id - CorpMembership id
         cm_id = form.cleaned_data['cm_id']
         first_name = form.cleaned_data['first_name']
         last_name = form.cleaned_data['last_name']
@@ -881,7 +886,7 @@ def roster_search(request,
                     corp_profile_id=corp_membership.corp_profile.id)
 
     if request.user.profile.is_superuser or \
-        (corp_membership.allow_edit_by(request.user)):
+        (corp_membership and corp_membership.allow_edit_by(request.user)):
         pass
     else:
         filter_and, filter_or = CorpMembership.get_membership_search_filter(
@@ -1389,6 +1394,22 @@ def index(request,
 
     return render_to_response(template_name, {'corp_app': corp_app},
         context_instance=RequestContext(request))
+
+
+@staff_member_required
+def summary_report(request,
+                template_name='corporate_memberships/reports/summary.html'):
+    """
+    Shows a report of corporate memberships per corporate membership type.
+    """
+    summary, total = get_corp_memb_summary()
+
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {
+        'summary': summary,
+        'total': total,
+        }, context_instance=RequestContext(request))
 
 
 # TO BE DELETED
