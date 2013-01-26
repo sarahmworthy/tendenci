@@ -11,7 +11,8 @@ from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
 from tendenci.core.site_settings.utils import get_setting
-from tendenci.core.theme.utils import get_theme_root
+from tendenci.core.theme.utils import get_theme_root, get_theme
+from tendenci.apps.theme_editor.utils import qstr_is_file, get_file_list
 
 STOP_WORDS = ['able','about','across','after','all','almost','also','am',
               'among','an','and','any','are','as','at','be','because',
@@ -471,18 +472,13 @@ def get_template_list():
     directory that begin with 'default-'
     """
     file_list = []
-    theme = get_setting('module', 'theme_editor', 'theme')
-    if hasattr(settings, 'USE_S3_STORAGE') and settings.USE_S3_STORAGE:
-        theme_dir = settings.ORIGINAL_THEMES_DIR
+    if settings.USE_S3_THEME:
+        theme_root = os.path.join(settings.THEME_S3_PATH, get_theme())
     else:
-        theme_dir = settings.THEMES_DIR
+        theme_root = os.path.join(settings.ORIGINAL_THEMES_DIR, get_theme())
 
-    current_dir = os.path.join(theme_dir, theme, template_directory)
-
-    if os.path.isdir(current_dir):
-        item_list = os.listdir(current_dir)
-    else:
-        item_list = []
+    current_dir = os.path.join(theme_root, template_directory)
+    item_list, extra_list = get_file_list(template_directory, ROOT_DIR=theme_root)
 
     for item in item_list:
         current_item = os.path.join(current_dir, item)
@@ -500,8 +496,13 @@ def check_template(filename):
     """
     Check to see if the file exists in the theme root
     """
-    current_file = os.path.join(settings.ORIGINAL_THEMES_DIR, THEME_ROOT, template_directory, filename)
-    return os.path.isfile(current_file)
+    current_file = os.path.join(template_directory, filename)
+    if settings.USE_S3_THEME:
+        theme_root = os.path.join(settings.THEME_S3_PATH, get_theme())
+    else:
+        theme_root = os.path.join(settings.ORIGINAL_THEMES_DIR, get_theme())
+    return qstr_is_file(current_file, ROOT_DIR=theme_root)
+
 
 def template_exists(template):
     """
