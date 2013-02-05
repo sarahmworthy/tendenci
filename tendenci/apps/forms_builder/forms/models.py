@@ -91,6 +91,52 @@ class Form(TendenciBaseModel):
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
     payment_methods = models.ManyToManyField("payments.PaymentMethod", blank=True)
 
+    first_name = models.BooleanField(_('First Name'), default=False)
+    last_name = models.BooleanField(_('Last Name'), default=False)
+    email = models.BooleanField(_('Email'), default=False)
+    title = models.BooleanField(_('Position Title'), default=False)
+    url = models.BooleanField(_('Position Title'), default=False)
+    comments = models.BooleanField(_('Comments'), default=False)
+
+    address = models.BooleanField(_('Address'), default=False)
+    city = models.BooleanField(_('City'), default=False)
+    state = models.BooleanField(_('State'), default=False)
+    zipcode = models.BooleanField(_('Zip Code'), default=False)
+    country = models.BooleanField(_('Country'), default=False)
+    phone = models.BooleanField(_('Phone'), default=False)
+
+    company_name = models.BooleanField(_('Company Name'), default=False)
+    company_address = models.BooleanField(_('Company Address'), default=False)
+    company_city = models.BooleanField(_('Company City'), default=False)
+    company_state = models.BooleanField(_('Company State'), default=False)
+    company_zipcode = models.BooleanField(_('Company Zip Code'), default=False)
+    company_country = models.BooleanField(_('Company Country'), default=False)
+    company_phone = models.BooleanField(_('Company Phone'), default=False)
+
+    # popular field
+    first_name = models.CharField(max_length=200, blank=True)
+    last_name = models.CharField(max_length=200, blank=True)
+    email = models.CharField(max_length=200, blank=True)
+    title = models.CharField(max_length=500, blank=True)
+    url = models.URLField(blank=True)
+    comments = models.TextField(blank=True)
+
+    address = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    zipcode = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+
+    company_address = models.CharField(max_length=100, blank=True)
+    company_city = models.CharField(max_length=100, blank=True)
+    company_state = models.CharField(max_length=100, blank=True)
+    company_zipcode = models.CharField(max_length=100, blank=True)
+    company_country = models.CharField(max_length=100, blank=True)
+    company_phone = models.CharField(max_length=50, blank=True)
+
+
+
     perms = generic.GenericRelation(ObjectPermission,
         object_id_field="object_id", content_type_field="content_type")
 
@@ -231,6 +277,29 @@ class FormEntry(models.Model):
     creator = models.ForeignKey(User, related_name="formentry_creator",  null=True, on_delete=models.SET_NULL)
     create_dt = models.DateTimeField(auto_now_add=True)
     update_dt = models.DateTimeField(auto_now=True)
+
+    # popular field
+    first_name = models.CharField(max_length=200, blank=True)
+    last_name = models.CharField(max_length=200, blank=True)
+    email = models.CharField(max_length=200, blank=True)
+    title = models.CharField(max_length=500, blank=True)
+    url = models.URLField(blank=True)
+    comments = models.TextField(blank=True)
+
+    address = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    zipcode = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+
+    company_name = models.CharField(max_length=500, blank=True)
+    company_address = models.CharField(max_length=100, blank=True)
+    company_city = models.CharField(max_length=100, blank=True)
+    company_state = models.CharField(max_length=100, blank=True)
+    company_zipcode = models.CharField(max_length=100, blank=True)
+    company_country = models.CharField(max_length=100, blank=True)
+    company_phone = models.CharField(max_length=50, blank=True)
 
     class Meta:
         verbose_name = _("Form entry")
