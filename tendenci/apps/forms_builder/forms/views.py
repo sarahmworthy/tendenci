@@ -389,6 +389,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
 
     if request.method == "POST":
         if form_for_form.is_valid():
+
             entry = form_for_form.save()
             entry.entry_path = request.POST.get("entry_path", "")
             if request.user.is_anonymous():
@@ -397,24 +398,28 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                     firstnamefield = entry.get_first_name()
                     lastnamefield = entry.get_last_name()
                     phonefield = entry.get_phone_number()
-                    password = ''
-                    for i in range(0, 10):
-                        password += random.choice(string.ascii_lowercase + string.ascii_uppercase)
 
-                    user_list = User.objects.filter(email=emailfield).order_by('-last_login')
+                    user_list = User.objects.filter(
+                        email=emailfield).order_by('-last_login')
+
                     if user_list:
                         anonymous_creator = user_list[0]
                     else:
-                        anonymous_creator = User(username=emailfield[:30], email=emailfield, 
-                                                 first_name=firstnamefield, last_name=lastnamefield)
-                        anonymous_creator.set_password(password)
+                        anonymous_creator = User(
+                            username=emailfield[:30],
+                            email=emailfield,
+                            first_name=firstnamefield,
+                            last_name=lastnamefield
+                        )
+
                         anonymous_creator.is_active = False
                         anonymous_creator.save()
                         anonymous_profile = Profile(user=anonymous_creator, owner=anonymous_creator,
                                                     creator=anonymous_creator, phone=phonefield)
                         anonymous_profile.save()
                     entry.creator = anonymous_creator
-            else:
+
+            else:  # user is authenticated
                 entry.creator = request.user
             entry.save()
 
@@ -422,7 +427,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             subject = generate_email_subject(form, entry)
             email_headers = {}  # content type specified below
             if form.email_from:
-                email_headers.update({'Reply-To':form.email_from})
+                email_headers.update({'Reply-To': form.email_from})
 
             # Email to submitter
             # fields aren't included in submitter body to prevent spam
@@ -504,6 +509,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             if form.completion_url:
                 return redirect(form.completion_url)
             return redirect("form_sent", form.slug)
+
     # set form's template to default if no template or template doesn't exist
     if not form.template or not template_exists(form.template):
         form.template = "default.html"
@@ -513,6 +519,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
         'form_template': form.template,
     }
     return render_to_response(template, context, RequestContext(request))
+
 
 def form_sent(request, slug, template="forms/form_sent.html"):
     """
