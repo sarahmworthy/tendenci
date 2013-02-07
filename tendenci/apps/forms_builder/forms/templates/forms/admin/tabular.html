@@ -126,32 +126,25 @@
                 alternatingRows(row);
             })
         });
-        
-        
-        
-        
+
         var has_mapped_field = function(field){
             var field_name = $(field).attr('name');
             var mapped_field = $(".inline-group tr.dynamic-fields")
-                                .find('.map_to_field select option[value="' + field_name + '"]:selected');
-            if (mapped_field.length > 0){
-                return true;
-            }else{
-                return false;
-            }
+            .find('.field_function select option[value="' +
+            field_name + '"]:selected');
+            return (mapped_field.length > 0);
         }
-        
+
         var get_mapped_row = function(field){
             var field_name = $(field).attr('name');
             var mapped_field = $(".inline-group tr.dynamic-fields")
-                                .find('.map_to_field select option[value="' + field_name + '"]:selected');
+            .find('.field_function select option[value="' +
+            field_name + '"]:selected');
             return $(mapped_field).closest('tr.dynamic-fields');
-            
         }
         
         var addMappedField = function(field){
-            var add_btn = $('.add-row a');
-            $(add_btn).trigger('click');
+            $('#fields-group .add-row a').click();
             var template = $("#{{ inline_admin_formset.formset.prefix }}-empty");
             var row_added = $(template).prev();
             
@@ -165,10 +158,10 @@
             
             // remove the error message for field type
             $(row_added).find('.field_type ul.errorlist').remove();
-            
+
             // select for map to user field
-            $(row_added).find('.map_to_field select')
-                .find('option[value="' + field_name + '"]').attr('selected', 'selected');
+            $(row_added).find('.field_function select')
+            .find('option[value="' + field_name + '"]').attr('selected', 'selected');
             
             // select for field type & choices  
             var field_type = 'CharField';
@@ -183,6 +176,7 @@
                 
                 $(row_added).find('.choices input[type="text"]').attr('value', 'Vegetarian,Non-Vegetarian');
             }
+
             $(row_added).find('.field_type select option[value="' + field_type + '"]').attr('selected', 'selected');
             
             // check display on roster
@@ -190,8 +184,8 @@
             if (field_name !== 'first_name' && field_name !== 'last_name' && field_name !== 'email'){
                 $(row_added).find('.required input[type="checkbox"]').removeAttr('checked'); 
             }
-            
-            if (field_name == 'first_name' || field_name == 'last_name' || field_name == 'email'){
+
+            if (['first_name','last_name','email'].indexOf(field_name) >= 0) {
                 $(field).attr('disabled', true);
             }
             
@@ -225,7 +219,7 @@
         var deleteMappedField = function(field){
             var field_name = $(field).attr('name');
             
-            var map_to_option = $('.map_to_field select option[value="' + field_name + '"]:selected');
+            var map_to_option = $('.field_function select option[value="' + field_name + '"]:selected');
             if (map_to_option){
                 var delete_btn = $(map_to_option).closest('tr').find('td.delete .inline-deletelink');
                 if (delete_btn.length > 0){
@@ -261,39 +255,36 @@
             
         }
         
-        $('.mapped-fields .form-row .field-box').css({'width': '150px'});
-        $('.mapped-fields .form-row label').css({'color': '#01437D'});
+        $('.predefined-fields label').css({'color': '#01437D'});
         $('.tabular td.choices input[type=text]').css({'width': '10em'});
         $('.tabular td.default input[type=text]').css({'width': '5em'});
-        // lock the dropdown of Map to User field
-       $('.map_to_field select').attr('disabled', true);
+
+        // disable field-function dropdowns
+       $('.field_function select').attr('disabled', true);
         
         var existing_rows = $('.inline-group tr.dynamic-fields');
         if (existing_rows.length == 0){
             // initialize
             var field;
-            var myfields = ['#id_first_name', '#id_last_name', '#id_email', 
-                            '#id_company_name', '#id_phone', '#id_comments'];
+            var myfields = ['#id_first_name', '#id_last_name', '#id_email'];
             for (var i=0; i<myfields.length; i++){
                 field = $(myfields[i]);
                 addMappedField(field);
-
                 $(field).attr('checked', 'checked');
             }
 
-        }else{
+        } else {
             var myfields = ['#id_first_name', '#id_last_name', '#id_email'];
             for (var i=0; i<myfields.length; i++){
                 if (has_mapped_field($(myfields[i]))){
                     $(myfields[i]).attr('disabled', true);
                 }
-                
             }
         }
     
         
         // field checkboxes on change
-        $('.mapped-fields .form-row input[type="checkbox"]').change(function(){
+        $('.predefined-fields .form-row input[type="checkbox"]').change(function(){
             var $this = $(this);
             if ($this.is(':checked')){
                 if (!has_mapped_field($this)){
@@ -310,18 +301,20 @@
             }
         });
         
-        // disable the delete buttons for mapped fields
+        // disable delete option
         $(".inline-group tr.dynamic-fields").each(function(){
-            var $this = $(this);
-            var map_to_value = $(this).find('.map_to_field select option:selected').attr('value');
+            var map_to_value = $(this)
+            .find('.field_function select option:selected').attr('value');
+
             if (map_to_value !==''){
                 $(this).find('td.delete input[type="checkbox"]').attr('disabled', true);
             }
+
         });
         
         // form on submit
         $('input[type="submit"]').click(function(){
-            $('.map_to_field select').removeAttr('disabled');
+            $('.field_function select').removeAttr('disabled');
             $('#id_first_name').removeAttr('disabled');
             $('#id_last_name').removeAttr('disabled');
             $('#id_email').removeAttr('disabled');
