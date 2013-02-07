@@ -213,7 +213,7 @@ class FormAdminForm(TendenciBaseForm):
                   'intro',
                   'response',
                   'template',
-                  'send_email', # removed per ed's request, added back per Aaron's request 2011-10-14
+                  'send_email',  # removed per ed's request, added back per Aaron's request 2011-10-14
                   'email_text',
                   'subject_template',
                   'completion_url',
@@ -228,6 +228,26 @@ class FormAdminForm(TendenciBaseForm):
                   'custom_payment',
                   'recurring_payment',
                   'payment_methods',
+
+                  'first_name',
+                  'last_name',
+                  'email',
+                  'position_title',
+                  'url',
+                  'comments',
+                  'address',
+                  'city',
+                  'state',
+                  'zipcode',
+                  'country',
+                  'phone',
+                  'company_name',
+                  'company_address',
+                  'company_city',
+                  'company_state',
+                  'company_zipcode',
+                  'company_country',
+                  'company_phone',
                  )
 
     def __init__(self, *args, **kwargs): 
