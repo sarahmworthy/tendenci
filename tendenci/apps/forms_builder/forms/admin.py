@@ -49,6 +49,7 @@ class FieldAdmin(admin.TabularInline):
     form = FieldAdminForm
     extra = 0
     ordering = ("position",)
+    template = "forms/admin/tabular.html"
 
 
 class FormAdmin(TendenciBaseModelAdmin):
@@ -57,10 +58,8 @@ class FormAdmin(TendenciBaseModelAdmin):
     list_display = ("title", "id", "intro", "email_from", "email_copies",
         "admin_link_export", "admin_link_view")
     list_display_links = ("title",)
-#    list_filter = ("status",)
     search_fields = ("title", "intro", "response", "email_from",
         "email_copies")
-#    radio_fields = {"status": admin.HORIZONTAL}
     prepopulated_fields = {'slug': ['title']}
     fieldsets = (
         (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template")}),
@@ -75,6 +74,7 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status',
             'status_detail'
         )}),
+        ("Predefined Fields", {"fields": (("first_name", "last_name", "email", "position_title"), ("address", "city", "state", "zipcode", "country", "phone", "url", "comments"), ("company_name", "company_address", "company_city", "company_state", "company_zipcode", "company_country", "company_phone"))}),
         (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods")}),
     )
 
@@ -83,10 +83,7 @@ class FormAdmin(TendenciBaseModelAdmin):
     class Media:
         js = (
             '%sjs/jquery-1.6.2.min.js' % settings.STATIC_URL,
-            #'%sjs/jquery_ui_all_custom/jquery-ui-1.8.5.custom.min.js' % settings.STATIC_URL,
-            #'https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js',
             'https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js',
-            '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
             '%sjs/admin/form-fields-inline-ordering.js' % settings.STATIC_URL,
             '%sjs/admin/form-field-dynamic-hiding.js' % settings.STATIC_URL,
         )
