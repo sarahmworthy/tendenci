@@ -8,62 +8,62 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
+        # Adding field 'Form.first_name'
+        db.add_column('forms_form', 'first_name', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.last_name'
+        db.add_column('forms_form', 'last_name', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.email'
+        db.add_column('forms_form', 'email', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.position_title'
+        db.add_column('forms_form', 'position_title', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.url'
+        db.add_column('forms_form', 'url', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.comments'
+        db.add_column('forms_form', 'comments', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.address'
+        db.add_column('forms_form', 'address', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.city'
+        db.add_column('forms_form', 'city', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.state'
+        db.add_column('forms_form', 'state', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.zipcode'
+        db.add_column('forms_form', 'zipcode', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.country'
+        db.add_column('forms_form', 'country', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.phone'
+        db.add_column('forms_form', 'phone', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
         # Adding field 'Form.company_name'
         db.add_column('forms_form', 'company_name', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
-        # Adding field 'Form.first_name'
-        db.add_column('forms_form', 'first_name', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
-
-        # Adding field 'Form.last_name'
-        db.add_column('forms_form', 'last_name', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
-
-        # Adding field 'Form.email'
-        db.add_column('forms_form', 'email', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
-
-        # Adding field 'Form.url'
-        db.add_column('forms_form', 'url', self.gf('django.db.models.fields.URLField')(default='', max_length=200, blank=True), keep_default=False)
-
-        # Adding field 'Form.comments'
-        db.add_column('forms_form', 'comments', self.gf('django.db.models.fields.TextField')(default='', blank=True), keep_default=False)
-
-        # Adding field 'Form.address'
-        db.add_column('forms_form', 'address', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
-
-        # Adding field 'Form.city'
-        db.add_column('forms_form', 'city', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
-
-        # Adding field 'Form.state'
-        db.add_column('forms_form', 'state', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
-
-        # Adding field 'Form.zipcode'
-        db.add_column('forms_form', 'zipcode', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
-
-        # Adding field 'Form.country'
-        db.add_column('forms_form', 'country', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
-
-        # Adding field 'Form.phone'
-        db.add_column('forms_form', 'phone', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True), keep_default=False)
-
         # Adding field 'Form.company_address'
-        db.add_column('forms_form', 'company_address', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
+        db.add_column('forms_form', 'company_address', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'Form.company_city'
-        db.add_column('forms_form', 'company_city', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
+        db.add_column('forms_form', 'company_city', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'Form.company_state'
-        db.add_column('forms_form', 'company_state', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
+        db.add_column('forms_form', 'company_state', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'Form.company_zipcode'
-        db.add_column('forms_form', 'company_zipcode', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
+        db.add_column('forms_form', 'company_zipcode', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'Form.company_country'
-        db.add_column('forms_form', 'company_country', self.gf('django.db.models.fields.CharField')(default='', max_length=100, blank=True), keep_default=False)
+        db.add_column('forms_form', 'company_country', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'Form.company_phone'
-        db.add_column('forms_form', 'company_phone', self.gf('django.db.models.fields.CharField')(default='', max_length=50, blank=True), keep_default=False)
-
-        # Changing field 'Form.title'
-        db.alter_column('forms_form', 'title', self.gf('django.db.models.fields.CharField')(max_length=500))
+        db.add_column('forms_form', 'company_phone', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'FormEntry.first_name'
         db.add_column('forms_formentry', 'first_name', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
@@ -74,8 +74,8 @@ class Migration(SchemaMigration):
         # Adding field 'FormEntry.email'
         db.add_column('forms_formentry', 'email', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True), keep_default=False)
 
-        # Adding field 'FormEntry.title'
-        db.add_column('forms_formentry', 'title', self.gf('django.db.models.fields.CharField')(default='', max_length=500, blank=True), keep_default=False)
+        # Adding field 'FormEntry.position_title'
+        db.add_column('forms_formentry', 'position_title', self.gf('django.db.models.fields.CharField')(default='', max_length=500, blank=True), keep_default=False)
 
         # Adding field 'FormEntry.url'
         db.add_column('forms_formentry', 'url', self.gf('django.db.models.fields.URLField')(default='', max_length=200, blank=True), keep_default=False)
@@ -125,9 +125,6 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         
-        # Deleting field 'Form.company_name'
-        db.delete_column('forms_form', 'company_name')
-
         # Deleting field 'Form.first_name'
         db.delete_column('forms_form', 'first_name')
 
@@ -136,6 +133,9 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Form.email'
         db.delete_column('forms_form', 'email')
+
+        # Deleting field 'Form.position_title'
+        db.delete_column('forms_form', 'position_title')
 
         # Deleting field 'Form.url'
         db.delete_column('forms_form', 'url')
@@ -161,6 +161,9 @@ class Migration(SchemaMigration):
         # Deleting field 'Form.phone'
         db.delete_column('forms_form', 'phone')
 
+        # Deleting field 'Form.company_name'
+        db.delete_column('forms_form', 'company_name')
+
         # Deleting field 'Form.company_address'
         db.delete_column('forms_form', 'company_address')
 
@@ -179,9 +182,6 @@ class Migration(SchemaMigration):
         # Deleting field 'Form.company_phone'
         db.delete_column('forms_form', 'company_phone')
 
-        # Changing field 'Form.title'
-        db.alter_column('forms_form', 'title', self.gf('django.db.models.fields.CharField')(max_length=100))
-
         # Deleting field 'FormEntry.first_name'
         db.delete_column('forms_formentry', 'first_name')
 
@@ -191,8 +191,8 @@ class Migration(SchemaMigration):
         # Deleting field 'FormEntry.email'
         db.delete_column('forms_formentry', 'email')
 
-        # Deleting field 'FormEntry.title'
-        db.delete_column('forms_formentry', 'title')
+        # Deleting field 'FormEntry.position_title'
+        db.delete_column('forms_formentry', 'position_title')
 
         # Deleting field 'FormEntry.url'
         db.delete_column('forms_formentry', 'url')
@@ -256,7 +256,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 5, 10, 30, 8, 820618)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 5, 12, 25, 24, 812183)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -264,7 +264,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 5, 10, 30, 8, 820516)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 5, 12, 25, 24, 812093)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -330,53 +330,54 @@ class Migration(SchemaMigration):
         },
         'forms.form': {
             'Meta': {'object_name': 'Form'},
-            'address': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            'address': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_anonymous_view': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'allow_member_edit': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_member_view': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_user_edit': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allow_user_view': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'city': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'comments': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'company_address': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'company_city': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'company_country': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            'city': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'comments': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'company_address': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'company_city': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'company_country': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'company_name': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'company_phone': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'company_state': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'company_zipcode': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            'company_phone': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'company_state': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'company_zipcode': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'completion_url': ('django.db.models.fields.URLField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
-            'country': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            'country': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'forms_form_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
             'creator_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'custom_payment': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'email': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
+            'email': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'email_copies': ('django.db.models.fields.CharField', [], {'max_length': '2000', 'blank': 'True'}),
             'email_from': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'email_text': ('django.db.models.fields.TextField', [], {'default': "''", 'max_length': '2000', 'blank': 'True'}),
             'entity': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'forms_form_entity'", 'null': 'True', 'blank': 'True', 'to': "orm['entities.Entity']"}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
+            'first_name': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'intro': ('django.db.models.fields.TextField', [], {'max_length': '2000', 'blank': 'True'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
+            'last_name': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'forms_form_owner'", 'null': 'True', 'to': "orm['auth.User']"}),
             'owner_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'payment_methods': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['payments.PaymentMethod']", 'symmetrical': 'False', 'blank': 'True'}),
-            'phone': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
+            'phone': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'position_title': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'recurring_payment': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'response': ('django.db.models.fields.TextField', [], {'max_length': '2000', 'blank': 'True'}),
             'send_email': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '100', 'db_index': 'True'}),
-            'state': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            'state': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'status_detail': ('django.db.models.fields.CharField', [], {'default': "'active'", 'max_length': '50'}),
             'subject_template': ('django.db.models.fields.CharField', [], {'default': "'[title] - [first name]  [last name] - [phone]'", 'max_length': '200', 'null': 'True', 'blank': 'True'}),
             'template': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '500', 'blank': 'True'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'url': ('django.db.models.fields.URLField', [], {'max_length': '200', 'blank': 'True'}),
-            'zipcode': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'})
+            'url': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'zipcode': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'forms.formentry': {
             'Meta': {'object_name': 'FormEntry'},
@@ -402,9 +403,9 @@ class Migration(SchemaMigration):
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
             'payment_method': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['payments.PaymentMethod']", 'null': 'True'}),
             'phone': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
+            'position_title': ('django.db.models.fields.CharField', [], {'max_length': '500', 'blank': 'True'}),
             'pricing': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['forms.Pricing']", 'null': 'True'}),
             'state': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '500', 'blank': 'True'}),
             'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'url': ('django.db.models.fields.URLField', [], {'max_length': '200', 'blank': 'True'}),
             'zipcode': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'})
