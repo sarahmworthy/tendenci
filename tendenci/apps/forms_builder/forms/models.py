@@ -35,11 +35,27 @@ FIELD_CHOICES = (
 )
 
 FIELD_FUNCTIONS = (
-    ("GroupSubscription", _("Subscribe to Group")),
-    ("EmailFirstName", _("First Name")),
-    ("EmailLastName", _("Last Name")),
-    ("EmailFullName", _("Full Name")),
-    ("EmailPhoneNumber", _("Phone Number")),
+    ("group_subscription", _("Subscribe to Group")),
+    ("first_name", _("First Name")),
+    ("last_name", _("Last Name")),
+    ("email", _("Email")),
+
+    ("address", _("Address")),
+    ("city", _("City")),
+    ("state", _("State")),
+    ("zip_code", _("Zip Code")),
+    ("country", _("Country")),
+    ("phone", _("Phone")),
+    ("position_title", _("Position Title")),
+    ("comments", _("Comments")),
+
+    ("company_name", _("Company Name")),
+    ("company_address", _("Company Address")),
+    ("company_city", _("Company City")),
+    ("company_state", _("Company State")),
+    ("company_zip_code", _("Company Zip Code")),
+    ("company_country", _("Company Country")),
+    ("company_phone", _("Company Phone")),
 )
 
 BILLING_PERIOD_CHOICES = (
@@ -174,7 +190,7 @@ class Field(models.Model):
     "GroupSubscription"
     - Subscribes form entries to the group specified
     - Required to be a BooleanField
-    "EmailFirstName", "EmailLastName", "EmailPhoneNumber", "EmailFullName"
+    "first_name", "last_name", "phone_number"
     - Markers for specific fields that need to be referenced in emails
     - Required to be a CharField
     - Includes their respective values to the email's subject
@@ -222,7 +238,7 @@ class Field(models.Model):
         return field_widget
 
     def execute_function(self, entry, value, user=None):
-        if self.field_function == "GroupSubscription":
+        if self.field_function == "group_subscription":
             if value:
                 for val in self.function_params.split(','):
                     group = Group.objects.get(name=val)
