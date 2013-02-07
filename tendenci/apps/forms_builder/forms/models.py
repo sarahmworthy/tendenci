@@ -112,7 +112,7 @@ class Form(TendenciBaseModel):
     last_name = models.BooleanField(_('Last Name'), default=False)
     email = models.BooleanField(_('Email'), default=False)
     position_title = models.BooleanField(_('Position Title'), default=False)
-    url = models.BooleanField(_('Position Title'), default=False)
+    url = models.BooleanField(_('URL'), default=False)
     comments = models.BooleanField(_('Comments'), default=False)
 
     address = models.BooleanField(_('Address'), default=False)
@@ -198,11 +198,10 @@ class Field(models.Model):
 
     form = models.ForeignKey("Form", related_name="fields")
     label = models.CharField(_("Label"), max_length=LABEL_MAX_LENGTH)
-    field_type = models.CharField(_("Type"), choices=FIELD_CHOICES,
-        max_length=64)
-    field_function = models.CharField(_("Special Functionality"),
+    field_function = models.CharField(_('Field Function'),
         choices=FIELD_FUNCTIONS, max_length=64, null=True, blank=True)
-    function_params = models.CharField(_("Group Name or Names"),
+    field_type = models.CharField(_("Type"), choices=FIELD_CHOICES, max_length=64)
+    function_params = models.CharField(_("Group Name(s)"),
         max_length=100, null=True, blank=True, help_text="Comma separated if more than one")
     required = models.BooleanField(_("Required"), default=True)
     visible = models.BooleanField(_("Visible"), default=True)
@@ -217,7 +216,6 @@ class Field(models.Model):
     class Meta:
         verbose_name = _("Field")
         verbose_name_plural = _("Fields")
-        #order_with_respect_to = "form"
         ordering = ('position',)
 
     def __unicode__(self):
