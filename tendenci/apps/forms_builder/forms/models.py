@@ -373,7 +373,7 @@ class FormEntry(models.Model):
 
         return (name, email)
 
-    def get_value_of(self, field_function):
+    def get(self, field_function):
         """
         Returns the value of the a field entry based
         on the field_function specified
@@ -381,7 +381,7 @@ class FormEntry(models.Model):
         for entry in self.fields.all():
             if entry.field.field_function == field_function:
                 return entry.value
-        return ''
+        return u''
 
     def get_type_of(self, field_type):
         """
@@ -391,19 +391,19 @@ class FormEntry(models.Model):
         for entry in self.fields.all():
             if entry.field.field_type.lower() == field_type:
                 return entry.value
-        return ''
+        return u''
 
     def get_first_name(self):
-        return self.get_value_of("EmailFirstName")
+        return self.get("first_name")
 
     def get_last_name(self):
-        return self.get_value_of("EmailLastName")
+        return self.get("last_name")
 
     def get_full_name(self):
-        return self.get_value_of("EmailFullName")
+        return self.get("full_name")
 
     def get_phone_number(self):
-        return self.get_value_of("EmailPhoneNumber")
+        return self.get("phone")
 
     def get_email_address(self):
         return self.get_type_of("emailverificationfield")

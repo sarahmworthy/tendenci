@@ -44,6 +44,7 @@ def generate_submitter_email_body(entry, form_for_form):
 
     return output
 
+
 def generate_email_subject(form, form_entry):
     """
         Generates email subject from subject template
@@ -62,30 +63,29 @@ def generate_email_subject(form, form_entry):
             else:
                 p = re.compile('\[%s\]' % label, re.IGNORECASE)
             subject = p.sub(value, subject)
-            
+
         # title
         p = re.compile('\[title\]', re.IGNORECASE)
         subject = p.sub(form.title, subject)
-            
+
         # replace those brackets with blank string
         p = re.compile('(-\s+)?\[[\d\D\s\S\w\W]*?\]')
         subject = p.sub('', subject)
-    
+
     else:
         subject = "%s:" % (form.title)
-        if form_entry.get_first_name():
-            subject = "%s %s" % (subject, form_entry.get_first_name())
+        if form_entry.get('first_name'):
+            subject = "%s %s" % (subject, form_entry.get('first_name'))
         if form_entry.get_last_name():
-            subject = "%s %s" % (subject, form_entry.get_last_name())
+            subject = "%s %s" % (subject, form_entry.get('last_name'))
         if form_entry.get_full_name():
-            subject = "%s %s" % (subject, form_entry.get_full_name())
+            subject = "%s %s" % (subject, form_entry.get('full_name'))
         if form_entry.get_phone_number():
-            subject = "%s - %s" % (subject, form_entry.get_phone_number())
+            subject = "%s - %s" % (subject, form_entry.get('phone'))
         if form_entry.get_email_address():
-            subject = "%s - %s" % (subject, form_entry.get_email_address())
-        
+            subject = "%s - %s" % (subject, form_entry.get('email'))
     return subject
-    
+
 
 def make_invoice_for_entry(entry, **kwargs):
     """

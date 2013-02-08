@@ -391,33 +391,41 @@ def form_detail(request, slug, template="forms/form_detail.html"):
         if form_for_form.is_valid():
 
             entry = form_for_form.save()
-            entry.entry_path = request.POST.get("entry_path", "")
+            entry.entry_path = request.POST.get('entry_path', u'')
+
             if request.user.is_anonymous():
                 if entry.get_email_address():
-                    emailfield = entry.get_email_address()
-                    firstnamefield = entry.get_first_name()
-                    lastnamefield = entry.get_last_name()
-                    phonefield = entry.get_phone_number()
+
+                    anon_email = entry.get('email')
+                    anon_fn = entry.get('first_name')
+                    anon_ln = entry.get('last_name')
+                    anon_phone = entry.get('phone')
 
                     user_list = User.objects.filter(
-                        email=emailfield).order_by('-last_login')
+                        email=anon_email).order_by('-last_login')
 
                     if user_list:
-                        anonymous_creator = user_list[0]
+                        anon = user_list[0]
                     else:
-                        anonymous_creator = User(
-                            username=emailfield[:30],
-                            email=emailfield,
-                            first_name=firstnamefield,
-                            last_name=lastnamefield
+                        # create user ------------------
+                        anon = User(
+                            username=anon_email[:30],
+                            email=anon_email,
+                            first_name=anon_fn,
+                            last_name=anon_ln
                         )
 
-                        anonymous_creator.is_active = False
-                        anonymous_creator.save()
-                        anonymous_profile = Profile(user=anonymous_creator, owner=anonymous_creator,
-                                                    creator=anonymous_creator, phone=phonefield)
-                        anonymous_profile.save()
-                    entry.creator = anonymous_creator
+                        anon.is_active = False
+                        anon.save()
+                        anon_profile = Profile(
+                            user=anon,
+                            owner=anon,
+                            creator=anon,
+                            phone=anon_phone
+                        )
+
+                        anon_profile.save()
+                    entry.creator = anon
 
             else:  # user is authenticated
                 entry.creator = request.user
