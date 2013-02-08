@@ -429,6 +429,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
 
             else:  # user is authenticated
                 entry.creator = request.user
+
             entry.save()
 
             # Email
