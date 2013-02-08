@@ -153,22 +153,35 @@ class FormForForm(forms.ModelForm):
         entry.form = self.form
         entry.entry_time = datetime.now()
         entry.save()
+
         for field in self.form_fields:
-            field_key = "field_%s" % field.id
+
+            field_key = "field_%s" % field.pk
+
             value = self.cleaned_data[field_key]
+
             if value and self.fields[field_key].widget.needs_multipart_form:
                 value = default_storage.save(join("forms", str(uuid4()), value.name), value)
 
             # if the value is a list convert is to a comma delimited string
             if isinstance(value, list):
                 value = ','.join(value)
-            if not value:
-                value = u''
-            field_entry = FieldEntry(field_id=field.id, entry=entry, value=value)
-            if self.user.is_authenticated():
-                field_entry.save(user=self.user)
+
+            value = value or u''
+
+            if field.field_function:
+                setattr(entry, field.field_function, value)
             else:
-                field_entry.save()
+                field_entry = FieldEntry(
+                    field_id=field.id,
+                    entry=entry,
+                    value=value
+                )
+
+                if self.user.is_authenticated():
+                    field_entry.save(user=self.user)
+                else:
+                    field_entry.save()
 
         # save selected pricing and payment method if any
         if (self.form.custom_payment or self.form.recurring_payment) and self.form.pricing_set.all():

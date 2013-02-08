@@ -39,11 +39,12 @@ FIELD_FUNCTIONS = (
     ("first_name", _("First Name")),
     ("last_name", _("Last Name")),
     ("email", _("Email")),
+    ("url", _("URL")),
 
     ("address", _("Address")),
     ("city", _("City")),
     ("state", _("State")),
-    ("zip_code", _("Zip Code")),
+    ("zipcode", _("Zip Code")),
     ("country", _("Country")),
     ("phone", _("Phone")),
     ("position_title", _("Position Title")),
@@ -53,7 +54,7 @@ FIELD_FUNCTIONS = (
     ("company_address", _("Company Address")),
     ("company_city", _("Company City")),
     ("company_state", _("Company State")),
-    ("company_zip_code", _("Company Zip Code")),
+    ("company_zipcode", _("Company Zip Code")),
     ("company_country", _("Company Country")),
     ("company_phone", _("Company Phone")),
 )
@@ -118,7 +119,7 @@ class Form(TendenciBaseModel):
     address = models.BooleanField(_('Address'), default=False)
     city = models.BooleanField(_('City'), default=False)
     state = models.BooleanField(_('State'), default=False)
-    zipcode = models.BooleanField(_('Zip Code'), default=False)
+    zipcode = models.BooleanField(_('Zipcode'), default=False)
     country = models.BooleanField(_('Country'), default=False)
     phone = models.BooleanField(_('Phone'), default=False)
 
@@ -126,7 +127,7 @@ class Form(TendenciBaseModel):
     company_address = models.BooleanField(_('Company Address'), default=False)
     company_city = models.BooleanField(_('Company City'), default=False)
     company_state = models.BooleanField(_('Company State'), default=False)
-    company_zipcode = models.BooleanField(_('Company Zip Code'), default=False)
+    company_zipcode = models.BooleanField(_('Company Zipcode'), default=False)
     company_country = models.BooleanField(_('Company Country'), default=False)
     company_phone = models.BooleanField(_('Company Phone'), default=False)
 
