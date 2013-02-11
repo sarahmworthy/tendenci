@@ -399,34 +399,38 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                     user_list = User.objects.filter(
                         email=entry.email).order_by('-last_login')
 
+                    anon = None
+
                     if user_list:
                         anon = user_list[0]
                     else:
-                        # create user ------------------
-                        anon = User(
-                            username=entry.email[:30],
-                            email=entry.email,
-                            first_name=entry.first_name,
-                            last_name=entry.last_name
-                        )
 
-                        anon.is_active = False
-                        anon.save()
+                        if form_for_form.create_user:
+                            # create user ------------------
+                            anon = User(
+                                username=entry.email[:30],
+                                email=entry.email,
+                                first_name=entry.first_name,
+                                last_name=entry.last_name
+                            )
 
-                        Profile.objects.create(
-                            phone=entry.phone,
-                            address=entry.address,
-                            city=entry.city,
-                            state=entry.state,
-                            zipcode=entry.zipcode,
-                            position_title=entry.position_title,
-                            company=entry.company_name,
-                            user=anon,
-                            creator=anon,
-                            owner=anon,
-                            creator_username=anon.username,
-                            owner_username=anon.username,
-                        )
+                            anon.is_active = False
+                            anon.save()
+
+                            Profile.objects.create(
+                                phone=entry.phone,
+                                address=entry.address,
+                                city=entry.city,
+                                state=entry.state,
+                                zipcode=entry.zipcode,
+                                position_title=entry.position_title,
+                                company=entry.company_name,
+                                user=anon,
+                                creator=anon,
+                                owner=anon,
+                                creator_username=anon.username,
+                                owner_username=anon.username,
+                            )
 
                     entry.creator = anon
 
