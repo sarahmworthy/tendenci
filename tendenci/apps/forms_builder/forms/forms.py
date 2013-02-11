@@ -229,6 +229,7 @@ class FormAdminForm(TendenciBaseForm):
                   'email_text',
                   'subject_template',
                   'completion_url',
+                  'create_user',
                   'email_from',
                   'email_copies',
                   'user_perms',

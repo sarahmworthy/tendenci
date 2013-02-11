@@ -101,6 +101,9 @@ class Form(TendenciBaseModel):
         help_text=_("Redirect to this page after form completion."))
     template = models.CharField(_('Template'), max_length=50, blank=True)
 
+    create_user = models.BooleanField(default=True,
+        help_text=_("Create a user if one does not exist"))
+
     # payments
     custom_payment = models.BooleanField(_("Is Custom Payment"), default=False,
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
@@ -108,7 +111,7 @@ class Form(TendenciBaseModel):
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
     payment_methods = models.ManyToManyField("payments.PaymentMethod", blank=True)
 
-    # popular fields
+    # popular fields -------------------------------------------------
     first_name = models.BooleanField(_('First Name'), default=False)
     last_name = models.BooleanField(_('Last Name'), default=False)
     email = models.BooleanField(_('Email'), default=False)

@@ -54,6 +54,8 @@ class FieldAdmin(admin.TabularInline):
 
 class FormAdmin(TendenciBaseModelAdmin):
 
+    form = FormAdminForm
+
     inlines = (PricingAdmin, FieldAdmin,)
     list_display = ("title", "id", "intro", "email_from", "email_copies",
         "admin_link_export", "admin_link_view")
@@ -62,7 +64,7 @@ class FormAdmin(TendenciBaseModelAdmin):
         "email_copies")
     prepopulated_fields = {'slug': ['title']}
     fieldsets = (
-        (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template")}),
+        (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template", "create_user")}),
         (_("Email"), {"fields": ('subject_template', "email_from", "email_copies", "send_email", "email_text")}),
         ('Permissions', {'fields': ('allow_anonymous_view',)}),
         ('Advanced Permissions', {'classes': ('collapse',), 'fields': (
@@ -77,8 +79,6 @@ class FormAdmin(TendenciBaseModelAdmin):
         ("Predefined Fields", {"fields": (("first_name", "last_name", "email", "url"), ("address", "city", "state", "zipcode", "country", "phone", "comments"), ("company_name", "company_address", "company_city", "company_state", "company_zipcode", "company_country", "company_phone", "position_title")), 'classes': ('predefined-fields',)}),
         (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods")}),
     )
-
-    form = FormAdminForm
 
     class Media:
         js = (
