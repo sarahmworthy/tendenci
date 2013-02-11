@@ -7,7 +7,10 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
+        # Adding field 'Form.create_user'
+        db.add_column('forms_form', 'create_user', self.gf('django.db.models.fields.BooleanField')(default=True), keep_default=False)
+
         # Adding field 'Form.first_name'
         db.add_column('forms_form', 'first_name', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
@@ -124,7 +127,10 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
-        
+
+        # Deleting field 'Form.create_user'
+        db.delete_column('forms_form', 'create_user')
+
         # Deleting field 'Form.first_name'
         db.delete_column('forms_form', 'first_name')
 
@@ -348,6 +354,7 @@ class Migration(SchemaMigration):
             'completion_url': ('django.db.models.fields.URLField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             'country': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'create_user': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'forms_form_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
             'creator_username': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'custom_payment': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
