@@ -65,12 +65,15 @@ class FormForForm(forms.ModelForm):
                 field_args["choices"] = zip(choices, choices)
             if "initial" in arg_names:
                 default = field.default.lower()
+
+
                 if field_class == "BooleanField":
                     if default == "checked" or default == "true" or \
                         default == "on" or default == "1":
                             default = True
                     else:
                         default = False
+
                 field_args["initial"] = field.default
 
             if field_widget is not None:
@@ -265,6 +268,9 @@ class FormAdminForm(TendenciBaseForm):
 
     def __init__(self, *args, **kwargs):
         super(FormAdminForm, self).__init__(*args, **kwargs)
+
+        print 'self.fields', self.fields['first_name'].initial
+
         if self.instance.pk:
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = self.instance.pk
             self.fields['response'].widget.mce_attrs['app_instance_id'] = self.instance.pk

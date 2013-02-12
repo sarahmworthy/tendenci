@@ -371,7 +371,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
     published = Form.objects.published(for_user=request.user)
     form = get_object_or_404(published, slug=slug)
 
-    if not has_view_perm(request.user,'forms.view_form',form):
+    if not has_view_perm(request.user, 'forms.view_form', form):
         raise Http403
 
     # If form has a recurring payment, make sure the user is logged in
@@ -435,6 +435,9 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                     entry.creator = anon
 
             else:  # user is authenticated
+
+                # If you're going to update user/profile
+                # info. Now is the time.
                 entry.creator = request.user
 
             entry.save()
@@ -459,8 +462,8 @@ def form_detail(request, slug, template="forms/form_detail.html"):
 
             # Email copies to admin
             admin_body = generate_admin_email_body(entry, form_for_form)
-            email_from = email_to or email_from # Send from the email entered.
-            email_headers.update({'Reply-To':email_from})
+            email_from = email_to or email_from  # Send from the email entered.
+            email_headers.update({'Reply-To': email_from})
             email_copies = [e.strip() for e in form.email_copies.split(",")
                 if e.strip()]
             if email_copies:
