@@ -27,6 +27,7 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.profiles.models import Profile
+from tendenci.apps.profiles.utils import spawn_username
 from tendenci.addons.recurring_payments.models import RecurringPayment
 from tendenci.core.exports.utils import run_export_task
 
@@ -405,10 +406,14 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                         anon = user_list[0]
                     else:
 
-                        if form_for_form.create_user:
+                        if form.create_user:
                             # create user ------------------
                             anon = User(
-                                username=entry.email[:30],
+                                username=spawn_username(
+                                    fn=entry.first_name,
+                                    ln=entry.last_name,
+                                    em=entry.email,
+                                ),
                                 email=entry.email,
                                 first_name=entry.first_name,
                                 last_name=entry.last_name
