@@ -251,6 +251,7 @@ class FormAdminForm(TendenciBaseForm):
                   'position_title',
                   'url',
                   'comments',
+                  'group_subscription',
                   'address',
                   'city',
                   'state',

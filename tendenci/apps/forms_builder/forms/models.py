@@ -118,6 +118,7 @@ class Form(TendenciBaseModel):
     position_title = models.BooleanField(_('Position Title'), default=False)
     url = models.BooleanField(_('URL'), default=False)
     comments = models.BooleanField(_('Comments'), default=False)
+    group_subscription = models.BooleanField(_('Group Subscription'), default=False)
 
     address = models.BooleanField(_('Address'), default=False)
     city = models.BooleanField(_('City'), default=False)

@@ -7,7 +7,7 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-
+        
         # Adding field 'Form.create_user'
         db.add_column('forms_form', 'create_user', self.gf('django.db.models.fields.BooleanField')(default=True), keep_default=False)
 
@@ -28,6 +28,9 @@ class Migration(SchemaMigration):
 
         # Adding field 'Form.comments'
         db.add_column('forms_form', 'comments', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'Form.group_subscription'
+        db.add_column('forms_form', 'group_subscription', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
         # Adding field 'Form.address'
         db.add_column('forms_form', 'address', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
@@ -127,7 +130,7 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
-
+        
         # Deleting field 'Form.create_user'
         db.delete_column('forms_form', 'create_user')
 
@@ -148,6 +151,9 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Form.comments'
         db.delete_column('forms_form', 'comments')
+
+        # Deleting field 'Form.group_subscription'
+        db.delete_column('forms_form', 'group_subscription')
 
         # Deleting field 'Form.address'
         db.delete_column('forms_form', 'address')
@@ -262,7 +268,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 5, 12, 25, 24, 812183)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 13, 17, 30, 21, 193047)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -270,7 +276,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 5, 12, 25, 24, 812093)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 2, 13, 17, 30, 21, 192958)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -364,6 +370,7 @@ class Migration(SchemaMigration):
             'email_text': ('django.db.models.fields.TextField', [], {'default': "''", 'max_length': '2000', 'blank': 'True'}),
             'entity': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'related_name': "'forms_form_entity'", 'null': 'True', 'blank': 'True', 'to': "orm['entities.Entity']"}),
             'first_name': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'group_subscription': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'intro': ('django.db.models.fields.TextField', [], {'max_length': '2000', 'blank': 'True'}),
             'last_name': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -400,7 +407,7 @@ class Migration(SchemaMigration):
             'company_zipcode': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
             'country': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'creator': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'formentry_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
+            'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True'}),
             'email': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
             'entry_path': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '200', 'blank': 'True'}),
             'entry_time': ('django.db.models.fields.DateTimeField', [], {}),
