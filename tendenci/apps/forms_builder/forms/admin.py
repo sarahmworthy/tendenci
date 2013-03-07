@@ -137,7 +137,7 @@ class FormAdmin(TendenciBaseModelAdmin):
         for entry in entries:
             values = FieldEntry.objects.filter(entry=entry)
             row = [""] * len(columns)
-            entry_time = entry.entry_time.strftime("%d-%m-%y %H:%M:%S")
+            entry_time = entry.entry_time.strftime("%Y-%m-%d %H:%M:%S")
             row[-4] = entry_time
             if entry.pricing:
                 row[-3] = entry.pricing.label
@@ -172,7 +172,6 @@ class FormAdmin(TendenciBaseModelAdmin):
         return response
 
     def save_formset(self, request, form, formset, change):
-        print 'form.instance', form.instance
         instances = formset.save(commit=False)
         for instance in instances:
             instance.object_id = instance.form.pk

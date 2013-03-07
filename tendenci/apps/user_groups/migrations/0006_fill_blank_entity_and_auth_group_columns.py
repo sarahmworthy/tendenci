@@ -1,9 +1,5 @@
 # encoding: utf-8
-import datetime
-from south.db import db
 from south.v2 import DataMigration
-from django.db import models
-from django.contrib.auth.models import Group as AuthGroup
 
 
 class Migration(DataMigration):
@@ -12,13 +8,15 @@ class Migration(DataMigration):
         from tendenci.apps.entities.models import Entity
         from tendenci.apps.user_groups.models import Group
         groups = Group.objects.all()
-        for ugroup in groups:
-            if not ugroup.entity:
-                ugroup.entity = Entity.objects.first()
-                ugroup.save()
-            if not ugroup.group:
-                ugroup.group = AuthGroup.objects.create(name=ugroup.name)
-                ugroup.save()
+        if groups:
+            first_entity = Entity.objects.first()
+            for ugroup in groups:
+                if not ugroup.entity:
+                    ugroup.entity = first_entity
+                    ugroup.save()
+                if not ugroup.group:
+                    # the save method will take care of the auth group.
+                    ugroup.save()
 
     def backwards(self, orm):
         pass

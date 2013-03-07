@@ -191,7 +191,7 @@ def view_attendees(request, event_id, template_name='events/attendees.html'):
     registration = event.registration_configuration
 
     pricing = registration.get_available_pricings(request.user, is_strict=False)
-    pricing = pricing.order_by('display_order', '-price')
+    pricing = pricing.order_by('position', '-price')
 
     reg_started = registration_has_started(event, pricing=pricing)
     reg_ended = registration_has_ended(event, pricing=pricing)
@@ -239,6 +239,7 @@ def search(request, redirect=False, template_name="events/search.html"):
     query = request.GET.get('q', None)
     event_type = request.GET.get('event_type', None)
     start_dt = request.GET.get('start_dt', None)
+    with_registration = request.GET.get('registration', None)
     try:
         start_dt = datetime.strptime(start_dt, '%Y-%m-%d')
     except:
@@ -261,17 +262,22 @@ def search(request, redirect=False, template_name="events/search.html"):
         if request.user.is_authenticated():
             events = events.select_related()
 
-    events = events.order_by('-priority', 'start_dt')
+    if with_registration:
+        events = events.filter(registration_configuration__enabled=True)
+
+    events = events.order_by('start_dt', '-priority')
+
     types = Type.objects.all().order_by('name')
 
     EventLog.objects.log()
 
-    return render_to_response(template_name,{
+    return render_to_response(template_name, {
         'events': events,
         'types': types,
         'now': datetime.now(),
         'event_type': event_type,
-        'start_dt': start_dt
+        'start_dt': start_dt,
+        'with_registration': with_registration,
         }, context_instance=RequestContext(request))
 
 
@@ -976,8 +982,8 @@ def register_pre(request, event_id, template_name="events/reg8n/register_pre2.ht
                                                spots_available=spots_available
                                                )
 
-    individual_pricings = pricings.filter(quantity=1).order_by('display_order', '-price')
-    table_pricings = pricings.filter(quantity__gt=1).order_by('display_order', '-price')
+    individual_pricings = pricings.filter(quantity=1).order_by('position', '-price')
+    table_pricings = pricings.filter(quantity__gt=1).order_by('position', '-price')
 
     if not (individual_pricings or table_pricings):
         raise Http404
@@ -1088,7 +1094,7 @@ def register(request, event_id=0,
                                         Q(allow_user=True) | Q(allow_anonymous=True)
                                                 ).exists()
 
-        pricings = pricings.order_by('display_order', '-price')
+        pricings = pricings.order_by('position', '-price')
 
         try:
             pricing_id = int(pricing_id)
@@ -2055,13 +2061,43 @@ def day_view(request, year=None, month=None, day=None, template_name='events/day
     if year <= 1900:
         raise Http404
 
+    day_date = datetime(year=int(year), month=int(month), day=int(day))
+    yesterday = day_date - timedelta(days=1)
+    yesterday_url = reverse('event.day', args=(
+            int(yesterday.year),
+            int(yesterday.month),
+            int(yesterday.day)
+        ))
+    tomorrow = day_date + timedelta(days=1)
+    tomorrow_url = reverse('event.day', args=(
+            int(tomorrow.year),
+            int(tomorrow.month),
+            int(tomorrow.day)
+        ))
+
     EventLog.objects.log()
 
     return render_to_response(template_name, {
-        'date': datetime(year=int(year), month=int(month), day=int(day)),
-        'now':datetime.now(),
-        'type':None,
+        'date': day_date,
+        'now': datetime.now(),
+        'type': None,
+        'yesterday': yesterday,
+        'tomorrow': tomorrow,
+        'yesterday_url': yesterday_url,
+        'tomorrow_url': tomorrow_url,
     }, context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+def today_redirect(request):
+    today_date = request.GET.get('today_date', None)
+    try:
+        today_date = datetime.strptime(today_date, '%Y-%m-%d')
+    except:
+        today_date = datetime.now()
+
+    day, month, year = today_date.day, today_date.month, today_date.year
+    return HttpResponseRedirect(reverse('event.day', args=(int(year), int(month), int(day))))
 
 
 @login_required
@@ -2227,7 +2263,7 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
         sort_field = '-%s' % sort_field
 
     if not roster_view: # default to total page
-        return HttpResponseRedirect(reverse('event.registrant.roster.total', args=[event.pk]))
+        roster_view = 'total'
 
     # paid or non-paid or total
     registrations = Registration.objects.filter(event=event, canceled=False)

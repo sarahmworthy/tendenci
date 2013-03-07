@@ -55,7 +55,7 @@ class Command(BaseCommand):
         """
         Copy media files to this sites' S3 location.
         """
-        conn = S3Connection(anon=True)
+        conn = S3Connection(settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY)
         bucket = conn.get_bucket('tendenci-static')
         bucket_list = bucket.list('npo_defaults')
 
@@ -78,7 +78,6 @@ class Command(BaseCommand):
         from tendenci.core.files.models import File
 
         staff_installed = "addons.staff" in settings.INSTALLED_APPS
-
         print 'npo_default_auth_user.json'
         call_command('loaddata', 'npo_default_auth_user.json')
         print 'npo_default_entities.json'

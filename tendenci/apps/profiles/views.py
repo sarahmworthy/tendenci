@@ -220,6 +220,9 @@ def search(request, template_name="profiles/search.html"):
     if only_members:
         profiles = profiles.exclude(member_number='')  # exclude non-members
 
+    if not request.user.profile.is_superuser:
+        profiles = profiles.exclude(hide_in_search=True)
+
     profiles = profiles.order_by('user__last_name', 'user__first_name')
 
     EventLog.objects.log()
@@ -341,7 +344,8 @@ def edit(request, id, form_class=ProfileForm, template_name="profiles/edit.html"
                 # superusers cannot demote themselves
                 if user_edit == request.user:
                     security_level = 'superuser'
-                    messages.add_message(request, messages.INFO, _("You cannot convert yourself to \"%(role)s\" role.") % {'role' : form.cleaned_data['security_level']})
+                    if form.cleaned_data['security_level'] != 'superuser':
+                        messages.add_message(request, messages.INFO, _("You cannot convert yourself to \"%(role)s\" role.") % {'role' : form.cleaned_data['security_level']})
                 else:
                     security_level = form.cleaned_data['security_level']
                 
