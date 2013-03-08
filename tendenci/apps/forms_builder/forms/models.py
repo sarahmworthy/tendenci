@@ -346,13 +346,11 @@ class FormEntry(models.Model):
             field_function='group_subscription')
         foreign_qs = self.fields.all()
 
-        labels = dict([(m, unicode(h)) for m, h in FIELD_FUNCTIONS])
-
         native_fields = []
         for form_field in native_qs:
 
             native_fields.append({
-                'label': labels[form_field.field_function],
+                'label': form_field.label,
                 'type': 'text',
                 'value': getattr(self, form_field.field_function),
                 'native': True,
