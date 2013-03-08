@@ -125,3 +125,7 @@ div.forms div.form-field div.id_end_dt .field input {
 div.forms div.form-field div.id_end_dt .field input#id_end_dt_1 {
 	width: 80px;
 }
+
+div#entry-path {
+	margin-bottom: 20px;
+}

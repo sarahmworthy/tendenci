@@ -335,7 +335,44 @@ class FormEntry(models.Model):
             pass
 
     def entry_fields(self):
-        return self.fields.all().order_by('field__position')
+
+        native_qs = self.form.fields.filter(field_function__isnull=False, visible=True)
+        foreign_qs = self.fields.all()
+
+        native_fields = []
+        for form_field in native_qs:
+
+            # skip fields not in this model
+            if not hasattr(self, form_field.field_function):
+                continue  # on to the next one
+
+            # making a label from the machine name
+            label_pieces = form_field.field_function.split('_')
+            label_pieces = [p.capitalize() for p in label_pieces]
+
+            native_fields.append({
+                'label': ' '.join(label_pieces),
+                'type': 'text',
+                'value': getattr(self, form_field.field_function),
+                'native': True,
+                'position': form_field.position,
+            })
+
+        foreign_fields = []
+        for form_field in foreign_qs:
+            foreign_fields.append({
+                'label': form_field.field.label,
+                'type': form_field.field.field_type,
+                'value': form_field.value,
+                'position': form_field.field.position,
+                'field': form_field.field,
+            })
+
+        # combine fields and sort
+        fields = native_fields + foreign_fields
+        fields.sort(key=lambda f: f['position'])
+
+        return fields
 
     def get_name_email(self):
         """Try to figure out the name and email from this entry
