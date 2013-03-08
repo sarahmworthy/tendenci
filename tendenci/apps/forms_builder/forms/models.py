@@ -335,23 +335,24 @@ class FormEntry(models.Model):
             pass
 
     def entry_fields(self):
-
-        native_qs = self.form.fields.filter(field_function__isnull=False, visible=True)
+        """
+        Returns native and custom fields
+        (list of dicts) combined and sorted.
+        Field must exist in form in order to display.
+        Non visible form fields will display.
+        """
+        native_qs = self.form.fields.filter(
+            field_function__isnull=False).exclude(
+            field_function='group_subscription')
         foreign_qs = self.fields.all()
+
+        labels = dict([(m, unicode(h)) for m, h in FIELD_FUNCTIONS])
 
         native_fields = []
         for form_field in native_qs:
 
-            # skip fields not in this model
-            if not hasattr(self, form_field.field_function):
-                continue  # on to the next one
-
-            # making a label from the machine name
-            label_pieces = form_field.field_function.split('_')
-            label_pieces = [p.capitalize() for p in label_pieces]
-
             native_fields.append({
-                'label': ' '.join(label_pieces),
+                'label': labels[form_field.field_function],
                 'type': 'text',
                 'value': getattr(self, form_field.field_function),
                 'native': True,
