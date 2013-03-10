@@ -767,7 +767,7 @@ class Registrant(models.Model):
 
         invoice = self.registration.get_invoice()
         if invoice:
-            balance = invoice.balanced
+            balance = invoice.balance
         else:
             balance = 0
 
