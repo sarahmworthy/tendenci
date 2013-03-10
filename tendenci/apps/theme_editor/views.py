@@ -229,15 +229,7 @@ def copy_to_theme(request, app=None):
 
     messages.add_message(request, messages.SUCCESS, ('Successfully copied %s/%s to the the theme root' % (current_dir, chosen_file)))
 
-    log_defaults = {
-        'event_id': 1110200,
-        'event_data': '%s copied by %s' % (full_filename, request.user),
-        'description': 'theme file copied to theme',
-        'user': request.user,
-        'request': request,
-        'source': 'theme_editor',
-    }
-    EventLog.objects.log(**log_defaults)
+    EventLog.objects.log()
     return redirect('theme_editor.editor')
 
 
@@ -280,16 +272,9 @@ def delete_file(request):
 
     messages.add_message(request, messages.SUCCESS, ('Successfully deleted %s/%s.' % (current_dir, chosen_file)))
 
-    log_defaults = {
-        'event_id': 1110300,
-        'event_data': '%s deleted by %s' % (full_filename, request.user),
-        'description': 'theme file deleted',
-        'user': request.user,
-        'request': request,
-        'source': 'theme_editor',
-    }
-    EventLog.objects.log(**log_defaults)
+    EventLog.objects.log()
     return redirect('theme_editor.editor')
+
 
 def upload_file(request):
 
@@ -298,6 +283,7 @@ def upload_file(request):
 
     if request.method == 'POST':
         form = UploadForm(request.POST, request.FILES)
+
         if form.is_valid():
             upload = request.FILES['upload']
             file_dir = form.cleaned_data['file_dir']
@@ -309,23 +295,16 @@ def upload_file(request):
                 return HttpResponseRedirect('/theme-editor/editor')
             else:
                 handle_uploaded_file(upload, file_dir)
-                response = {
-                    "success": True
-                }
                 messages.add_message(request, messages.SUCCESS, ('Successfully uploaded %s.' % (upload.name)))
 
-                log_defaults = {
-                    'event_id': 1110100,
-                    'event_data': '%s uploaded by %s' % (full_filename, request.user),
-                    'description': 'theme file upload',
-                    'user': request.user,
-                    'request': request,
-                    'source': 'theme_editor',
-                }
-                EventLog.objects.log(**log_defaults)
+                EventLog.objects.log()
 
                 return HttpResponseRedirect('/theme-editor/editor/')
+
+        else:  # not valid
+            messages.add_message(request, messages.ERROR, form.errors)
+
     else:
         form = UploadForm()
 
-    return render_to_response(context_instance=RequestContext(request))
+    return HttpResponseRedirect('/theme-editor/editor/')
