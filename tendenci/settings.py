@@ -83,7 +83,7 @@ MIDDLEWARE_CLASSES = (
     'johnny.middleware.LocalStoreClearMiddleware',
     'johnny.middleware.QueryCacheMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'tracking.middleware.VisitorTrackingMiddleware',
+    'tendenci.core.base.middleware.VisitorTrackingMiddleware',
     'tracking.middleware.VisitorCleanUpMiddleware',
     'pagination.middleware.PaginationMiddleware',
     'tendenci.apps.profiles.middleware.ProfileMiddleware',
@@ -183,6 +183,7 @@ INSTALLED_APPS = (
     'captcha',
     'south',
     'tastypie',
+    'tracking',
     'tendenci.libs.model_report',
 
     'tendenci.apps.entities',
@@ -472,4 +473,4 @@ INDEX_UPDATE_NOTE = 'updated hourly'
 # DJANGO TRACKING SETTINGS
 #-------------------------------------------------------#
 TRACKING_TIMEOUT = 10
-NO_TRACKING_PREFIXES = ['/themes/']
+TRACKING_PREFIXES = ['/pages/edit/']  # indicate prefixes of pages we want to track
