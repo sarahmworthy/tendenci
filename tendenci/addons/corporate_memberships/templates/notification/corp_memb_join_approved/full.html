@@ -13,13 +13,13 @@
 
 <p>
 {% blocktrans %}To add individual memberships under your corporate, go to:
-{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url membership_default.add %}">{{ SITE_GLOBAL_SITEURL }}{% url membership_default.add %}</a>
+{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url membership_default.add_under_corp object.id %}">{{ SITE_GLOBAL_SITEURL }}{% url membership_default.add_under_corp object.id %}</a>
 </p>
 
 {% if object.authentication_method == 'secret_code' %}
 <p>
 {% blocktrans %}<b>secret code</b>:{% endblocktrans %}<br />
-<b>{{ object.secret_code }}</b>
+<b>{{ object.corp_profile.secret_code }}</b>
 </p>
 {% endif %}
 
