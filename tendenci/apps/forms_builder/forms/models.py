@@ -367,6 +367,7 @@ class FormEntry(models.Model):
                 'value': form_field.value,
                 'position': form_field.field.position,
                 'field': form_field.field,
+                'field_entry': form_field,
             })
 
         # combine fields and sort

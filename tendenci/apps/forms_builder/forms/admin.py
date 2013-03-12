@@ -131,17 +131,17 @@ class FormAdmin(TendenciBaseModelAdmin):
 
         # the rest of the rows
         for e in form.entries.order_by('pk'):
-            row = []
+            row = [''] * len(columns)
             for f in e.entry_fields():
 
                 # replace value with URL
                 if f.get('field') and f['field'].field_type == 'FileField':
-                    url = reverse('admin:forms_form_file', args=f['pk'])
+                    url = reverse('form_files', args=[f['field_entry'].pk])
                     f['value'] = request.build_absolute_uri(url)
 
                 # insert value into matching column position
                 # fields match via position in list
-                row.insert(columns.index(f['position']), f['value'])
+                row[columns.index(f['position'])] = f['value']
 
             # extra [price] columns -----------------------------
             row.append(e.entry_time.strftime(dt_format))
