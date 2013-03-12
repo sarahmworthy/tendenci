@@ -8,14 +8,16 @@ from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.payments.authorizenet.utils import prepare_authorizenet_sim_form
 from tendenci.apps.invoices.models import Invoice
 from tendenci.core.base.http import Http403
-from tendenci.core.base.utils import tcurrency
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.site_settings.utils import get_setting
+
 
 def pay_online(request, invoice_id, guid="", template_name="payments/pay_online.html"):
     # check if they have the right to view the invoice
     invoice = get_object_or_404(Invoice, pk=invoice_id)
-    if not invoice.allow_view_by(request.user, guid): raise Http403
+
+    if not invoice.allow_view_by(request.user, guid):
+        raise Http403
 
     if request.session.get('payment_gateway', None):
         merchant_account = request.session.pop('payment_gateway')
@@ -43,7 +45,6 @@ def pay_online(request, invoice_id, guid="", template_name="payments/pay_online.
         if merchant_account.name == 'stripe':
             return HttpResponseRedirect(reverse('stripe.payonline', args=[payment.id]))    
         else:
-
             if merchant_account.name == "authorizenet":
                 form = prepare_authorizenet_sim_form(request, payment)
                 post_url = merchant_account.get_value_of("AUTHNET_POST_URL")
@@ -62,29 +63,29 @@ def pay_online(request, invoice_id, guid="", template_name="payments/pay_online.
             else:   # more vendors 
                 form = None
                 post_url = ""
-
+    else:
+        form = None
+        post_url = ""
         
-    return render_to_response(template_name, 
-                              {'form':form, 'post_url':post_url}, 
-                              context_instance=RequestContext(request))
-    
+    return render_to_response(
+        template_name, {'form':form, 'post_url':post_url},
+        context_instance=RequestContext(request))
+
+
 def view(request, id, guid=None, template_name="payments/view.html"):
     payment = get_object_or_404(Payment, pk=id)
 
-    if not payment.allow_view_by(request.user, guid): raise Http403
-    #payment.amount = tcurrency(payment.amount)
-    
-    return render_to_response(template_name, {'payment':payment}, 
+    if not payment.allow_view_by(request.user, guid):
+        raise Http403
+
+    return render_to_response(template_name, {'payment': payment},
         context_instance=RequestContext(request))
-    
+
+
 def receipt(request, id, guid, template_name='payments/receipt.html'):
     payment = get_object_or_404(Payment, pk=id)
-    if payment.guid <> guid:
+    if payment.guid != guid:
         raise Http403
-        
-    return render_to_response(template_name,{'payment':payment},
+
+    return render_to_response(template_name, {'payment': payment},
                               context_instance=RequestContext(request))
-
-        
-
-

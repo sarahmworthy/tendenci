@@ -1,9 +1,8 @@
-#import time
-#import hashlib
-#from django.conf import settings
-#from django.http import Http404
+from datetime import datetime
+
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
+
 from forms import FirstDataPaymentForm
 from tendenci.core.payments.models import Payment, PaymentGateway
 from tendenci.core.payments.utils import payment_processing_object_updates
@@ -48,7 +47,7 @@ def prepare_firstdata_form(request, payment):
               #'txndatetime': txndatetime,
               #'hash': hash,
               #'currency': currency,
-              'oid':payment.id,
+              'oid': "%s-%s" % (payment.id, datetime.now().strftime('%Y%m%d-%H%M%S')),
               'userid':userid,
               'bcountry':payment.country,
               #'objectguid':payment.guid,
