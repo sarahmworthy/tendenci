@@ -286,7 +286,7 @@ def entries_export(request, id, include_files=False):
     form_instance = get_object_or_404(Form, pk=id)
 
     # check permission
-    if not has_perm(request.user,'forms.change_form',form_instance):
+    if not has_perm(request.user, 'forms.change_form', form_instance):
         raise Http403
 
     EventLog.objects.log(instance=form_instance)

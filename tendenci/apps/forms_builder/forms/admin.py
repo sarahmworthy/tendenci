@@ -112,50 +112,52 @@ class FormAdmin(TendenciBaseModelAdmin):
         response = HttpResponse(mimetype="text/csv")
         csvname = "%s-%s.csv" % (form.slug, slugify(datetime.now().ctime()))
         response["Content-Disposition"] = "attachment; filename=%s" % csvname
-        csv = writer(response)
-        # Write out the column names and store the index of each field
-        # against its ID for building each entry row. Also store the IDs of
-        # fields with a type of FileField for converting their field values
-        # into download URLs.
-        columns = []
-        field_indexes = {}
-        file_field_ids = []
-        for field in form.fields.all():
-            columns.append(field.label.encode("utf-8"))
-            field_indexes[field.id] = len(field_indexes)
-            if field.field_type == "FileField":
-                file_field_ids.append(field.id)
-        entry_time_name = FormEntry._meta.get_field("entry_time").verbose_name
-        columns.append(unicode(entry_time_name))
-        columns.append(unicode("Pricing"))
-        columns.append(unicode("Price"))
-        columns.append(unicode("Payment Method"))
-        csv.writerow(columns)
-        # Loop through each field value order by entry, building up each
-        # entry as a row.
-        entries = FormEntry.objects.filter(form=form).order_by('pk')
-        for entry in entries:
-            values = FieldEntry.objects.filter(entry=entry)
-            row = [""] * len(columns)
-            entry_time = entry.entry_time.strftime("%Y-%m-%d %H:%M:%S")
-            row[-4] = entry_time
-            if entry.pricing:
-                row[-3] = entry.pricing.label
-                row[-2] = entry.pricing.price
-            row[-1] = entry.payment_method
-            for field_entry in values:
-                value = field_entry.value.encode("utf-8")
-                # Create download URL for file fields.
-                if field_entry.field_id in file_field_ids:
-                    url = reverse("admin:forms_form_file", args=(field_entry.id,))
-                    value = request.build_absolute_uri(url)
-                # Only use values for fields that currently exist for the form.
-                try:
-                    row[field_indexes[field_entry.field_id]] = value
-                except KeyError:
-                    pass
-            # Write out the row.
-            csv.writerow(row)
+        w = writer(response)
+
+        dt_format = '%Y-%m-%d %H:%M:%S'
+        form_fields = [f for f in form.fields.order_by('position') if f.field_function != 'group_subscription']
+        columns = [f.position for f in form_fields]
+
+        price_columns = [
+            # EntryForm.entry_time verbose name
+            unicode(FormEntry._meta.get_field('entry_time').verbose_name),
+            'Pricing',
+            'Price',
+            'Payment Method',
+        ]
+
+        # header row
+        w.writerow([f.label for f in form_fields] + price_columns)
+
+        # the rest of the rows
+        for e in form.entries.order_by('pk'):
+            row = []
+            for f in e.entry_fields():
+
+                # replace value with URL
+                if f.get('field') and f['field'].field_type == 'FileField':
+                    url = reverse('admin:forms_form_file', args=f['pk'])
+                    f['value'] = request.build_absolute_uri(url)
+
+                # insert value into matching column position
+                # fields match via position in list
+                row.insert(columns.index(f['position']), f['value'])
+
+            # extra [price] columns -----------------------------
+            row.append(e.entry_time.strftime(dt_format))
+
+            if e.pricing:
+                row.append(e.pricing.label)
+                row.append(e.pricing.price)
+            else:
+                row.append('')
+                row.append('')
+
+            row.append(e.payment_method)
+            # ---------------------------------------------------
+
+            w.writerow(row)
+
         return response
 
     def file_view(self, request, field_entry_id):

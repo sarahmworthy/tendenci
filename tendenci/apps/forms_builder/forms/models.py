@@ -350,6 +350,7 @@ class FormEntry(models.Model):
         for form_field in native_qs:
 
             native_fields.append({
+                'pk': form_field.pk,
                 'label': form_field.label,
                 'type': 'text',
                 'value': getattr(self, form_field.field_function),
@@ -360,6 +361,7 @@ class FormEntry(models.Model):
         foreign_fields = []
         for form_field in foreign_qs:
             foreign_fields.append({
+                'pk': form_field.pk,
                 'label': form_field.field.label,
                 'type': form_field.field.field_type,
                 'value': form_field.value,
