@@ -10,6 +10,7 @@ from django.conf import settings
 from django.db.models import Avg, Max, Min, Count
 from django.db.models.fields.related import ManyToManyField, ForeignKey
 from django.contrib.contenttypes import generic
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.utils.encoding import smart_str
 from django.template.defaultfilters import yesno
@@ -136,7 +137,7 @@ class FormEntriesExportTask(Task):
 
         response = HttpResponse(mimetype='text/csv')
         response['Content-Disposition'] = 'attachment; filename=export_entries_%d.csv' % time()
-        headers = []
+        # headers = []
         has_files = form_instance.has_files() and include_files
 
         # if the object hase file store the csv elsewhere
@@ -144,26 +145,26 @@ class FormEntriesExportTask(Task):
         if has_files:
             temp_csv = NamedTemporaryFile(mode='w', delete=False)
             temp_zip = NamedTemporaryFile(mode='wb', delete=False)
-            writer = csv.writer(temp_csv, delimiter=',')
+            w = csv.writer(temp_csv, delimiter=',')
             zip = zipfile.ZipFile(temp_zip, 'w', compression=zipfile.ZIP_DEFLATED)
         else:
-            writer = csv.writer(response, delimiter=',')
+            w = csv.writer(response, delimiter=',')
 
-        # get the header for headers for the csv
-        headers.append('submitted on')
-        for field in entries[0].fields.all():
-            headers.append(smart_str(field.field.label))
-        writer.writerow(headers)
+        fields = form_instance.fields.order_by('position')
+        columns = [f.position for f in fields]
+
+        # header row
+        w.writerow([f.label for f in fields] + ['Submitted on'])
 
         # write out the values
-        for entry in entries:
-            values = []
+        for entry in entries.order_by('pk'):
+            values = [''] * len(fields)
             values.append(entry.entry_time)
-            for field in entry.fields.all():
-                if has_files and field.field.field_type == 'FileField':
-                    archive_name = join('files',field.value)
+            for field in entry.entry_fields():
+                if has_files and field.get('field') and field['field'].field_type == 'FileField':
+                    archive_name = join('files', field['value'])
                     if hasattr(settings, 'USE_S3_STORAGE') and settings.USE_S3_STORAGE:
-                        file_path = field.value
+                        file_path = field['value']
                         try:
                             # TODO: for large files, we may need to copy down
                             # the files before adding them to the zip file.
@@ -171,14 +172,14 @@ class FormEntriesExportTask(Task):
                         except IOError:
                             pass
                     else:
-                        file_path = join(settings.MEDIA_ROOT,field.value)
+                        file_path = join(settings.MEDIA_ROOT, field['value'])
                         zip.write(file_path, archive_name, zipfile.ZIP_DEFLATED)
 
-                if field.field.field_type == 'BooleanField':
-                    values.append(yesno(smart_str(field.value)))
+                if field.get('field') and field['field'].field_type == 'BooleanField':
+                    values[columns.index(field['position'])] = yesno(smart_str(field['value']))
                 else:
-                    values.append(smart_str(field.value))
-            writer.writerow(values)
+                    values[columns.index(field['position'])] = smart_str(field['value'])
+            w.writerow(values)
 
         # add the csv file to the zip, close it, and set the response
         if has_files:
