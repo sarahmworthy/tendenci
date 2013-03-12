@@ -25,6 +25,7 @@ from django.template.loader import render_to_string
 from django.http import Http404
 from django.db.models import ForeignKey, OneToOneField
 from django.db.models.fields import AutoField
+from django.utils.translation import ugettext_lazy as _
 from johnny.cache import invalidate
 
 from tendenci.core.imports.utils import render_excel
@@ -58,8 +59,10 @@ from tendenci.addons.corporate_memberships.forms import (
                                          CorpProfileForm,
                                          CorpMembershipRenewForm,
                                          RosterSearchAdvancedForm,
+                                         CorpMembershipSearchForm,
                                          CorpMembershipUploadForm,
                                          CorpExportForm,
+                                         CorpMembershipRepForm,
                                          CorpMembForm, 
                                          CreatorForm,
                                          CorpApproveForm,
@@ -73,6 +76,8 @@ from tendenci.addons.corporate_memberships.utils import (
                                          get_payment_method_choices,
                                          get_indiv_memberships_choices,
                                          corp_membership_rows,
+                                         corp_membership_update_perms,
+                                         get_corp_memb_summary,
                                          corp_memb_inv_add, 
                                          dues_rep_emails_list,
                                          corp_memb_update_perms,
@@ -90,7 +95,7 @@ from tendenci.core.perms.utils import get_notice_recipients
 from tendenci.core.base.utils import send_email_notification
 from tendenci.core.files.models import File
 from tendenci.apps.profiles.models import Profile
-from tendenci.addons.corporate_memberships.settings import use_search_index
+#from tendenci.addons.corporate_memberships.settings import use_search_index
 from tendenci.core.site_settings.utils import get_setting
 
 
@@ -109,6 +114,7 @@ def get_app_fields_json(request):
     return HttpResponse(simplejson.dumps(simplejson.loads(app_fields)))
 
 
+@login_required
 def app_preview(request, app_id,
                     template='corporate_memberships/applications/preview.html'):
     """
@@ -127,7 +133,9 @@ def app_preview(request, app_id,
     corpmembership_form = CorpMembershipForm(app_fields,
                                      request_user=request.user,
                                      corpmembership_app=app)
+    current_app = CorpMembershipApp.objects.current_app()
     context = {'app': app,
+               'current_app': current_app,
                "app_fields": app_fields,
                'corpprofile_form': corpprofile_form,
                'corpmembership_form': corpmembership_form}
@@ -136,10 +144,7 @@ def app_preview(request, app_id,
 
 def corpmembership_add_pre(request,
                 template='corporate_memberships/applications/add_pre.html'):
-    [app] = CorpMembershipApp.objects.filter(
-                               status=True,
-                               status_detail__in=['active', 'published']
-                               ).order_by('id')[:1] or [None]
+    app = CorpMembershipApp.objects.current_app()
     if not app:
         raise Http404
     form = CreatorForm(request.POST or None)
@@ -151,6 +156,8 @@ def corpmembership_add_pre(request,
                        ).hexdigest()
             creator.hash = hash
             creator.save()
+            # log an event
+            EventLog.objects.log(instance=creator)
 
             # redirect to add
             return HttpResponseRedirect('%s%s' % (reverse('corpmembership.add'),
@@ -183,6 +190,7 @@ def corpmembership_add(request,
     app_fields = app.fields.filter(display=True)
     if not is_superuser:
         app_fields = app_fields.filter(admin_only=False)
+    app_fields = app_fields.exclude(field_name='expiration_dt')
     app_fields = app_fields.order_by('order')
 
     corpprofile_form = CorpProfileForm(app_fields,
@@ -233,12 +241,12 @@ def corpmembership_add(request,
             if request.user.is_authenticated():
                 # set the user as representative of the corp. membership
                 CorpMembershipRep.objects.create(
-                    corp_membership=corp_membership,
+                    corp_profile=corp_membership.corp_profile,
                     user=request.user,
                     is_dues_rep=True)
 
             # assign object permissions
-            corp_memb_update_perms(corp_membership)
+            corp_membership_update_perms(corp_membership)
 
             # email to user who created the corporate membership
             # include the secret code in the email
@@ -268,7 +276,8 @@ def corpmembership_add(request,
             }
             send_email_notification('corp_memb_added', recipients,
                                     extra_context)
-
+            # log an event
+            EventLog.objects.log(instance=corp_membership)
             # handle online payment
             if corp_membership.payment_method.is_online:
                 if corp_membership.invoice and \
@@ -277,6 +286,10 @@ def corpmembership_add(request,
                                     reverse('payment.pay_online',
                                     args=[corp_membership.invoice.id,
                                           corp_membership.invoice.guid]))
+            else:
+                if is_superuser and corp_membership.status \
+                    and corp_membership.status_detail == 'active':
+                    corp_membership.approve_join(request)
 
             return HttpResponseRedirect(reverse('corpmembership.add_conf',
                                                 args=[corp_membership.id]))
@@ -299,7 +312,6 @@ def corpmembership_add_conf(request, id,
     if not app:
         raise Http404
 
-    EventLog.objects.log(instance=corp_membership)
     context = {"corporate_membership": corp_membership,
                'app': app}
     return render_to_response(template, context, RequestContext(request))
@@ -321,6 +333,10 @@ def corpmembership_edit(request, id,
     app_fields = app.fields.filter(display=True)
     if not is_superuser:
         app_fields = app_fields.filter(admin_only=False)
+    if corp_membership.is_expired:
+        # if it is expired, remove the expiration_dt field so they can
+        # renew this corporate membership
+        app_fields = app_fields.exclude(field_name='expiration_dt')
     app_fields = app_fields.order_by('order')
 
     corpprofile_form = CorpProfileForm(app_fields,
@@ -347,7 +363,7 @@ def corpmembership_edit(request, id,
                 corp_membership.save()
 
             # assign object permissions
-            corp_memb_update_perms(corp_membership)
+            corp_membership_update_perms(corp_membership)
 
             # send notification to administrators
             if not is_superuser:
@@ -361,7 +377,8 @@ def corpmembership_edit(request, id,
                 send_email_notification('corp_memb_edited',
                                         recipients,
                                         extra_context)
-
+            # log an event
+            EventLog.objects.log(instance=corp_membership)
             # redirect to view 
             return HttpResponseRedirect(reverse('corpmembership.view',
                                                 args=[corp_membership.id]))
@@ -426,6 +443,14 @@ def corpmembership_view(request, id,
     app_fields = list(app_fields.order_by('order'))
 
     if can_edit:
+        app_field = CorpMembershipAppField(label='Join Date',
+                                            field_name='join_dt',
+                                            required=True)
+        app_fields.append(app_field)
+        app_field = CorpMembershipAppField(label='Expiration Date',
+                                            field_name='expiration_dt',
+                                            required=True)
+        app_fields.append(app_field)
         app_field = CorpMembershipAppField(label='Representatives',
                                     field_type='section_break',
                                     admin_only=False)
@@ -465,57 +490,66 @@ def corpmembership_view(request, id,
     return render_to_response(template, context, RequestContext(request))
 
 
-def corpmembership_search(request,
+def corpmembership_search(request, my_corps_only=False,
             template_name="corporate_memberships/applications/search.html"):
     allow_anonymous_search = get_setting('module',
                                      'corporate_memberships',
                                      'anonymoussearchcorporatemembers')
 
-    if not request.user.is_authenticated() and not allow_anonymous_search:
-        raise Http403
+    if not request.user.is_authenticated():
+        if my_corps_only or not allow_anonymous_search:
+            raise Http403
+    is_superuser = request.user.profile.is_superuser
 
-    query = request.GET.get('q', None)
+    search_form = CorpMembershipSearchForm(request.GET)
 
-    if query == 'is_pending:true' and request.user.profile.is_superuser:
+    query = request.GET.get('q')
+    try:
+        cp_id = request.GET.get('cp_id')
+    except:
+        cp_id = 0
+
+    if query == 'is_pending:true' and is_superuser:
         # pending list only for admins
-        pending_rew_entry_ids = CorpMembRenewEntry.objects.filter(
-                            status_detail__in=['pending',
-                                               'paid - pending approval']
-                            ).values_list('id', flat=True)
         q_obj = Q(status_detail__in=['pending', 'paid - pending approval'])
-        if pending_rew_entry_ids:
-            q_obj = q_obj | Q(renew_entry_id__in=pending_rew_entry_ids)
         corp_members = CorpMembership.objects.filter(q_obj)
     else:
-        filter_and, filter_or = CorpMembership.get_search_filter(request.user)
-        q_obj = None
-        if filter_and:
-            q_obj = Q(**filter_and)
-        if filter_or:
-            q_obj_or = reduce(operator.or_, [Q(**{key: value}
-                        ) for key, value in filter_or.items()])
-            if q_obj:
-                q_obj = reduce(operator.and_, [q_obj, q_obj_or])
-            else:
-                q_obj = q_obj_or
-
-        if get_setting('site', 'global', 'searchindex') and query:
-            corp_members = CorpMembership.objects.search(query,
-                                                         user=request.user)
-            if q_obj:
-                corp_members = corp_members.filter(q_obj)
-            corp_members = corp_members.order_by('name_exact')
-        else:
-            if q_obj:
-                corp_members = CorpMembership.objects.filter(q_obj)
-            else:
-                corp_members = CorpMembership.objects.all()
-
+        corp_members = CorpMembership.get_my_corporate_memberships(request.user,
+                                                my_corps_only=my_corps_only)
     corp_members = corp_members.order_by('corp_profile__name')
+
+    # generate the choices for the cp_id field
+    corp_profiles_choices = [(0, _('Select One'))]
+    for corp_memb in corp_members:
+        t = (corp_memb.corp_profile.id, corp_memb.corp_profile.name)
+        if not t in corp_profiles_choices:
+            corp_profiles_choices.append(t)
+
+    search_form.fields['cp_id'].choices = corp_profiles_choices
+
+    if query:
+        corp_members = corp_members.filter(
+                            corp_profile__name__icontains=query)
+
+    if cp_id:
+        corp_members = corp_members.filter(corp_profile_id=cp_id)
+
+    if not my_corps_only and is_superuser:
+        # add cm_type_id for the links in the summary report
+        try:
+            cm_type_id = int(request.GET.get('cm_type_id'))
+        except:
+            cm_type_id = 0
+        if cm_type_id > 0:
+            corp_members = corp_members.filter(
+                        corporate_membership_type_id=cm_type_id)
+    corp_members = corp_members.order_by('-expiration_dt')
 
     EventLog.objects.log()
 
-    return render_to_response(template_name, {'corp_members': corp_members},
+    return render_to_response(template_name, {
+        'corp_members': corp_members,
+        'search_form': search_form},
         context_instance=RequestContext(request))
 
 
@@ -630,12 +664,16 @@ def corpmembership_approve(request, id,
             if msg:
                 messages.add_message(request, messages.SUCCESS, msg)
 
+            # assign object permissions
+            corp_membership_update_perms(corporate_membership)
+
             EventLog.objects.log(instance=corporate_membership)
 
             return HttpResponseRedirect(reverse('corpmembership.view',
                                                 args=[corporate_membership.id]))
-
+    field_labels = corporate_membership.get_labels()
     context = {"corporate_membership": corporate_membership,
+               'field_labels': field_labels,
                'indiv_renew_entries': indiv_renew_entries,
                'new_expiration_dt': new_expiration_dt,
                'approve_form': approve_form,
@@ -709,6 +747,8 @@ def corp_renew(request, id,
                                         **opt_d)
                 new_corp_membership.invoice = inv
                 new_corp_membership.save()
+
+                EventLog.objects.log(instance=corp_membership)
 
                 # save the individual members
                 for member in members:
@@ -823,8 +863,12 @@ def corp_renew_conf(request, id,
 @login_required
 def roster_search(request,
                   template_name='corporate_memberships/roster_search.html'):
-    form = RosterSearchAdvancedForm(request.GET or None)
+    invalidate('corporate_memberships_corpprofile')
+    invalidate('corporate_memberships_corpmembership')
+    form = RosterSearchAdvancedForm(request.GET or None,
+                                    request_user=request.user)
     if form.is_valid():
+        # cm_id - CorpMembership id
         cm_id = form.cleaned_data['cm_id']
         first_name = form.cleaned_data['first_name']
         last_name = form.cleaned_data['last_name']
@@ -859,7 +903,7 @@ def roster_search(request,
                     corp_profile_id=corp_membership.corp_profile.id)
 
     if request.user.profile.is_superuser or \
-        (corp_membership.allow_edit_by(request.user)):
+        (corp_membership and corp_membership.allow_edit_by(request.user)):
         pass
     else:
         filter_and, filter_or = CorpMembership.get_membership_search_filter(
@@ -906,8 +950,9 @@ def roster_search(request,
 
     if corp_membership:
         form.fields['cm_id'].initial = corp_membership.id
-    if corp_membership:
         EventLog.objects.log(instance=corp_membership)
+    else:
+        EventLog.objects.log()
     corp_profile = corp_membership and corp_membership.corp_profile
 
     return render_to_response(template_name, {
@@ -1254,12 +1299,142 @@ def corpmembership_export(request,
                             row_item_list[i] = row_item_list[i].encode("utf-8")
                 csv_writer.writerow(row_item_list)
 
+            # log an event
+            EventLog.objects.log()
             # switch to StreamingHttpResponse once we're on 1.5
             return response
     context = {"form": form}
     return render_to_response(template, context, RequestContext(request))
 
 
+def edit_corp_reps(request, id, form_class=CorpMembershipRepForm,
+                   template_name="corporate_memberships/reps/edit.html"):
+    corp_memb = get_object_or_404(CorpMembership, pk=id)
+
+    if not has_perm(request.user,
+                    'corporate_memberships.change_corpmembership',
+                    corp_memb):
+        raise Http403
+
+    reps = CorpMembershipRep.objects.filter(
+                    corp_profile=corp_memb.corp_profile
+                    ).order_by('user')
+    form = form_class(corp_memb, request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            rep = form.save(commit=False)
+            rep.corp_profile = corp_memb.corp_profile
+            rep.save()
+
+            corp_membership_update_perms(corp_memb)
+
+            EventLog.objects.log(instance=rep)
+
+            if (request.POST.get('submit', '')).lower() == 'save':
+                return HttpResponseRedirect(reverse('corpmembership.view',
+                                                    args=[corp_memb.id]))
+
+    return render_to_response(template_name, {'corp_memb': corp_memb, 
+                                              'form': form,
+                                              'reps': reps}, 
+        context_instance=RequestContext(request))
+
+
+def corp_reps_lookup(request):
+    q = request.REQUEST['term']
+    use_search_index = get_setting('site', 'global', 'searchindex')
+
+    if use_search_index:
+        profiles = Profile.objects.search(
+                            q,
+                            user=request.user
+                            ).order_by('last_name_exact')
+    else:
+        # they don't have search index, probably just check username only
+        # for the performance sake
+        profiles = Profile.objects.filter(
+                                 Q(user__first_name__istartswith=q) \
+                               | Q(user__last_name__istartswith=q) \
+                               | Q(user__username__istartswith=q) \
+                               | Q(user__email__istartswith=q))
+        profiles = profiles.order_by('user__last_name')
+
+    if profiles and len(profiles) > 10:
+        profiles = profiles[:10]
+
+    if use_search_index:
+        users = [p.object.user for p in profiles]
+    else:
+        users = [p.user for p in profiles]
+
+    results = []
+    for u in users:
+        value = '%s, %s (%s) - %s' % (u.last_name, u.first_name,
+                                      u.username, u.email)
+        u_dict = {'id': u.id, 'label': value, 'value': value}
+        results.append(u_dict)
+    return HttpResponse(simplejson.dumps(results),
+                        mimetype='application/json')
+
+
+@login_required
+def delete_corp_rep(request, id,
+                    template_name="corporate_memberships/reps/delete.html"):
+    rep = get_object_or_404(CorpMembershipRep, pk=id)
+    corp_profile = rep.corp_profile
+    corp_memb = corp_profile.corp_membership
+
+    if corp_memb.allow_edit_by(request.user) or \
+         has_perm(request.user, 'corporate_memberships.change_corpmembership'):
+        if request.method == "POST":
+
+            messages.add_message(request, messages.SUCCESS,
+                                 'Successfully deleted %s' % rep)
+            EventLog.objects.log()
+            rep.delete()
+            corp_membership_update_perms(corp_memb)
+
+            return HttpResponseRedirect(reverse(
+                                        'corpmembership.edit_corp_reps',
+                                        args=[corp_memb.pk]))
+
+        return render_to_response(template_name, {'corp_memb': corp_memb},
+            context_instance=RequestContext(request))
+    else:
+        raise Http403
+
+
+def index(request,
+          template_name="corporate_memberships/applications/index.html"):
+    corp_app = CorpMembershipApp.objects.current_app()
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {'corp_app': corp_app},
+        context_instance=RequestContext(request))
+
+
+@staff_member_required
+def summary_report(request,
+                template_name='corporate_memberships/reports/summary.html'):
+    """
+    Shows a report of corporate memberships per corporate membership type.
+    """
+
+    if not request.user.profile.is_superuser:
+        raise Http403
+
+    summary, total = get_corp_memb_summary()
+
+    EventLog.objects.log()
+
+    return render_to_response(template_name, {
+        'summary': summary,
+        'total': total,
+        }, context_instance=RequestContext(request))
+
+
+# TO BE DELETED
 def add_pre(request, slug, template='corporate_memberships/add_pre.html'):
     corp_app = get_object_or_404(CorpApp, slug=slug)
     form = CreatorForm(request.POST or None)
@@ -1308,7 +1483,7 @@ def add(request, slug=None, hash=None, template="corporate_memberships/add.html"
     if not user_is_superuser:
         field_objs = field_objs.filter(admin_only=0)
     
-    field_objs = list(field_objs.order_by('order'))
+    field_objs = list(field_objs.order_by('position'))
     
     form = CorpMembForm(corp_app, field_objs, request.POST or None, request.FILES or None)
     
@@ -1440,7 +1615,7 @@ def edit(request, id, template="corporate_memberships/edit.html"):
     if not user_is_superuser:
         field_objs = field_objs.filter(admin_only=0)
     
-    field_objs = list(field_objs.order_by('order'))
+    field_objs = list(field_objs.order_by('position'))
     
     # get the field entry for each field_obj if exists
     for field_obj in field_objs:
@@ -1808,7 +1983,7 @@ def view(request, id, template="corporate_memberships/view.html"):
     if not can_edit:
         field_objs = field_objs.exclude(field_name='corporate_membership_type')
     
-    field_objs = list(field_objs.order_by('order'))
+    field_objs = list(field_objs.order_by('position'))
     
     if can_edit:
         field_objs.append(CorpField(label='Representatives', field_type='section_break', admin_only=0))
@@ -1834,58 +2009,7 @@ def view(request, id, template="corporate_memberships/view.html"):
 
 
 def search(request, template_name="corporate_memberships/search.html"):
-    allow_anonymous_search = get_setting('module', 
-                                     'corporate_memberships', 
-                                     'anonymoussearchcorporatemembers')
-
-    if not request.user.is_authenticated() and not allow_anonymous_search:
-        raise Http403
-    
-    query = request.GET.get('q', None)
-    
-    if query == 'is_pending:true' and request.user.profile.is_superuser:
-        # pending list only for admins
-        pending_rew_entry_ids = CorpMembRenewEntry.objects.filter(
-                                    status_detail__in=['pending', 'paid - pending approval']
-                                    ).values_list('id', flat=True)
-        q_obj = Q(status_detail__in=['pending', 'paid - pending approval'])
-        if pending_rew_entry_ids:
-            q_obj = q_obj | Q(renew_entry_id__in=pending_rew_entry_ids)
-        corp_members = CorporateMembership.objects.filter(q_obj)
-    else:
-    
-        filter_and, filter_or = CorporateMembership.get_search_filter(request.user)
-        q_obj = None
-        if filter_and:
-            q_obj = Q(**filter_and)
-        if filter_or:
-            q_obj_or = reduce(operator.or_, [Q(**{key: value}) for key, value in filter_or.items()])
-            if q_obj:
-                q_obj = reduce(operator.and_, [q_obj, q_obj_or])
-            else:
-                q_obj = q_obj_or
-        
-        if get_setting('site', 'global', 'searchindex') and query:
-            corp_members = CorporateMembership.objects.search(query, user=request.user)
-            if q_obj:
-                corp_members = corp_members.filter(q_obj)
-            corp_members = corp_members.order_by('name_exact')
-        else:
-            if q_obj:
-                corp_members = CorporateMembership.objects.filter(q_obj)
-            else:
-                corp_members = CorporateMembership.objects.all()
-        
-    #        if request.user.is_authenticated():
-    #            corp_members = corp_members.select_related()
-            
-        
-    corp_members = corp_members.order_by('name')
-
-    EventLog.objects.log()
-
-    return render_to_response(template_name, {'corp_members': corp_members}, 
-        context_instance=RequestContext(request))
+    return HttpResponseRedirect(reverse('corpmembership.search'))
 
 @login_required
 def delete(request, id, template_name="corporate_memberships/delete.html"):
@@ -1915,16 +2039,9 @@ def delete(request, id, template_name="corporate_memberships/delete.html"):
         raise Http403
     
     
-def index(request, template_name="corporate_memberships/index.html"):
-    corp_apps = CorpApp.objects.filter(status=1, status_detail='active').order_by('name')
-    #cm_types = CorporateMembershipType.objects.filter(status=1, status_detail='active').order_by('-price')
-    EventLog.objects.log()
-    return render_to_response(template_name, {'corp_apps': corp_apps}, 
-        context_instance=RequestContext(request))
-    
-    
 def edit_reps(request, id, form_class=CorpMembRepForm, template_name="corporate_memberships/edit_reps.html"):
     corp_memb = get_object_or_404(CorporateMembership, pk=id)
+    use_search_index = get_setting('site', 'global', 'searchindex')
     
     if not has_perm(request.user,'corporate_memberships.change_corporatemembership',corp_memb):
         raise Http403
@@ -1969,6 +2086,7 @@ def edit_reps(request, id, form_class=CorpMembRepForm, template_name="corporate_
     
 def reps_lookup(request):
     q = request.REQUEST['term']
+    use_search_index = get_setting('site', 'global', 'searchindex')
     
     if use_search_index:
         profiles = Profile.objects.search(
@@ -2002,6 +2120,7 @@ def reps_lookup(request):
 def delete_rep(request, id, template_name="corporate_memberships/delete_rep.html"):
     rep = get_object_or_404(CorporateMembershipRep, pk=id)
     corp_memb = rep.corporate_membership
+    use_search_index = get_setting('site', 'global', 'searchindex')
 
     if corp_memb.allow_edit_by(request.user) or \
          has_perm(request.user,'corporate_memberships.edit_corporatemembership'):   
@@ -2406,13 +2525,13 @@ def corp_export(request):
     if request.method == 'POST':
         if form.is_valid():
             # reset the password_promt session
-            request.session['password_promt'] = False
+            del request.session['password_promt']
             corp_app = form.cleaned_data['corp_app']
             
             filename = "corporate_memberships_%d_export.csv" % corp_app.id
             
             corp_fields = CorpField.objects.filter(corp_app=corp_app).exclude(field_type__in=('section_break', 
-                                                               'page_break')).order_by('order')
+                                                               'page_break')).order_by('position')
             label_list = [corp_field.label for corp_field in corp_fields]
             extra_field_labels = ['Dues reps', 'Join Date', 'Expiration Date', 'Status', 'Status Detail', 'Invoice Number', 'Invoice Amount', 'Invoice Balance']
             extra_field_names = ['dues_reps', 'join_dt', 'expiration_dt', 'status', 'status_detail', 'invoice_id', 'total', 'balance']

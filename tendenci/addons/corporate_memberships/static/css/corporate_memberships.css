@@ -68,10 +68,17 @@ div.forms div.form-field input.timepicker{
 .status-archived{
     background-color: #000;
     color: #fff;
+    padding: 5px;
+    font-weight: bold;
 }
 .status-archive{
     background-color: #000;
     color: #fff;
+    padding: 5px;
+    font-weight: bold;
+}
+.status-disapproved{
+    color:#C09853;
 }
 .pending-info-box{
 	background-color: #F7FFAF;
@@ -173,4 +180,13 @@ div.forms div.form-field input.timepicker{
 }
 .disapproved .meta, .disapproved{
 	background-color: #ccc !important;
+}
+
+/* search */
+.field-label{
+    font-weight: bold;
+    margin-right: 3px;
+}
+.indiv-join-link{
+    font-size: 1.2em;
 }	
