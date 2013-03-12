@@ -830,7 +830,7 @@ class Reg8nEditForm(BetterModelForm):
     payment_gateway = forms.ModelMultipleChoiceField(
         queryset=PaymentGateway.objects.all(),
         widget=forms.CheckboxSelectMultiple(),
-        required=False)
+        required=False, initial=[1,2,3,4,5])
     use_custom_reg = UseCustomRegField(label="Custom Registration Form")
 
 

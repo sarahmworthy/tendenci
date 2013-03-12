@@ -1,43 +1,18 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     def forwards(self, orm):
-        
-        # Adding model 'PaymentGateway'
-        db.create_table('payments_paymentgateway', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=200)),
-        ))
-        db.send_create_signal('payments', ['PaymentGateway'])
-
-        # Adding model 'PaymentGatewayField'
-        db.create_table('payments_paymentgatewayfield', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('gateway', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fields', to=orm['payments.PaymentGateway'])),
-            ('label', self.gf('django.db.models.fields.CharField')(max_length=200)),
-            ('value', self.gf('django.db.models.fields.CharField')(max_length=200)),
-        ))
-        db.send_create_signal('payments', ['PaymentGatewayField'])
-
-        # Adding field 'Payment.merchant_account'
-        db.add_column('payments_payment', 'merchant_account', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['payments.PaymentGateway'], null=True), keep_default=False)
+        from django.core.management import call_command
+        call_command("loaddata", "paymentgateway.json")
 
 
     def backwards(self, orm):
-        
-        # Deleting model 'PaymentGateway'
-        db.delete_table('payments_paymentgateway')
-
-        # Deleting model 'PaymentGatewayField'
-        db.delete_table('payments_paymentgatewayfield')
-
-        # Deleting field 'Payment.merchant_account'
-        db.delete_column('payments_payment', 'merchant_account_id')
+        raise RuntimeError("Cannot reverse this migration.")
 
 
     models = {
@@ -56,7 +31,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 20, 1, 16, 37, 48881)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 3, 12, 3, 16, 53, 513563)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -64,7 +39,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 12, 20, 1, 16, 37, 48782)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 3, 12, 3, 16, 53, 513460)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -83,9 +58,9 @@ class Migration(SchemaMigration):
             'arrival_date_time': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'balance': ('django.db.models.fields.DecimalField', [], {'default': '0', 'max_digits': '15', 'decimal_places': '2', 'blank': 'True'}),
             'bill_to': ('django.db.models.fields.CharField', [], {'max_length': '120', 'blank': 'True'}),
-            'bill_to_address': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
+            'bill_to_address': ('django.db.models.fields.CharField', [], {'max_length': '250', 'null': 'True', 'blank': 'True'}),
             'bill_to_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
-            'bill_to_company': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
+            'bill_to_company': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'bill_to_country': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'bill_to_email': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'bill_to_fax': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
@@ -119,10 +94,10 @@ class Migration(SchemaMigration):
             'receipt': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'ship_date': ('django.db.models.fields.DateTimeField', [], {}),
             'ship_to': ('django.db.models.fields.CharField', [], {'max_length': '120', 'blank': 'True'}),
-            'ship_to_address': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            'ship_to_address': ('django.db.models.fields.CharField', [], {'max_length': '250', 'blank': 'True'}),
             'ship_to_address_type': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'ship_to_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'ship_to_company': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
+            'ship_to_company': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
             'ship_to_country': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
             'ship_to_email': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'ship_to_fax': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
@@ -153,14 +128,14 @@ class Migration(SchemaMigration):
         'payments.payment': {
             'Meta': {'object_name': 'Payment'},
             'account_number': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '4', 'null': 'True'}),
-            'address': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '60', 'null': 'True', 'blank': 'True'}),
-            'address2': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '60', 'null': 'True', 'blank': 'True'}),
+            'address': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '250', 'null': 'True', 'blank': 'True'}),
+            'address2': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'amount': ('django.db.models.fields.DecimalField', [], {'max_digits': '15', 'decimal_places': '2'}),
             'auth_code': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
             'avs_code': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
             'card_type': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True'}),
-            'city': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '40', 'null': 'True', 'blank': 'True'}),
-            'company': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True', 'blank': 'True'}),
+            'city': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True', 'blank': 'True'}),
+            'company': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'country': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '60', 'null': 'True', 'blank': 'True'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'payment_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
@@ -169,7 +144,7 @@ class Migration(SchemaMigration):
             'description': ('django.db.models.fields.CharField', [], {'max_length': '1600'}),
             'duty': ('django.db.models.fields.CharField', [], {'max_length': '16', 'blank': 'True'}),
             'email': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'fax': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '25', 'null': 'True', 'blank': 'True'}),
+            'fax': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'freight': ('django.db.models.fields.CharField', [], {'max_length': '16', 'blank': 'True'}),
             'guid': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
@@ -184,22 +159,22 @@ class Migration(SchemaMigration):
             'owner_username': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True'}),
             'payment_attempted': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'payment_type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
-            'phone': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '25', 'null': 'True', 'blank': 'True'}),
+            'phone': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'po_num': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
             'response_code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '2'}),
             'response_page': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
             'response_reason_code': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '15'}),
             'response_reason_text': ('django.db.models.fields.TextField', [], {'default': "''"}),
             'response_subcode': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '10'}),
-            'ship_to_address': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '60', 'null': 'True'}),
-            'ship_to_city': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '40', 'null': 'True'}),
-            'ship_to_company': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True'}),
+            'ship_to_address': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '250', 'null': 'True'}),
+            'ship_to_city': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True'}),
+            'ship_to_company': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'null': 'True'}),
             'ship_to_country': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '60', 'null': 'True'}),
             'ship_to_first_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'null': 'True'}),
             'ship_to_last_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100', 'null': 'True'}),
-            'ship_to_state': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '40', 'null': 'True'}),
+            'ship_to_state': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True'}),
             'ship_to_zip': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '20', 'null': 'True'}),
-            'state': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '40', 'null': 'True', 'blank': 'True'}),
+            'state': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'status_detail': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '50'}),
             'submit_dt': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
@@ -212,7 +187,7 @@ class Migration(SchemaMigration):
             'zip': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '20', 'null': 'True', 'blank': 'True'})
         },
         'payments.paymentgateway': {
-            'Meta': {'object_name': 'PaymentGateway'},
+            'Meta': {'ordering': "('name',)", 'object_name': 'PaymentGateway'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '200'})
         },
@@ -221,7 +196,7 @@ class Migration(SchemaMigration):
             'gateway': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fields'", 'to': "orm['payments.PaymentGateway']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'label': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
-            'value': ('django.db.models.fields.CharField', [], {'max_length': '200'})
+            'value': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'})
         },
         'payments.paymentmethod': {
             'Meta': {'object_name': 'PaymentMethod'},

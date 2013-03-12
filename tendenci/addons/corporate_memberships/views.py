@@ -282,6 +282,7 @@ def corpmembership_add(request,
             if corp_membership.payment_method.is_online:
                 if corp_membership.invoice and \
                     corp_membership.invoice.balance > 0:
+                    request.session['payment_gateway'] = corp_membership.payment_gateway
                     return HttpResponseRedirect(
                                     reverse('payment.pay_online',
                                     args=[corp_membership.invoice.id,
@@ -766,6 +767,7 @@ def corp_renew(request, id,
                     if new_corp_membership.invoice \
                         and new_corp_membership.invoice.balance > 0:
 
+                        request.session['payment_gateway'] = new_corp_membership.payment_gateway
                         return HttpResponseRedirect(
                                 reverse('payment.pay_online',
                                     args=[new_corp_membership.invoice.id,

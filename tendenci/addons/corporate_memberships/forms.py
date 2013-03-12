@@ -112,6 +112,7 @@ class CorpMembershipAppForm(TendenciBaseForm):
                   'authentication_method',
                   'memb_app',
                   'payment_methods',
+                  'payment_gateways',
                   'description',
                   'confirmation_text',
                   'notes',
@@ -172,7 +173,7 @@ def assign_fields(form, app_field_objs, instance=None):
         # on edit set corporate_membership_type and payment_method
         # as display only
         if instance and instance.pk and obj.field_name in ['corporate_membership_type',
-                              'payment_method']:
+                              'payment_method', 'payment_gateway']:
             obj.display_only = True
             if obj.field_name == 'corporate_membership_type':
                 obj.display_content = instance.corporate_membership_type.name
@@ -185,6 +186,10 @@ def assign_fields(form, app_field_objs, instance=None):
                     obj.display_content = """%s - <a href="%s">View Invoice</a>
                                         """ % (obj.display_content,
                                         instance.invoice.get_absolute_url())
+                continue
+            if obj.field_name == 'payment_gateway' and 'payment_gateway' in form.fields:
+                obj.display_content = instance.payment_gateway
+                del form.fields['payment_gateway']
                 continue
 
         if obj.field_name in field_names:
@@ -199,7 +204,7 @@ def assign_fields(form, app_field_objs, instance=None):
             elif obj.field_stype == 'datetimeinput':
                 field.widget.attrs.update({'class': 'datepicker'})
             label_type = []
-            if obj.field_name not in ['payment_method',
+            if obj.field_name not in ['payment_method', 'payment_gateway',
                                       'corporate_membership_type',
                                       ]:
                 obj.field_div_class = 'inline-block'
@@ -306,12 +311,19 @@ class CorpMembershipForm(forms.ModelForm):
                                 price__gt=0).exists()
         if not require_payment:
             del self.fields['payment_method']
+            del self.fields['payment_gateway']
         else:
             self.fields['payment_method'].empty_label = None
             self.fields['payment_method'].widget = forms.widgets.RadioSelect(
                         choices=get_payment_method_choices(
                                     self.request_user,
                                     self.corpmembership_app))
+
+            payment_gateway_choices = [(p.pk, p.name) for p in self.corpmembership_app.payment_gateways.all()]
+            self.fields['payment_gateway'].empty_label = None
+            self.fields['payment_gateway'].widget = forms.widgets.RadioSelect(
+                choices=payment_gateway_choices)
+
         self_fields_keys = self.fields.keys()
         if 'status_detail' in self_fields_keys:
             self.fields['status_detail'].widget = forms.widgets.Select(

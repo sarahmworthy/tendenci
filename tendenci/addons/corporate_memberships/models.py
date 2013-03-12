@@ -32,7 +32,7 @@ from tendenci.addons.corporate_memberships.managers import (
                                                 CorpMembershipAppManager)
 #from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.user_groups.models import GroupMembership
-from tendenci.core.payments.models import PaymentMethod, Payment
+from tendenci.core.payments.models import PaymentMethod, Payment, PaymentGateway
 from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.base.fields import DictField
@@ -363,7 +363,7 @@ class CorpMembership(TendenciBaseModel):
     payment_method = models.ForeignKey(PaymentMethod,
                                        verbose_name=_("Payment Method"),
                                        null=True, default=None)
-
+    payment_gateway = models.ForeignKey(PaymentGateway, null=True)
     invoice = models.ForeignKey(Invoice, blank=True, null=True)
 
     anonymous_creator = models.ForeignKey('Creator', null=True)
@@ -1092,6 +1092,8 @@ class CorpMembershipApp(TendenciBaseModel):
                             null=True)
     payment_methods = models.ManyToManyField(PaymentMethod,
                                              verbose_name="Payment Methods")
+    payment_gateways = models.ManyToManyField(PaymentGateway,
+                                             verbose_name="Payment Gateways")
 
     objects = CorpMembershipAppManager()
 

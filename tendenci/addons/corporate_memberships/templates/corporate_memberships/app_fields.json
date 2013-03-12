@@ -224,6 +224,13 @@
     "admin_only": "false"
     },
     {
+    "label": "Payment Gateway",
+    "field_name": "payment_gateway",
+    "display": "true",
+    "required": "true",
+    "admin_only": "false"
+    },
+    {
     "label": "Section 5. Admin Only",
     "field_name": "",
     "display": "true",
