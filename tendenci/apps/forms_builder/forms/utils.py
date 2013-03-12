@@ -51,14 +51,15 @@ def generate_email_subject(form, form_entry):
     """
     if form.subject_template:
         subject = form.subject_template
-        field_entries = form_entry.entry_fields()
-        for field_entry in field_entries:
-            label = field_entry.field.label
-            value = field_entry.value
+        for entry_field in form_entry.entry_fields():
+            label = entry_field['label']
+            value = entry_field['value']
+
             # removes parens and asterisks so they don't break the re compile.
             label = re.sub('[\*()]', '', label)
+
             if not value:
-                value = ''
+                value = u''
                 p = re.compile('(-\s+)?\[%s\]' % label, re.IGNORECASE)
             else:
                 p = re.compile('\[%s\]' % label, re.IGNORECASE)
@@ -74,16 +75,14 @@ def generate_email_subject(form, form_entry):
 
     else:
         subject = "%s:" % (form.title)
-        if form_entry.get('first_name'):
-            subject = "%s %s" % (subject, form_entry.get('first_name'))
-        if form_entry.get_last_name():
-            subject = "%s %s" % (subject, form_entry.get('last_name'))
-        if form_entry.get_full_name():
-            subject = "%s %s" % (subject, form_entry.get('full_name'))
-        if form_entry.get_phone_number():
-            subject = "%s - %s" % (subject, form_entry.get('phone'))
-        if form_entry.get_email_address():
-            subject = "%s - %s" % (subject, form_entry.get('email'))
+        if form_entry.first_name:
+            subject = "%s %s" % (subject, form_entry.first_name)
+        if form_entry.last_name:
+            subject = "%s %s" % (subject, form_entry.last_name)
+        if form_entry.phone:
+            subject = "%s - %s" % (subject, form_entry.phone)
+        if form_entry.email:
+            subject = "%s - %s" % (subject, form_entry.email)
     return subject
 
 
