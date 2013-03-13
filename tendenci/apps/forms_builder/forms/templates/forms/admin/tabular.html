@@ -147,7 +147,7 @@
             $('#fields-group .add-row a').click();
             var template = $("#{{ inline_admin_formset.formset.prefix }}-empty");
             var row_added = $(template).prev();
-            
+
             // get field_name and field_label from checkbox
             var field_name = $(field).attr('name');
             var field_label = $(field).next('label').html();
@@ -165,6 +165,25 @@
             
             // select for field type & choices  
             var field_type = 'CharField';
+
+            if (field_name == 'group_subscription'){
+                field_type = 'MultipleChoiceField/django.forms.CheckboxSelectMultiple';
+
+                keep_list = [
+                    'ChoiceField',
+                    'MultipleChoiceField/django.forms.CheckboxSelectMultiple',
+                    'MultipleChoiceField'
+                ]
+
+                row_added.find('.field_type option').each(function() {
+                    if (keep_list.indexOf(this.value) < 0){
+                        $(this).remove();
+                    }
+
+                });
+
+            }
+
             if (field_name == 'comments'){
                 field_type = 'CharField/django.forms.Textarea';
             }
@@ -173,12 +192,12 @@
             }
             if (field_name == 'meal_option'){
                 field_type = 'ChoiceField';
-                
+
                 $(row_added).find('.choices input[type="text"]').attr('value', 'Vegetarian,Non-Vegetarian');
             }
 
             $(row_added).find('.field_type select option[value="' + field_type + '"]').attr('selected', 'selected');
-            
+
             // check display on roster
             $(row_added).find('.display_on_roster input[type="checkbox"]').attr('checked', 'checked');
             if (field_name !== 'first_name' && field_name !== 'last_name' && field_name !== 'email'){
@@ -261,7 +280,7 @@
 
         // disable field-function dropdowns
        $('.field_function select').attr('disabled', true);
-        
+
         var existing_rows = $('.inline-group tr.dynamic-fields');
         if (existing_rows.length == 0){
             // initialize
@@ -281,8 +300,29 @@
                 }
             }
         }
-    
-        
+
+        // update choices available to group subscription -----------------
+        var group_subscription_choices = [
+            'ChoiceField',
+            'MultipleChoiceField/django.forms.CheckboxSelectMultiple',
+            'MultipleChoiceField'
+        ];
+
+        existing_rows.each(function(){
+            var row = $(this);
+            var field_function = row.find('.field_function option:selected').val();
+            if(field_function == 'group_subscription'){
+                row.find('.field_type option').each(function() {
+                    if (group_subscription_choices.indexOf(this.value) < 0){
+                        $(this).remove();
+                    }
+
+                });
+
+            };
+        });
+        // ----------------------------------------------------------------
+
         // field checkboxes on change
         $('.predefined-fields .form-row input[type="checkbox"]').change(function(){
             var $this = $(this);
@@ -292,6 +332,7 @@
                 }else{
                     // field exists, check if there is delete checkbox and uncheck it if checked.
                     var row = get_mapped_row($this);
+
                     var delete_checkbox = $(row).find('td.delete input[type="checkbox"]');
                     $(delete_checkbox).removeAttr('checked');
                     
