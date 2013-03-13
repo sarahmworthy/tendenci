@@ -1598,19 +1598,16 @@ class AppEntryForm(forms.ModelForm):
                 return self.cleaned_data["field_%s" % field.id]
         return None
 
-class AppEntryBaseFormSet(BaseFormSet):
-    def __init__(self, app=None, data=None, files=None, auto_id='id_%s', prefix=None,
+class AppFieldFormset(BaseFormSet):
+    def __init__(self, app_fields=None, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, **kwargs):
-        self.corporate_membership = kwargs.pop('corporate_membership', None)
-        self.user = kwargs.pop('user', None)
-        self.app = app
-        custom_reg_form = kwargs.pop('custom_reg_form', None)
-        if custom_reg_form:
-            self.custom_reg_form = custom_reg_form
-        entries = kwargs.pop('entries', None)
-        if entries:
-            self.entries = entries
-        super(AppEntryBaseFormSet, self).__init__(data, files, auto_id, prefix,
+        self.corporate_membership = kwargs.pop('corp_membership', None)
+        self.user = kwargs.pop('request_user', None)
+        self.app = kwargs.pop('membership_app', None)
+        self.join_corporate = kwargs.pop('join_under_corporate', None)
+        self.app_fields = app_fields
+
+        super(AppFieldFormset, self).__init__(data, files, auto_id, prefix,
                  initial, error_class)
         
     def _construct_form(self, i, **kwargs):
@@ -1619,15 +1616,13 @@ class AppEntryBaseFormSet(BaseFormSet):
         """
         defaults = {'auto_id': self.auto_id, 'prefix': self.add_prefix(i)}
         
-        defaults['app'] = self.app
-        defaults['corporate_membership'] = self.corporate_membership
-        defaults['user'] = self.user
-        defaults['form_index'] = i
-        if hasattr(self, 'custom_reg_form'):
-            defaults['custom_reg_form'] = self.custom_reg_form
-        if hasattr(self, 'entries'):
-            defaults['entry'] = self.entries[i]
-            
+        if self.form is MembershipDefault2Form:
+            defaults['membership_app'] = self.app
+            defaults['corp_membership'] = self.corporate_membership
+            defaults['request_user'] = self.user
+            defaults['join_under_corporate'] = self.join_corporate
+
+        defaults['app_field_objs'] = self.app_fields
         
         if self.data or self.files:
             defaults['data'] = self.data

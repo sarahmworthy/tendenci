@@ -178,7 +178,7 @@ def assign_fields(form, app_field_objs, instance=None):
                 obj.display_content = instance.corporate_membership_type.name
                 del form.fields['corporate_membership_type']
                 continue
-            if obj.field_name == 'payment_method':
+            if obj.field_name == 'payment_method' and 'payment_method' in form.fields:
                 del form.fields['payment_method']
                 obj.display_content = instance.payment_method
                 if instance.invoice:

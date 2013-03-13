@@ -6,6 +6,7 @@ import time as ttime
 import subprocess
 from sets import Set
 import calendar
+import itertools
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -58,7 +59,7 @@ from tendenci.addons.memberships.forms import (
     MembershipExportForm, AppCorpPreForm, MembershipForm, MembershipDefaultForm,
     MemberApproveForm, ReportForm, EntryEditForm, ExportForm,
     AppEntryForm, MembershipDefaultUploadForm, UserForm, ProfileForm,
-    DemographicsForm,
+    DemographicsForm, AppFieldFormset,
     MembershipDefault2Form)
 from tendenci.addons.memberships.utils import (is_import_valid, prepare_chart_data,
     get_days, get_over_time_stats, get_status_filter,
@@ -334,17 +335,14 @@ def application_details(request, template_name="memberships/applications/details
             )
 
     try:
-        AppEntryFormset = formset_factory(AppEntryForm,
-                                          formset=AppEntryBaseFormSet,
-                                          max_num=1)
-        app_entry_formset = AppEntryFormset(
-                            app,
-                            request.POST or None,
-                            request.FILES or None,
-                            user=user,
-                            corporate_membership=corporate_membership,
-                            initial=initial_dict)
-
+        app_entry_form = AppEntryForm(
+                app,
+                request.POST or None,
+                request.FILES or None,
+                user=user,
+                corporate_membership=corporate_membership,
+                initial=initial_dict
+            )
     except NoMembershipTypes as e:
         print e
 
@@ -358,83 +356,78 @@ def application_details(request, template_name="memberships/applications/details
             context_instance=RequestContext(request))
 
     if request.method == "POST":
-        if app_entry_formset.is_valid():
-            for app_entry_form in app_entry_formset.forms:
-                entry = app_entry_form.save(commit=False)
-                entry_invoice = entry.save_invoice()
+        if app_entry_form.is_valid():
 
-                if user.is_authenticated():
-                    entry.user = user
-                    entry.is_renewal = all(is_only_a_member)
+            entry = app_entry_form.save(commit=False)
+            entry_invoice = entry.save_invoice()
 
-                # add all permissions and save the model
-                entry = update_perms_and_save(request, app_entry_form, entry)
+            if user.is_authenticated():
+                entry.user = user
+                entry.is_renewal = all(is_only_a_member)
 
-                # administrators go to approve/disapprove page
-                #if user.profile.is_superuser:
-                #    return redirect(reverse('membership.application_entries', args=[entry.pk]))
+            # add all permissions and save the model
+            entry = update_perms_and_save(request, app_entry_form, entry)
 
-                # send "joined" notification
+            # administrators go to approve/disapprove page
+            if user.profile.is_superuser:
+                return redirect(reverse('membership.application_entries', args=[entry.pk]))
+
+            # send "joined" notification
+            Notice.send_notice(
+                entry=entry,
+                request=request,
+                emails=entry.email,
+                notice_type='join',
+                membership_type=entry.membership_type,
+            )
+
+            if entry_invoice.total == 0:
+                if not entry_invoice.is_tendered:
+                    entry_invoice.tender(request.user)
+
+            # online payment
+            if entry_invoice.total > 0 and entry.payment_method and entry.payment_method.is_online:
+
+                return HttpResponseRedirect(reverse(
+                    'payment.pay_online',
+                    args=[entry_invoice.pk, entry_invoice.guid]
+                ))
+
+            if not entry.approval_required():
+
+                entry.user, created = entry.get_or_create_user()
+                if created:
+                    send_welcome_email(entry.user)
+
+                entry.approve()
+
+                # silence old memberships within renewal period
+                Membership.objects.silence_old_memberships(entry.user)
+
+                # get user from the membership since it's null in the entry
+                entry.user = entry.membership.user
+
+                # send "approved" notification
                 Notice.send_notice(
-                    entry=entry,
                     request=request,
                     emails=entry.email,
-                    notice_type='join',
+                    notice_type='approve',
+                    membership=entry.membership,
                     membership_type=entry.membership_type,
                 )
 
-                if entry_invoice.total == 0:
-                    if not entry_invoice.is_tendered:
-                        entry_invoice.tender(request.user)
-
-                # online payment
-                #if entry_invoice.total > 0 and entry.payment_method and entry.payment_method.is_online:
-
-                #    return HttpResponseRedirect(reverse(
-                #        'payment.pay_online',
-                #        args=[entry_invoice.pk, entry_invoice.guid]
-                #    ))
-
-                if not entry.approval_required():
-
-                    entry.user, created = entry.get_or_create_user()
-                    if created:
-                        send_welcome_email(entry.user)
-
-                    entry.approve()
-
-                    # silence old memberships within renewal period
-                    Membership.objects.silence_old_memberships(entry.user)
-
-                    # get user from the membership since it's null in the entry
-                    entry.user = entry.membership.user
-
-                    # send "approved" notification
-                    Notice.send_notice(
-                        request=request,
-                        emails=entry.email,
-                        notice_type='approve',
-                        membership=entry.membership,
-                        membership_type=entry.membership_type,
-                    )
-
-                    # log - entry approval
-                    EventLog.objects.log(instance=entry)
-
-                # log - entry submission
+                # log - entry approval
                 EventLog.objects.log(instance=entry)
 
-            return redirect('membership.application_entries_search')
+            # log - entry submission
+            EventLog.objects.log(instance=entry)
 
-    can_add_more = False
-    if corporate_membership and not corporate_membership.corporate_membership_type.membership_type.price > 0:
-        can_add_more = True
+            return redirect(entry.confirmation_url)
 
     return render_to_response(template_name, {
             'app': app,
-            'can_add_more': can_add_more,
+            'app_entry_form': app_entry_form,
             'pending_entries': pending_entries,
-            'app_entry_formset': app_entry_formset,
             }, context_instance=RequestContext(request))
 
 
@@ -1409,69 +1402,18 @@ def membership_default_add(request,
     if any(good) and username:
         [user] = User.objects.filter(username=username)[:1] or [None]
 
-    join_under_corporate = kwargs.get('join_under_corporate', False)
-    corp_membership = None
-
-    if join_under_corporate:
-        corp_app = CorpMembershipApp.objects.current_app()
-        if not corp_app:
-            raise Http404
-
-        #app = corp_app.memb_app
-        app = MembershipApp.objects.current_app()
-
-        cm_id = kwargs.get('cm_id')
-        if not cm_id:
-            # redirect them to the corp_pre page
-            return redirect(reverse('membership_default.corp_pre_add'))
-        # check if they have verified their email or entered the secret code
-        corp_membership = get_object_or_404(CorpMembership, id=cm_id)
-        imv_id = kwargs.get('imv_id', 0)
-        imv_guid = kwargs.get('imv_guid')
-        secret_hash = kwargs.get('secret_hash', '')
-
-        is_verified = False
-        authentication_method = corp_app.authentication_method
-        if request.user.profile.is_superuser or authentication_method == 'admin':
-            is_verified = True
-        elif authentication_method == 'email':
-            try:
-                indiv_veri = IndivEmailVerification.objects.get(pk=imv_id,
-                                                              guid=imv_guid)
-                if indiv_veri.verified:
-                    is_verified = True
-            except IndivEmailVerification.DoesNotExist:
-                pass
-        elif authentication_method == 'secret_code':
-            tmp_secret_hash = md5('%s%s' % (corp_membership.corp_profile.secret_code,
-                        request.session.get('corp_hash_random_string', ''))
-                                  ).hexdigest()
-            if secret_hash == tmp_secret_hash:
-                is_verified = True
-
-        if not is_verified:
-            return redirect(reverse('membership_default.corp_pre_add',
-                                    args=[cm_id]))
-
-    else:
-        app = MembershipApp.objects.current_app()
+    app = MembershipApp.objects.current_app()
 
     if not app:
         raise Http404
 
-    if join_under_corporate:
-        app_fields = app.fields.filter(Q(display=True) | Q(
-                            field_name='corporate_membership_id'))
-    else:
-        app_fields = app.fields.filter(display=True)
+    app_fields = app.fields.filter(display=True)
 
     if not request.user.profile.is_superuser:
         app_fields = app_fields.filter(admin_only=False)
 
     app_fields = app_fields.order_by('order')
-    if not join_under_corporate:
-        # exclude the corp memb field if not join under corporate
-        app_fields = app_fields.exclude(field_name='corporate_membership_id')
+    app_fields = app_fields.exclude(field_name='corporate_membership_id')
 
     user_initial = {}
     if user:
@@ -1521,12 +1463,7 @@ def membership_default_add(request,
 
     params = {'request_user': request.user,
         'membership_app': app,
-        'join_under_corporate': join_under_corporate,
-        'corp_membership': corp_membership,
     }
-
-    if join_under_corporate:
-        params['authentication_method'] = authentication_method
 
     demographics_form = DemographicsForm(app_fields, request.POST or None)
 
@@ -1641,6 +1578,265 @@ def membership_default_add(request,
         'profile_form': profile_form,
         'demographics_form': demographics_form,
         'membership_form': membership_form,
+        'captcha_form': captcha_form
+    }
+    return render_to_response(template, context, RequestContext(request))
+
+
+def corporate_membership_add(request, template='memberships/applications/corp_membership_add.html',
+                             **kwargs):
+    user = None
+    membership = None
+    username = request.GET.get('username', u'')
+    membership_type_id = request.GET.get('membership_type_id', u'')
+
+    if membership_type_id.isdigit():
+        membership_type_id = int(membership_type_id)
+    else:
+        membership_type_id = 0
+
+    good = (
+        request.user.profile.is_superuser,
+        username == request.user.username,
+    )
+
+    if any(good) and username:
+        [user] = User.objects.filter(username=username)[:1] or [None]
+
+    from tendenci.addons.corporate_memberships.models import CorpMembershipApp
+    corp_app = CorpMembershipApp.objects.current_app()
+    if not corp_app:
+        raise Http404
+
+    #app = corp_app.memb_app
+    app = MembershipApp.objects.current_app()
+
+    cm_id = kwargs.get('cm_id')
+    if not cm_id:
+        # redirect them to the corp_pre page
+        return redirect(reverse('membership_default.corp_pre_add'))
+
+    # check if they have verified their email or entered the secret code
+    corp_membership = get_object_or_404(CorpMembership, id=cm_id)
+    imv_id = kwargs.get('imv_id', 0)
+    imv_guid = kwargs.get('imv_guid')
+    secret_hash = kwargs.get('secret_hash', '')
+
+    is_verified = False
+    authentication_method = corp_app.authentication_method
+    if request.user.profile.is_superuser or authentication_method == 'admin':
+        is_verified = True
+    elif authentication_method == 'email':
+        try:
+            indiv_veri = IndivEmailVerification.objects.get(pk=imv_id,
+                                                            guid=imv_guid)
+            if indiv_veri.verified:
+                is_verified = True
+        except IndivEmailVerification.DoesNotExist:
+            pass
+    elif authentication_method == 'secret_code':
+        tmp_secret_hash = md5('%s%s' % (corp_membership.corp_profile.secret_code,
+                              request.session.get('corp_hash_random_string', ''))
+                             ).hexdigest()
+        if secret_hash == tmp_secret_hash:
+            is_verified = True
+
+    if not is_verified:
+        return redirect(reverse('membership_default.corp_pre_add',
+                                 args=[cm_id]))
+
+    if not app:
+        raise Http404
+
+    app_fields = app.fields.filter(Q(display=True) | Q(
+                                   field_name='corporate_membership_id'))
+
+    if not request.user.profile.is_superuser:
+        app_fields = app_fields.filter(admin_only=False)
+
+    app_fields = app_fields.order_by('order')
+
+    user_initial = {}
+    if user:
+        user_initial = {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+        }
+
+    UserFormset = formset_factory(form=UserForm,
+                                  formset=AppFieldFormset, max_num=1)
+    user_formset = UserFormset(app_fields=app_fields, initial=[user_initial],
+                               data=request.POST or None, prefix='user')
+
+    profile_initial = {}
+    if user:
+        profile_initial = {
+            'salutation': user.profile.salutation,
+            'phone': user.profile.phone,
+            'phone2': user.profile.phone2,
+            'address': user.profile.address,
+            'address2': user.profile.address2,
+            'city': user.profile.city,
+            'state': user.profile.state,
+            'zipcode': user.profile.zipcode,
+            'county': user.profile.county,
+            'country': user.profile.country,
+            'address_type': user.profile.address_type,
+            'url': user.profile.url,
+            'display_name': user.profile.display_name,
+            'mailing_name': user.profile.mailing_name,
+            'company': user.profile.company,
+            'position_title': user.profile.position_title,
+            'position_assignment': user.profile.position_assignment,
+            'fax': user.profile.fax,
+            'work_phone': user.profile.work_phone,
+            'home_phone': user.profile.home_phone,
+            'mobile_phone': user.profile.mobile_phone,
+            'email2': user.profile.email2,
+            'dob': user.profile.dob,
+            'spouse': user.profile.spouse,
+            'department': user.profile.department,
+        }
+
+    ProfileFormset = formset_factory(form=ProfileForm,
+                                     formset=AppFieldFormset, max_num=1)
+    profile_formset = ProfileFormset(app_fields=app_fields, initial=[profile_initial],
+                                     data=request.POST or None, prefix='profile')
+
+    params = {'request_user': request.user,
+        'membership_app': app,
+        'join_under_corporate': True,
+        'corp_membership': corp_membership,
+        'authentication_method': authentication_method
+    }
+
+    DemographicsFormset = formset_factory(form=DemographicsForm,
+                                          formset=AppFieldFormset, max_num=1)
+    demographics_formset = DemographicsFormset(app_fields=app_fields, prefix='demographics',
+                                               data=request.POST or None)
+
+    if user:
+        [membership] = user.membershipdefault_set.filter(
+            membership_type=membership_type_id).order_by('-pk')[:1] or [None]
+
+    membership_initial = {}
+    if membership:
+        membership_initial = {
+            'membership_type': membership.membership_type,
+            'payment_method': membership.payment_method,
+            'certifications': membership.certifications,
+            'work_experience': membership.work_experience,
+            'referral_source': membership.referral_source,
+            'referral_source_other': membership.referral_source_other,
+            'referral_source_member_number': membership.referral_source_member_number,
+            'affiliation_member_number': membership.affiliation_member_number,
+            'primary_practice': membership.primary_practice,
+            'how_long_in_practice': membership.how_long_in_practice,
+            'bod_dt': membership.bod_dt,
+            'chapter': membership.chapter,
+            'areas_of_expertise': membership.areas_of_expertise,
+            'home_state': membership.home_state,
+            'year_left_native_country': membership.year_left_native_country,
+            'network_sectors': membership.network_sectors,
+            'networking': membership.networking,
+            'government_worker': membership.government_worker,
+            'government_agency': membership.government_agency,
+            'license_number': membership.license_number,
+            'license_state': membership.license_state,
+        }
+
+    MembershipFormset = formset_factory(form=MembershipDefault2Form,
+                                        formset=AppFieldFormset, max_num=1)
+    membership_formset = MembershipFormset(app_fields=app_fields, initial=[membership_initial],
+                                           data=request.POST or None, prefix='membership', **params)
+
+    captcha_form = CaptchaForm(request.POST or None)
+    if request.user.is_authenticated() or not app.use_captcha:
+        del captcha_form.fields['captcha']
+
+    can_add_more = corp_membership.corporate_membership_type.membership_type.price <= 0
+
+    if request.method == 'POST':
+        good = (
+            user_formset.is_valid(),
+            profile_formset.is_valid(),
+            demographics_formset.is_valid(),
+            membership_formset.is_valid(),
+            captcha_form.is_valid()
+        )
+
+        # forms are valid
+        if all(good):
+            formsets = itertools.izip(user_formset, profile_formset,
+                                      demographics_formset, membership_formset)
+
+            for user_form, profile_form, demographics_form, membership_form in formsets:
+                user = user_form.save()
+
+                profile_form.instance = user.profile
+                profile_form.save(
+                    request_user=request.user
+                )
+
+                # save demographics
+                demographics = demographics_form.save(commit=False)
+                if hasattr(user, 'demographics'):
+                    demographics.pk = user.demographics.pk
+
+                demographics.user = user
+                demographics.save()
+
+                membership = membership_form.save(
+                    request=request,
+                    user=user,
+                )
+
+            # redirect: payment gateway
+            if membership.is_paid_online():
+                request.session['payment_gateway'] = membership.payment_gateway
+                return HttpResponseRedirect(reverse(
+                    'payment.pay_online',
+                    args=[membership.get_invoice().pk, membership.get_invoice().guid]
+                ))
+
+            # redirect: membership edit page
+            if request.user.profile.is_superuser:
+                return HttpResponseRedirect(reverse(
+                    'admin:memberships_membershipdefault_change',
+                     args=[membership.pk],
+                ))
+
+            # send email notification to admin
+            recipients = get_notice_recipients(
+                                       'module', 'memberships',
+                                       'membershiprecipients')
+            extra_context = {
+                'membership': membership,
+                'app': app,
+                'request': request
+            }
+            send_email_notification('membership_joined_to_admin', recipients,
+                                    extra_context)
+
+            # redirect: confirmation page
+            return HttpResponseRedirect(reverse(
+                'membership.application_confirmation_default',
+                 args=[membership.guid]
+            ))
+
+    formsets = itertools.izip(user_formset, profile_formset,
+                              demographics_formset, membership_formset)
+
+    context = {
+        'app': app,
+        'app_fields': app_fields,
+        'user_formset': user_formset,
+        'profile_formset': profile_formset,
+        'demographics_formset': demographics_formset,
+        'membership_formset': membership_formset,
+        'formsets': formsets,
+        'can_add_more': can_add_more,
         'captcha_form': captcha_form
     }
     return render_to_response(template, context, RequestContext(request))
