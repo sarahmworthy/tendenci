@@ -1518,8 +1518,8 @@ class AppEntryForm(forms.ModelForm):
                 field_args['initial'] = field.default_value
             field_args['help_text'] = field.help_text
 
-            #if field.pk in kwargs['initial']:
-            #    field_args['initial'] = kwargs['initial'][field.pk]
+            if field.pk in kwargs['initial']:
+                field_args['initial'] = kwargs['initial'][field.pk]
 
             if field_widget is not None:
                 module, widget = field_widget.rsplit(".", 1)

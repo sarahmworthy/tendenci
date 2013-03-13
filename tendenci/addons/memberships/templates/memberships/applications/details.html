@@ -25,7 +25,6 @@
 
 	<div class="form-builder-wrap">
     	<form method="post" enctype="multipart/form-data">{% csrf_token %}
-        {{ app_entry_formset.management_form }}
     	<div class="forms">
             {{ app_entry_form|styled_form }}
 		</div>
@@ -65,8 +64,5 @@
                 });
             };
         }
-    </script>
-    <script type="text/javascript">
-        {% include 'memberships/include/membership-applicants.js' %}
     </script>
 {% endblock extra_body %}
