@@ -45,8 +45,6 @@ def render_corp_field(request, field_obj, form):
 
 @register.inclusion_tag("corporate_memberships/nav.html", takes_context=True)
 def corpmemb_nav(context, user, corp_memb=None):
-    if corp_memb:
-        print corp_memb.corp_profile.name
     context.update({
         'nav_object': corp_memb,
         "user": user
@@ -61,6 +59,12 @@ def corpmemb_options(context, user, corp_memb):
         "user": user
     })
     return context
+
+
+@register.inclusion_tag("corporate_memberships/applications/search_form.html", takes_context=True)
+def corpmembership_search(context):
+    return context
+
 
 @register.inclusion_tag("corporate_memberships/search_form.html", takes_context=True)
 def corp_memb_search(context):
