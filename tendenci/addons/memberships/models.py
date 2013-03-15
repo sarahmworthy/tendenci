@@ -106,6 +106,9 @@ class MembershipType(OrderingBaseModel, TendenciBaseModel):
     allow_renewal = models.BooleanField(_('Allow Renewal'), default=1)
     renewal = models.BooleanField(_('Renewal Only'), default=0)
     renewal_require_approval = models.BooleanField(_('Renewal Requires Approval'), default=1)
+    require_payment_approval = models.BooleanField(
+        _('Auto-approval requires payment'), default=1,
+        help_text='If checked, auto-approved memberships will require a successful online payment to be auto-approved.')
 
     admin_only = models.BooleanField(_('Admin Only'), default=0)  # from allowuseroption
 
@@ -822,8 +825,8 @@ class MembershipDefault(TendenciBaseModel):
         This is dependent on whether membership is a join or renewal.
         """
         if self.renewal:
-            return self.membership_type.renewal_require_approval
-        return self.membership_type.require_approval
+            return self.membership_type.renewal_require_approval or self.membership_type.require_payment_approval
+        return self.membership_type.require_approval or self.membership_type.require_payment_approval
 
     def group_refresh(self):
         """
