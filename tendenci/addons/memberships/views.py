@@ -192,7 +192,7 @@ def download_template(request, slug=''):
 
 def application_detail_default(request, **kwargs):
     """
-    Returns default membership applicaiton response
+    Returns default membership application response
     """
 
     if request.method == 'POST':
@@ -1511,7 +1511,8 @@ def membership_default_add(request,
         initial=profile_initial
     )
 
-    params = {'request_user': request.user,
+    params = {
+        'request_user': request.user,
         'membership_app': app,
         'join_under_corporate': join_under_corporate,
         'corp_membership': corp_membership,

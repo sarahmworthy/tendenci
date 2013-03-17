@@ -517,7 +517,9 @@ class MembershipDefault(TendenciBaseModel):
         self.group_refresh()
 
         # new invoice; bound via ct and object_id
-        self.save_invoice(status_detail='tendered')
+        # commenting it out - calling save_invoice resets everything for paid invoices.
+        # the invoice should already have been created 
+        #self.save_invoice(status_detail='tendered')
 
         # archive other membership [of this type]
         self.archive_old_memberships()
@@ -716,10 +718,10 @@ class MembershipDefault(TendenciBaseModel):
 
     def is_forever(self):
         """
-        status=True, status_detail='active' and has
-        not expire_dt (within database is NULL).
+        Returns boolean.
+        Tests if expiration datetime exists.
         """
-        return self.is_active() and not self.expire_dt
+        return not self.expire_dt
 
     def get_expire_dt(self):
         """
@@ -918,16 +920,18 @@ class MembershipDefault(TendenciBaseModel):
             return None
 
         if not isinstance(self.expire_dt, datetime):
-            return None
+            return None  # membership does not expire
 
         start_dt = self.expire_dt - timedelta(
-                days=self.membership_type.renewal_period_start)
+            days=self.membership_type.renewal_period_start
+        )
+
         # the end_dt should be the end of the end_dt not start of the end_dt
         # not datetime.datetime(2013, 2, 21, 0, 0),
         # but datetime.datetime(2013, 2, 21, 23, 59, 59)
         end_dt = self.expire_dt + timedelta(
-                days=self.membership_type.renewal_period_end + 1
-                ) - timedelta(seconds=1)
+            days=self.membership_type.renewal_period_end + 1
+        ) - timedelta(seconds=1)
 
         return (start_dt, end_dt)
 
@@ -941,16 +945,7 @@ class MembershipDefault(TendenciBaseModel):
 
         returns boolean
         """
-
         renewal_period = self.get_renewal_period_dt()
-
-        # if never expires; can never renew
-        if self.is_forever():
-            return False
-
-        # if membership type allows renewals
-        if not self.membership_type.allow_renewal:
-            return False
 
         # renewal not allowed; or no renewal period
         if not renewal_period:
@@ -1033,14 +1028,15 @@ class MembershipDefault(TendenciBaseModel):
     def get_price(self):
         """
         Returns price
-            Considers:
-                Join price
-                Renew price
-                Admin Price
-                Corporate price
 
-        Admin price is only included on joins.  Corporate price,
-        trumps all membership prices.
+        Considers:
+            Join price
+            Renew price
+            Admin Price
+            Corporate price
+
+        Admin price is only included on joins.
+        Corporate price, trumps all membership prices.
         """
         from tendenci.addons.corporate_memberships.models import CorporateMembership
 
@@ -1065,7 +1061,7 @@ class MembershipDefault(TendenciBaseModel):
                 if membership_count <= threshold_limit:
                     return threshold_price
 
-        if self.user.profile.can_renew2():
+        if self.renewal:
             return self.membership_type.renewal_price or 0
         else:
             return self.membership_type.price + (self.membership_type.admin_fee or 0)
