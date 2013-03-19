@@ -1,8 +1,10 @@
 
+import re
 from csv import writer
+from os.path import join
 from datetime import datetime
 from mimetypes import guess_type
-from os.path import join
+from collections import namedtuple
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
@@ -115,23 +117,29 @@ class FormAdmin(TendenciBaseModelAdmin):
         w = writer(response)
 
         dt_format = '%Y-%m-%d %H:%M:%S'
-        form_fields = [f for f in form.fields.order_by('position') if f.field_function != 'group_subscription']
-        columns = [f.position for f in form_fields]
+        form_fields = [f for f in form.fields.order_by('position')]
+        entry_column_name = unicode(FormEntry._meta.get_field('entry_time').verbose_name)
 
         price_columns = [
-            # EntryForm.entry_time verbose name
-            unicode(FormEntry._meta.get_field('entry_time').verbose_name),
+            entry_column_name,
             'Pricing',
             'Price',
             'Payment Method',
         ]
 
         # header row
-        w.writerow([f.label for f in form_fields] + price_columns)
+        column_names = [f.label for f in form_fields] + price_columns
+        w.writerow(column_names)
+
+        column_keys = [re.sub('\W+', '_', c.lower()) for c in column_names]
+        EntryTuple = namedtuple('Entry', column_keys)
+
+        entry_dict = {}
+        for c in column_keys:
+            entry_dict.setdefault(c, u'')
 
         # the rest of the rows
         for e in form.entries.order_by('pk'):
-            row = [''] * len(columns)
             for f in e.entry_fields():
 
                 # replace value with URL
@@ -139,24 +147,19 @@ class FormAdmin(TendenciBaseModelAdmin):
                     url = reverse('form_files', args=[f['field_entry'].pk])
                     f['value'] = request.build_absolute_uri(url)
 
-                # insert value into matching column position
-                # fields match via position in list
-                row[columns.index(f['position'])] = f['value']
+                entry_dict[re.sub('\W+', '_', f['label'].lower())] = f['value']
 
             # extra [price] columns -----------------------------
-            row.append(e.entry_time.strftime(dt_format))
+            entry_dict[re.sub('\W+', '_', entry_column_name.lower())] = e.entry_time.strftime(dt_format)
 
             if e.pricing:
-                row.append(e.pricing.label)
-                row.append(e.pricing.price)
-            else:
-                row.append('')
-                row.append('')
+                entry_dict['pricing'] = e.pricing.label
+                entry_dict['price'] = e.pricing.price
 
-            row.append(e.payment_method)
+            entry_dict['payment_method'] = e.payment_method
             # ---------------------------------------------------
 
-            w.writerow(row)
+            w.writerow(EntryTuple(**entry_dict))
 
         return response
 
