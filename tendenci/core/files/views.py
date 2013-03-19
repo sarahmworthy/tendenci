@@ -31,7 +31,7 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.files.cache import FILE_IMAGE_PRE_KEY
 from tendenci.core.files.models import File
-from tendenci.core.files.utils import get_image, aspect_ratio, generate_image_cache_key
+from tendenci.core.files.utils import get_image, aspect_ratio, generate_image_cache_key, handle_uploads
 from tendenci.core.files.forms import FileForm, MostViewedForm, FileSearchForm, SwfFileForm
 
 
@@ -244,6 +244,11 @@ def edit(request, id, form_class=FileForm, category_form_class=CategoryForm, tem
         if form.is_valid() and categoryform.is_valid():
             file = form.save(commit=False)
 
+            # Handle file upload
+            uploads = handle_uploads(request)            
+            for upload in uploads:
+                setattr(file, upload[0], upload[1])
+
             # update all permissions and save the model
             file = update_perms_and_save(request, form, file)
             
@@ -376,13 +381,13 @@ def add(request, form_class=FileForm, category_form_class=CategoryForm, template
         categoryform = category_form_class(content_type, request.POST, prefix='category')
         if form.is_valid() and categoryform.is_valid():
             file = form.save(commit=False)
-            
-            # set up the user information
-            file.creator = request.user
-            file.creator_username = request.user.username
-            file.owner = request.user
-            file.owner_username = request.user.username
-            file.save()
+
+            # Handle file upload
+            uploads = handle_uploads(request)            
+            for upload in uploads:
+                setattr(file, upload[0], upload[1])
+
+            file = update_perms_and_save(request, form, file)
             
             #setup categories
             category = Category.objects.get_for_object(file,'category')

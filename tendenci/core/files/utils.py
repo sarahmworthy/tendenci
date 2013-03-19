@@ -6,6 +6,8 @@ import httplib
 import urllib
 import urllib2
 import socket
+import uuid
+import re
 from urlparse import urlparse
 from django.db import connection
 from django.core.files.base import ContentFile
@@ -19,6 +21,7 @@ from tendenci.libs.boto_s3.utils import read_media_file_from_s3
 
 from tendenci.core.files.models import File as TFile
 from tendenci.core.files.models import file_directory
+from tendenci.core.site_settings.utils import get_setting
 
 
 def get_image(file, size, pre_key, crop=False, quality=90, cache=False, unique_key=None, constrain=False):
@@ -471,3 +474,35 @@ class AppRetrieveFiles(object):
         tfile.file.save(file_path, ContentFile(urllib2.urlopen(url).read()))
         tfile.save()
         return tfile
+
+
+def handle_uploads(request):
+    saved = []
+
+    uuid_hex = uuid.uuid1().get_hex()[:8]
+    
+    upload_dir = 'files/files/%s' % uuid_hex
+    upload_full_path = os.path.join(settings.MEDIA_ROOT, upload_dir)
+
+    if not os.path.exists(upload_full_path):
+        os.makedirs(upload_full_path)
+
+    for key, upload in request.FILES.iteritems():
+        upload.name = re.sub(r'[^a-z0-9._]+', '-', upload.name.lower())
+        while os.path.exists(os.path.join(upload_full_path, upload.name)):
+            upload.name = '_' + upload.name
+        dest = open(os.path.join(upload_full_path, upload.name), 'wb')
+        for chunk in upload.chunks():
+            dest.write(chunk)
+        dest.close()
+        saved.append((key, os.path.join(upload_dir, upload.name)))
+    # returns [(key1, path1), (key2, path2), ...]
+    return saved
+
+
+def get_max_file_upload_size(file_module=False):
+    global_max_upload_size = (get_setting('site', 'global', 'maxfilesize') or 
+                              "26214400")  # default value if ever site setting is missing
+    if file_module:
+        return int(get_setting('module', 'files', 'maxfilesize') or global_max_upload_size)
+    return int(global_max_upload_size)
