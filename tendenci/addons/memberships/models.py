@@ -147,8 +147,11 @@ class MembershipType(OrderingBaseModel, TendenciBaseModel):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.id:
-            self.guid = str(uuid.uuid1())
+        """
+        Save GUID if GUID is not set.
+        Save MembershipType instance.
+        """
+        self.guid = self.guid or uuid.uuid1().get_hex()
         super(MembershipType, self).save(*args, **kwargs)
 
     def get_expiration_dt(self, renewal=False, join_dt=None, renew_dt=None):
@@ -359,10 +362,14 @@ class MembershipDefault(TendenciBaseModel):
         verbose_name_plural = u'Memberships'
 
     def __unicode__(self):
+        """
+        Returns summary of membership object
+        """
+        u = "Membership object"
         if self.pk:
-            return "Membership %s for %s" % (self.pk, self.user.get_full_name())
-        else:
-            return "Membership object"
+            u = "Membership {} for {}".format(self.pk, self.user.get_full_name())
+
+        return u
 
     @models.permalink
     def get_absolute_url(self):
@@ -380,7 +387,6 @@ class MembershipDefault(TendenciBaseModel):
         if hasattr(self, 'user') and self.user:
             if hasattr(self.user, 'demographics'):
                 return self.user.demographics
-        return None
 
     @classmethod
     def refresh_groups(cls):
@@ -398,8 +404,6 @@ class MembershipDefault(TendenciBaseModel):
                     status_detail__in=['active', 'pending', 'expired'],
                 ).values_list('status_detail', flat=True)
 
-                print user.username, membership_type.name,
-
                 status_details = list(status_details)
                 if status_details.count('active') > 1:
                     memberships = MembershipDefault.objects.filter(
@@ -415,8 +419,6 @@ class MembershipDefault(TendenciBaseModel):
 
                 if 'active' in status_details:
 
-                    print 'in'
-
                     exists = GroupMembership.objects.filter(
                         member=user,
                         group=membership_type.group,
@@ -428,9 +430,6 @@ class MembershipDefault(TendenciBaseModel):
                             group=membership_type.group,
                         )
                 else:
-
-                    print 'out'
-
                     # remove from group
                     GroupMembership.objects.filter(
                         member=user,
@@ -1594,19 +1593,6 @@ class Membership(TendenciBaseModel):
             else:
                 if verbosity > 1:
                     print '***Membership (ID=%d) does NOT have a member number.' % self.id
-
-    def clear_user_member_id(self):
-        """
-        Clear the member ID (or member number) in user's profile.
-        """
-        if not self.is_active():
-            [profile] = Profile.objects.filter(user=self.user)[:1] or [None]
-            if profile and profile.member_number:
-                profile.member_number = u''
-                profile.save()
-
-                # set the is_member attr to False for this user
-                setattr(self.user, 'is_member', False)
 
     def populate_or_clear_member_id(self):
         """
