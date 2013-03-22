@@ -339,7 +339,8 @@ class MembershipDefault(TendenciBaseModel):
     corporate_entity = models.ForeignKey(Entity,
         related_name='corporate_set', editable=False, null=True)
     corp_profile_id = models.IntegerField(blank=True, default=0)
-    corporate_membership_id = models.IntegerField(blank=True, null=True)
+    corporate_membership_id = models.IntegerField(_('Corporate Membership'),
+                                                  blank=True, null=True)
     home_state = models.CharField(max_length=50, blank=True, default=u'')
     year_left_native_country = models.IntegerField(blank=True, null=True)
     network_sectors = models.CharField(max_length=250, blank=True, default=u'')
@@ -1360,9 +1361,9 @@ class MembershipDefault(TendenciBaseModel):
     # to lookup for the number, go to /accountings/account_numbers/
     def get_acct_number(self, discount=False):
         if discount:
-            return 462000
+            return 464700
         else:
-            return 402000
+            return 404700
 
 
 class Membership(TendenciBaseModel):
