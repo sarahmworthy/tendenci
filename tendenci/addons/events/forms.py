@@ -622,6 +622,12 @@ class PlaceForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(PlaceForm, self).__init__(*args, **kwargs)
+
+        if self.instance.pk:
+            self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.pk
+        else:
+            self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
+
         # Populate place
         places = Place.objects.all().order_by(
             'address', 'city', 'state', 'zip', 'country', '-pk').distinct(
@@ -644,10 +650,6 @@ class PlaceForm(forms.ModelForm):
             'country',
             'url',
         ]
-        if self.instance.id:
-            self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.id
-        else:
-            self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
 
     def save(self, *args, **kwargs):
         place = super(PlaceForm, self).save(commit=False)
@@ -707,8 +709,8 @@ class SpeakerForm(BetterModelForm):
 
     def __init__(self, *args, **kwargs):
         super(SpeakerForm, self).__init__(*args, **kwargs)
-        if self.instance.id:
-            self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.id
+        if self.instance.pk:
+            self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.pk
         else:
             self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
 
@@ -738,8 +740,8 @@ class OrganizerForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(OrganizerForm, self).__init__(*args, **kwargs)
-        if self.instance.id:
-            self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.id
+        if self.instance.pk:
+            self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.pk
         else:
             self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
 
