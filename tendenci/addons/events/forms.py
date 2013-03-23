@@ -224,7 +224,7 @@ class FormForCustomRegForm(forms.ModelForm):
             email = self.cleaned_data.get('email', '')
 
         if email:
-            [profile] = Profile.objects.filter(user__email=email,
+            [profile] = Profile.objects.filter(user__email__iexact=email,
                                              user__is_active=True,
                                              status=True,
                                              status_detail='active'
@@ -1297,7 +1297,7 @@ class RegistrantForm(forms.Form):
             email = self.cleaned_data.get('email', '')
 
         if email:
-            [profile] = Profile.objects.filter(user__email=email,
+            [profile] = Profile.objects.filter(user__email__iexact=email,
                                              user__is_active=True,
                                              status=True,
                                              status_detail='active'
