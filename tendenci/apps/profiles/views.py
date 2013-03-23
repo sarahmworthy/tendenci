@@ -46,6 +46,7 @@ from tendenci.apps.profiles.models import Profile
 from tendenci.apps.profiles.forms import (ProfileForm, ExportForm, UserPermissionForm, 
 UserGroupsForm, ValidatingPasswordChangeForm, UserMembershipForm, ProfileMergeForm)
 from tendenci.apps.profiles.tasks import ExportProfilesTask
+from tendenci.apps.profiles.utils import get_member_reminders
 from tendenci.addons.events.models import Registrant
 
 try:
@@ -140,6 +141,23 @@ def index(request, username='', template_name="profiles/index.html"):
             multiple_apps = True
     else:
         membership_apps = None
+
+    if request.user == user_this:
+        membership_reminders = get_member_reminders(user_this)
+
+        if membership_reminders[0]:
+            messages.add_message(
+                request, messages.INFO,
+                'Memberships that are available for renewal: %s' % ', '.join(membership_reminders[0]))
+        elif membership_reminders[1]:
+            messages.add_message(
+                request, messages.INFO,
+                'Memberships that are expiring soon: %s' % ', '.join(membership_reminders[1]))
+        elif membership_reminders[2]:
+            messages.add_message(
+                request, messages.INFO,
+                'Memberships that have expired: %s' % ', '.join(membership_reminders[2]))
+
 
     return render_to_response(template_name, {
         'can_edit': can_edit,

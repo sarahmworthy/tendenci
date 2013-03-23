@@ -1,12 +1,16 @@
 import re
 from string import digits
 from random import choice
+
 from django.conf import settings
 from django.contrib.auth.models import User
-from tendenci.core.site_settings.utils import get_setting
+from django.db.models import Q
+
 from tendenci.apps.user_groups.models import GroupMembership, Group
 from tendenci.addons.memberships.models import Membership, App
 from tendenci.core.perms.utils import get_query_filters
+from tendenci.core.site_settings.utils import get_setting
+
 
 def profile_edit_admin_notify(request, old_user, old_profile, profile, **kwargs):
     from django.core.mail.message import EmailMessage
@@ -196,3 +200,26 @@ def spawn_username(fn=u'', ln=u'', em=u''):
 
     int_string = ''.join([choice(digits) for x in xrange(10)])
     return 'user.%s' % int_string
+
+
+def get_member_reminders(user):
+    renewal_list = []
+    expiring_list = []
+    expired_list = []
+
+    active_qs = Q(status_detail__iexact='active')
+    expired_qs = Q(status_detail__iexact='expired')
+
+    memberships = user.membershipdefault_set.filter(
+            status=True) & user.membershipdefault_set.filter(
+                active_qs | expired_qs)
+
+    for membership in memberships:
+        if membership.can_renew():
+            renewal_list.append(membership.membership_type.name)
+        elif membership.is_expired():
+            expiring_list.append(membership.membership_type.name)
+        elif membership.get_status() == 'expired':
+            expired_list.append(membership.membership_type.name)
+        
+    return renewal_list, expiring_list, expired_list
