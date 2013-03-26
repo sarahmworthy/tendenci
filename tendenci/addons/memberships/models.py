@@ -92,12 +92,19 @@ FIELD_FUNCTIONS = (
 )
 FIELD_MAX_LENGTH = 2000
 
+
 class MembershipType(OrderingBaseModel, TendenciBaseModel):
     guid = models.CharField(max_length=50)
     name = models.CharField(_('Name'), max_length=255, unique=True)
     description = models.CharField(_('Description'), max_length=500)
-    price = models.DecimalField(_('Price'), max_digits=15, decimal_places=2, blank=True, default=0,
-        help_text="Set 0 for free membership.")
+    price = models.DecimalField(
+        _('Price'),
+        max_digits=15,
+        decimal_places=2,
+        blank=True,
+        default=0,
+        help_text="Set 0 for free membership."
+    )
     renewal_price = models.DecimalField(_('Renewal Price'), max_digits=15, decimal_places=2,
         blank=True, default=0, null=True, help_text="Set 0 for free membership.")
     # for first time processing
@@ -384,11 +391,18 @@ class MembershipDefault(TendenciBaseModel):
         return ('admin:memberships_membershipdefault_change', [self.pk])
 
     def save(self, *args, **kwargs):
+        """
+        Set GUID if not already set.
+        """
         self.guid = self.guid or uuid.uuid1().get_hex()
         super(MembershipDefault, self).save(*args, **kwargs)
 
     @property
     def demographics(self):
+        """
+        Binds demographic-table which holds
+        user-defined information.
+        """
         if hasattr(self, 'user') and self.user:
             if hasattr(self.user, 'demographics'):
                 return self.user.demographics
@@ -814,9 +828,11 @@ class MembershipDefault(TendenciBaseModel):
             'application_denied'
         ]
 
-        field_names = [field.name
-                      for field in self.__class__._meta.fields
-                      if field.name not in ignore_fields]
+        field_names = [
+            field.name
+            for field in self.__class__._meta.fields
+            if field.name not in ignore_fields
+        ]
 
         for name in field_names:
             if hasattr(self, name):
@@ -1246,6 +1262,8 @@ class MembershipDefault(TendenciBaseModel):
         return all(good)
 
     def get_field_items(self):
+        """
+        """
         app = self.app
 
         items = {}
@@ -1654,11 +1672,9 @@ class MembershipImport(models.Model):
                                    upload_to=UPLOAD_DIR,
                                    null=True)
     recap_file = models.FileField(_("Recap File"), max_length=260,
-                                   upload_to=UPLOAD_DIR,
-                                   null=True)
+                                   upload_to=UPLOAD_DIR, null=True)
     # store the header line to assist in generating recap
-    header_line = models.CharField(_('Header Line'), max_length=3000,
-                           default='')
+    header_line = models.CharField(_('Header Line'), max_length=3000, default='')
     # active users
     interactive = models.IntegerField(choices=INTERACTIVE_CHOICES, default=0)
     # overwrite already existing fields if match
@@ -1700,8 +1716,7 @@ class MembershipImport(models.Model):
             header_row.extend(['action', 'error'])
             recap_writer.writerow(header_row)
             data_list = MembershipImportData.objects.filter(
-                                            mimport=self
-                                            ).order_by('row_num')
+                mimport=self).order_by('row_num')
             for idata in data_list:
                 data_dict = idata.row_data
                 row = [data_dict[k] for k in header_row if k not in [
@@ -1752,7 +1767,7 @@ class Notice(models.Model):
         help_text=_("Note that if you \
             don't select a membership type, \
             the notice will go out to all members."
-        ))
+    ))
 
     subject = models.CharField(max_length=255)
     content_type = models.CharField(_("Content Type"),
@@ -2020,7 +2035,8 @@ class MembershipApp(TendenciBaseModel):
 
     def application_form_link(self):
         return '<a href="%s">%s</a>' % (
-                            self.get_absolute_url(), self.slug)
+            self.get_absolute_url(), self.slug
+        )
     application_form_link.allow_tags = True
 
 
@@ -2301,9 +2317,11 @@ class AppEntry(TendenciBaseModel):
     decision_dt = models.DateTimeField(null=True)
     judge = models.ForeignKey(User, null=True, related_name='entries', on_delete=models.SET_NULL)
     invoice = models.ForeignKey(Invoice, null=True)
-    perms = generic.GenericRelation(ObjectPermission,
-                                          object_id_field="object_id",
-                                          content_type_field="content_type")
+    perms = generic.GenericRelation(
+        ObjectPermission,
+        object_id_field="object_id",
+        content_type_field="content_type"
+    )
 
     objects = MemberAppEntryManager()
 
@@ -2429,7 +2447,7 @@ class AppEntry(TendenciBaseModel):
         # TODO: Prone to error; We're depending on a string membership type name
         try:
             [entry_field] = self.fields.filter(
-                                field__field_type="payment-method")[:1] or [None]
+                field__field_type="payment-method")[:1] or [None]
             if entry_field:
                 v = entry_field.value.strip()
                 if v:
@@ -2599,15 +2617,15 @@ class AppEntry(TendenciBaseModel):
                     group = Group.objects.get(name=val)
                     try:
                         GroupMembership.objects.create(**{
-                                    'group': group,
-                                    'member': user,
-                                    'creator_id': judge_pk or user.pk,
-                                    'creator_username': judge_username,
-                                    'owner_id': judge_pk or user.pk,
-                                    'owner_username': judge_username,
-                                    'status': True,
-                                    'status_detail': 'active',
-                                })
+                            'group': group,
+                            'member': user,
+                            'creator_id': judge_pk or user.pk,
+                            'creator_username': judge_username,
+                            'owner_id': judge_pk or user.pk,
+                            'owner_username': judge_username,
+                            'status': True,
+                            'status_detail': 'active',
+                        })
                     except:
                         pass
 
@@ -2643,11 +2661,7 @@ class AppEntry(TendenciBaseModel):
         """
         from operator import __or__ as OR
 
-        kwargs = kwargs or {
-                # 'first_name': self.first_name,
-                # 'last_name': self.last_name,
-                'email': self.email
-            }
+        kwargs = kwargs or {'email': self.email}
 
         users = {}
         lst = []
@@ -2705,10 +2719,10 @@ class AppEntry(TendenciBaseModel):
         return status
 
     def is_pending(self):
-        return self.is_approved == None
+        return not self.is_approved
 
     def is_disapproved(self):
-        return self.is_approved == False
+        return not self.is_approved
 
     def make_acct_entries(self, user, inv, amount, **kwargs):
         """
@@ -2785,8 +2799,10 @@ class AppEntry(TendenciBaseModel):
     def save_invoice(self, **kwargs):
         status_detail = kwargs.get('status_detail', 'tendered')
 
-        content_type = ContentType.objects.get(app_label=self._meta.app_label,
-              model=self._meta.module_name)
+        content_type = ContentType.objects.get(
+            app_label=self._meta.app_label,
+            model=self._meta.module_name
+        )
 
         try:  # get invoice
             invoice = Invoice.objects.get(
