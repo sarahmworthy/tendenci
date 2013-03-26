@@ -191,7 +191,8 @@ class ListCorpMembershipNode(ListNode):
         query = u''
         user = AnonymousUser()
         limit = 3
-        order = '-join_dt'
+        order = u''
+        corp_membership_type = u''
 
         randomize = False
 
@@ -244,6 +245,18 @@ class ListCorpMembershipNode(ListNode):
             except:
                 order = self.kwargs['order']
 
+        if 'corp_membership_type' in self.kwargs:
+            try:
+                corp_membership_type = Variable(self.kwargs['corp_membership_type'])
+                corp_membership_type = unicode(group.resolve(context))
+            except:
+                corp_membership_type = self.kwargs['corp_membership_type']
+
+            try:
+                corp_membership_type = int(corp_membership_type)
+            except:
+                corp_membership_type = None
+
         items = CorpMembership.objects.all()
         if user.is_authenticated():
             if not user.profile.is_superuser:
@@ -257,9 +270,14 @@ class ListCorpMembershipNode(ListNode):
 
         objects = []
 
+        if hasattr(self.model, 'corporate_membership_type') and corp_membership_type:
+            items = items.filter(corporate_membership_type=corp_membership_type)
+
         # if order is not specified it sorts by relevance
         if order:
             items = items.order_by(order)
+        else:
+            items = items.order_by('corporate_membership_type__position', 'corp_profile__name')
 
         if randomize:
             objects = [item for item in random.sample(items, items.count())][:limit]
@@ -291,6 +309,8 @@ def list_corporate_memberships(parser, token):
            Specify a user to only show public items to all. **Default: Viewing user**
         ``query``
            The text to search for items. Will not affect order.
+        ``corp_membership_type``
+           The id for the corporate_membership_type the membership belong to.
         ``random``
            Use this with a value of true to randomize the items included.
 
@@ -314,8 +334,5 @@ def list_corporate_memberships(parser, token):
         raise TemplateSyntaxError(message)
 
     kwargs = parse_tag_kwargs(bits)
-
-    if 'order' not in kwargs:
-        kwargs['order'] = '-join_dt'
 
     return ListCorpMembershipNode(context_var, *args, **kwargs)
