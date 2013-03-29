@@ -1,0 +1,33 @@
+{% load nav_tags %}
+{% load box_tags %}
+
+<div id="header" class="clearfix">
+    <div id="header-left-container" class="eight columns alpha">
+        <div class="logo">
+            <a href="/"><img src="{{ THEME_URL }}media/images/logo.png" border="0" alt="" /></a>
+        </div>
+    </div><!-- /#header-left-container -->
+    <div id="header-right-container" class="eight columns omega">
+        <div class="boxdiv">
+            {% box 2 %}
+        </div>
+        <form method="get" action="/search/">
+            <input type="text" name="q" onfocus="this.value=''" value="Search" class="searchbox" />
+            <input type="submit" value="" class="gobtn" />
+        </form>
+    </div>
+</div><!-- /#header -->
+
+<div id="nav-container" class="clearfix">
+    <div id="nav">
+        {% nav 1 %}
+    </div>
+    {% if not request.user.is_authenticated %}
+    <div id="logindiv">
+        <ul>
+            <li><img src="{{ THEME_URL }}media/images/login_img.png" border="0" alt="" class="img" /><a href="/login/">Login</a></li>
+            <li><a href="/accounts/register/">Sign Up</a></li>
+        </ul>
+    </div>
+    {% endif %}
+</div><!-- /#nav container-->
