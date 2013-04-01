@@ -1,0 +1,27 @@
+{% load box_tags %}
+{% load nav_tags %}
+
+<div id="header" class="container sixteen columns">
+    <div id="header-left-container" class="twelve columns alpha">
+        <div class="logo">
+            <a href="/"><img src="{{ THEME_URL }}media/images/logo.png" border="0" alt="" /></a>
+        </div>
+    </div><!-- /#header-left-container -->
+    <div id="header-right-container" class="four columns omega">
+        <div class="searchdiv">
+            <form method="get" action="/search/">
+                <input type="text" name="q" onfocus="this.value=''" value="Search" class="textbox" />
+                <input type="submit" value="" class="gobtn" />
+            </form>
+        </div>
+        <div class="boxdiv">
+            {% box 3 %}
+        </div>
+    </div><!-- /#header-right-container -->
+</div><!-- /#header --> 
+
+<div id="nav-container" class="clearfix">
+    <div id="nav" class="container sixteen columns">
+        {% nav 1 %}
+    </div>
+</div><!-- /#nav container-->
