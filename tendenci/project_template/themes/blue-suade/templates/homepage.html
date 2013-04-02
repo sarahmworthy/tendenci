@@ -1,0 +1,185 @@
+<!-- Tendenci Specific Load Tags
+================================================== -->
+{% load base_filters %}
+{% load base_tags %}
+{% load theme_tags %}
+{% load cache %}
+{% load story_tags %}
+{% load article_tags %}
+{% load box_tags %}
+{% load news_tags %}
+{% load mobile_tags %}
+{% load event_tags %}
+
+<!-- Extends Tendenci Base Structure
+================================================== -->
+{% theme_extends "base.html" %}
+
+{% block extra_head %}
+<!-- Mobile Specific Metas
+================================================== -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+<!-- Favicons
+================================================== -->
+  <link rel="shortcut icon" href="{{ THEME_URL }}media/images/favicon.ico">
+
+<!-- CSS
+================================================== -->
+  <link rel='stylesheet' href="{{ THEME_URL }}media/css/skeleton.css" type="text/css"/>
+  <link rel="stylesheet" href="{{ THEME_URL }}media/css/style.css" type="text/css" />
+  <link rel="stylesheet" href="{{ THEME_URL }}media/fonts/fonts.css" type="text/css" />
+    
+<!-- IE Specific Compatibility
+================================================== -->
+  <!--[if lt IE 9]>
+  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 9]>   
+  <script src="http://css3-mediaqueries-js.googlecode.com/svn/trunk/css3-mediaqueries.js"></script>
+  <![endif]-->
+{% endblock extra_head %}
+
+{% block body_ids %}home{% endblock %}
+{% block body_classes %}home{% endblock body_classes %}
+
+<!-- Primary Page Layout
+================================================== -->
+{% block html_body %}
+  <div id="header-container">
+    <div class="container sixteen columns">
+      {% theme_include "header.html" %} <!-- Pulls in the Header Document -->
+    </div><!-- /.container sixteen columns -->
+  </div><!-- /#header-container -->
+
+  <div id="rotator-container" >
+      <div id="rotator-wrap" class="container">
+          <div id="rotator">
+            {% list_stories as stories_list limit=4 tags="rotator" quality="90" %}
+            {% for story in stories_list %}
+              <div class="rotator-item">
+                <div class="rotator-content">
+                  <h1><a href="{{ story.full_story_link }}">{{ story.title }}</a></h2>
+                  <p>{{ story.content|safe|truncatewords:15 }}
+                  <a class="readmore" href="{{ story.full_story_link }}">Read More &raquo;</a></p>
+                </div><!-- /.rotator-content-->
+                <div class="rotator-image">
+                   <a href="{{ story.full_story_link }}"><img src="{% image_url story.image size=920x400 crop=True quality=90 %}" alt="{{ story.title }}" /></a>
+                </div><!-- /.rotator-image-->
+                <span id="story-label-{{ forloop.counter0 }}" class="story-label">{% cycle "Network" "Join" "Jobs" "Events" %}</span>
+              </div><!-- /.rotator-item -->
+            {% endfor %}
+          </div><!-- /#rotator-->
+          <div id="stories-pager"></div>
+    </div><!-- /#rotator-wrap -->
+  </div><!-- /#rotator-container-->
+
+  <div id="content-wrap">
+  <div class="container">
+    <section id="home-content" class="clearfix">
+      {% theme_include "base/messages.html" %} <!--Pulls in the Alert Messages within Tendenci Core-->
+
+      <div id="home-body" class="clearfix">
+         <div class="right-col">
+           <div class="events-row clearfix">
+             <h3>Upcoming Events</h3>
+             {% list_events as events_list limit=3 %}
+             {% for event in events_list %}
+             <div class="event-item clearfix">
+               <h5>{{ event.start_dt|date:"d" }}</h5>
+               <strong>{{ event.start_dt|date:"F" }}</strong>
+               <a href="{{ event.get_absolute_url }}">{{ event.title }}</a>
+             </div>
+             {% endfor %}
+           </div><!--/.events-row -->
+           <div class="button-row">
+             <a href="#">Join PR Firm Today</a>
+             <a href="#">Renew PR Firm Today</a>
+           </div><!--/.button-row -->
+         </div><!--/.right-col -->
+
+         <div class="left-col">
+           <div class="box-row clearfix">
+             {% box 4 %}
+           </div><!--/.article-row -->
+
+           <div class="news-row">
+             <div class="news-col">
+               <h3>News</h3>
+               {% list_news as news_list limit=1 %}
+               {% for news_item in news_list %}
+               <div class="news-item">
+                 {% if news_item.summary %}
+                 <p>{{ news_item.summary|striptags|truncatewords:"100"|safe }}
+                 {% else %}
+                 <p>{{ news_item.body|striptags|truncatewords:"100"|safe }}
+                 {% endif %}
+                 <a href="{{ news_item.get_absolute_url }}">Read more ...</a></p>
+                 <p><a class="view-more" href="{% url news %}">Read more news...</a></p>
+               </div>
+               {% endfor %}
+             </div><!--/.news-col -->
+             <div class="box-col">
+               {% box 8 %}
+             </div><!--/.box-col -->
+           </div><!--/.news-row -->
+         </div><!--/.left-col -->
+      </div><!-- /#home-body -->
+
+    </section><!--/#home-content -->
+  </div><!-- /.container -->
+  </div><!-- /#content-wrap -->
+        
+  <section id="footer">
+    {% theme_include "footer.html" %} <!-- Pulls in the Footer Document -->
+  </section><!-- /#footer -->
+
+<!-- End Document
+================================================== -->
+{% endblock html_body %}
+
+{% block extra_body %}
+
+<script src="{{ THEME_URL }}media/js/jquery.hint.js" type="text/javascript"></script>
+<script src="{{ THEME_URL }}media/js/jquery.cycle.all.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  $('input[title!=""]').hint();
+  $("#rotator").cycle({
+    timeout: 8000,
+    speed: 2000,
+    pager: '#stories-pager',
+    pagerEvent: 'mouseover',
+    pagerAnchorBuilder: function(index, panel) { 
+        var title = $('#story-label-'+index).text();
+        return '<a href="#">'+ title +'</a>'; 
+    }
+  });
+});
+</script>
+
+<!--[if lt IE 7 ]>
+    <script src="{{ THEME_URL }}media/js/dd_belatedpng.js"></script>
+    <script> DD_belatedPNG.fix('img, .png_bg');</script>
+<![endif]-->
+
+<div id="fb-root"></div>
+<script>
+  (function() {
+    var e = document.createElement('script'); e.async = true;
+    e.src = document.location.protocol +
+      '//connect.facebook.net/en_US/all.js';
+    document.getElementById('fb-root').appendChild(e);
+  }());
+</script>
+
+<script>
+    var _gaq=[["_setAccount","UA-XXXXX-X"],["_trackPageview"]];
+    (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.async=1;
+    g.src=("https:"==location.protocol?"//ssl":"//www")+".google-analytics.com/ga.js";
+    s.parentNode.insertBefore(g,s)}(document,"script"));
+  </script>
+{% endblock %}
