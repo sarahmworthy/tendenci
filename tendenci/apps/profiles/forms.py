@@ -265,9 +265,6 @@ class ProfileForm(TendenciBaseForm):
             
         return super(ProfileForm, self).save(*args, **kwargs)
 
-
-
-
 class ProfileAdminForm(TendenciBaseForm):
 
     first_name = forms.CharField(label=_("First Name"), max_length=100,
@@ -395,7 +392,6 @@ class ProfileAdminForm(TendenciBaseForm):
         match. Note that an error here will end up in
         ``non_field_errors()`` because it doesn't apply to a single
         field.
-        
         """
         if not self.instance.id:
             if 'password1' in self.cleaned_data and 'password2' in self.cleaned_data:
@@ -613,18 +609,23 @@ class ExportForm(forms.Form):
 
 
 class ProfileMergeForm(forms.Form):
-    master_record = forms.ModelChoiceField(queryset=Profile.objects.none(),
-                        empty_label=None,
-                        label=_("Choose the master record"),
-                        widget=forms.RadioSelect())
-
     user_list = forms.ModelMultipleChoiceField(queryset=Profile.objects.none(),
                     label=_("Choose the users to merge"),
                     widget=forms.CheckboxSelectMultiple())
+
+    master_record = forms.ModelChoiceField(queryset=Profile.objects.none(),
+                        empty_label=None,
+                        label=_("Choose the master record of the users you are merging above"),
+                        widget=forms.RadioSelect())
 
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('list', None)
         super(ProfileMergeForm, self).__init__(*args, **kwargs)
 
-        self.fields["master_record"].queryset = Profile.objects.filter(user__in=choices)
-        self.fields["user_list"].queryset = Profile.objects.filter(user__in=choices)
+        queryset = Profile.objects.filter(user__in=choices).order_by('-user__last_login')
+
+        self.fields["master_record"].queryset = queryset
+        self.fields["user_list"].queryset = queryset
+
+        if queryset.count() == 2:
+            self.fields['user_list'].initial = queryset

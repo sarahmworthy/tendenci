@@ -215,14 +215,20 @@ def search(request, template_name="profiles/search.html"):
     profiles = Profile.objects.filter(Q(status=True), Q(status_detail="active"), Q(filters)).distinct()
 
     if query:
-        profiles = profiles.filter(
-            Q(user__first_name__icontains=query) | \
-            Q(user__last_name__icontains=query) | \
-            Q(user__email__icontains=query) | \
-            Q(user__username__icontains=query) | \
-            Q(display_name__icontains=query) | \
-            Q(company__icontains=query)
-        )
+        db_filters = (
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
+            Q(user__email__icontains=query) |
+            Q(user__username__icontains=query) |
+            Q(display_name__icontains=query) |
+            Q(company__icontains=query))
+
+        full_name_filter = Q()
+
+        if " " in query:
+            full_name_filter = (Q(user__first_name__icontains=query.split(' ', 1)[0]) & Q(user__last_name__icontains=query.split(' ', 1)[1]))
+
+        profiles = profiles.filter(db_filters | full_name_filter)
 
     # if non-superuser
         # if is member
@@ -1026,16 +1032,32 @@ def similar_profiles(request, template_name="profiles/similar_profiles.html"):
             else:
                 duplicate_emails = []
 
+    query = request.GET.get('q', '')
+    filtered_email_list = User.objects.values_list(
+        'email', flat=True)
+    filtered_name_list = User.objects.values_list(
+        'first_name', flat=True)
+
+    if query:
+        filtered_email_list = filtered_email_list.filter(
+            Q(username__icontains=query) | Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) | Q(email__icontains=query))
+
+        filtered_name_list = filtered_name_list.filter(
+            Q(username__icontains=query) | Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) | Q(email__icontains=query))
+
     for dup_name in duplicate_names:
-        if dup_name[0] and dup_name[1]:
+        if dup_name[0] and dup_name[1] and dup_name[0] in filtered_name_list:
             users = User.objects.filter(
-                        first_name=dup_name[0],
-                        last_name=dup_name[1])
+                first_name=dup_name[0],
+                last_name=dup_name[1]).order_by('-last_login')
             users_with_duplicate_name.append(users)
+
     for email in duplicate_emails:
-        if email:
+        if email and email in filtered_email_list:
             users = User.objects.filter(
-                        email=email)
+                email=email).order_by('-last_login')
             users_with_duplicate_email.append(users)
 
     return render_to_response(template_name, {

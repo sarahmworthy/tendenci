@@ -4,27 +4,39 @@ import traceback
 
 from django.core.management.base import BaseCommand
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.template import TemplateDoesNotExist
 from django.template import Context, Template
+from django.conf import settings
 
 
 class Command(BaseCommand):
     """
-    Get a list of membership notices from the notice table,
-    and send each notice to members who meet the criteria.
+    Get a list of corporate membership notices from the notice table,
+    and send each notice to representatives of corporate memberships
+    that meet the criteria.
 
-    Usage: python manage.py send_membership_notices --verbosity 1
+    Usage: python manage.py send_corp_membership_notices --verbosity 1
     """
 
     def handle(self, *args, **options):
         verbosity = 1
         if 'verbosity' in options:
             verbosity = options['verbosity']
+        # first test if we have notices set up
+        from tendenci.addons.corporate_memberships.models import Notice
+        if not Notice.objects.filter(status=True,
+                                     status_detail='active'
+                                    ).exclude(
+                                    notice_time='attimeof'
+                                    ).exists():
+            if verbosity > 1:
+                print('No notices set up...existing...')
+            # no active notices to process. stop here
+            return
 
-        from django.conf import settings
         from tendenci.addons.corporate_memberships.models import (
-            Notice,
             CorpMembership,
             NoticeLog,
             NoticeLogRecord)
@@ -139,10 +151,10 @@ class Command(BaseCommand):
             if memberships_count > 0:
                 email.content_type = notice.content_type
 
-                global_context = {'sitedisplayname': site_display_name,
-                                  'sitecontactname': site_contact_name,
-                                  'sitecontactemail': site_contact_email,
-                                  'timesubmitted': nowstr,
+                global_context = {'site_display_name': site_display_name,
+                                  'site_contact_name': site_contact_name,
+                                  'site_contact_email': site_contact_email,
+                                  'time_submitted': nowstr,
                                   }
 
                 # log notice sent
@@ -154,17 +166,15 @@ class Command(BaseCommand):
 
                 for membership in memberships:
                     try:
-                        if membership.corp_profile.email:
-                            email_member(notice, membership, global_context)
-                            if memberships_count <= 50:
-                                notice.members_sent.append(membership)
-                            num_sent += 1
+                        num_sent += email_member(notice, membership, global_context)
+                        if memberships_count <= 50:
+                            notice.members_sent.append(membership)
 
-                            # log record
-                            notice_log_record = NoticeLogRecord(
-                                                    notice_log=notice_log,
-                                                    corp_membership=membership)
-                            notice_log_record.save()
+                        # log record
+                        notice_log_record = NoticeLogRecord(
+                            notice_log=notice_log,
+                            corp_membership=membership)
+                        notice_log_record.save()
                     except:
                         # catch the exception and email
                         notice.err += traceback.format_exc()
@@ -178,46 +188,59 @@ class Command(BaseCommand):
 
         def email_member(notice, membership, global_context):
             corp_profile = membership.corp_profile
+            representatives = corp_profile.reps.filter(Q(is_dues_rep=True)|(Q(is_member_rep=True)))
+            sent = 0
 
-            body = notice.email_content
-            context = membership.get_field_items()
-            context['membership'] = membership
-            context.update(global_context)
+            for recipient in representatives:
+                body = notice.email_content
+                context = membership.get_field_items()
+                context['membership'] = membership
+                context.update(global_context)
 
-            if membership.expiration_dt:
-                body = body.replace("[expirationdatetime]",
-                                    time.strftime(
-                                      "%d-%b-%y %I:%M %p",
-                                      membership.expiration_dt.timetuple()))
-            else:
-                body = body.replace("[expirationdatetime]", '')
+                context.update({
+                    'rep_first_name': recipient.user.first_name,
+                })
 
-            context.update({'corporatemembershiptypeid':
-                                str(membership.corporate_membership_type.id),
-                            'corporatemembershiptype': membership.corporate_membership_type.name,
-                            })
+                if membership.expiration_dt:
+                    body = body.replace("[expirationdatetime]",
+                                        time.strftime(
+                                          "%d-%b-%y %I:%M %p",
+                                          membership.expiration_dt.timetuple()))
+                else:
+                    body = body.replace("[expirationdatetime]", '')
 
-            body = fieldify(body)
+                context.update({
+                    'corporatemembershiptypeid': str(membership.corporate_membership_type.id),
+                    'corporatemembershiptype': membership.corporate_membership_type.name,
+                    'view_link': "%s%s" % (site_url, membership.get_absolute_url()),
+                    'renew_link': "%s%s" % (site_url, membership.get_renewal_url()),
+                    'renewed_individuals_list': render_to_string(('notification/corp_memb_notice_email/renew_list.html'),
+                                                             {'corp_membership': membership, }),
+                })
 
-            body = '%s <br /><br />%s' % (body, get_footer())
+                body = fieldify(body)
 
-            context = Context(context)
-            template = Template(body)
-            body = template.render(context)
+                body = '%s <br /><br />%s' % (body, get_footer())
 
-            email.recipient = corp_profile.email
-            email.subject = notice.subject.replace('(name)',
-                                                   corp_profile.name)
-            email.body = body
-            if notice.sender:
-                email.sender = notice.sender
-                email.reply_to = notice.sender
-            if notice.sender_display:
-                email.sender_display = notice.sender_display
+                context = Context(context)
+                template = Template(body)
+                body = template.render(context)
 
-            email.send()
-            if verbosity > 1:
-                print 'To ', email.recipient, email.subject
+                email.recipient = recipient.user.email
+                email.subject = notice.subject.replace('(name)',
+                                                       corp_profile.name)
+                email.body = body
+                if notice.sender:
+                    email.sender = notice.sender
+                    email.reply_to = notice.sender
+                if notice.sender_display:
+                    email.sender_display = notice.sender_display
+
+                email.send()
+                sent += 1
+                if verbosity > 1:
+                    print 'To ', email.recipient, email.subject
+            return sent
 
         def get_footer():
             return """

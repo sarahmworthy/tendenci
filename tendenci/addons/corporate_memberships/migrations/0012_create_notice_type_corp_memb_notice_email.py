@@ -1,78 +1,27 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
+from django.conf import settings
+from django.utils.translation import ugettext_noop as _
 
-class Migration(SchemaMigration):
+
+class Migration(DataMigration):
 
     def forwards(self, orm):
-        
-        # Adding model 'NoticeLog'
-        db.create_table('corporate_memberships_noticelog', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('notice', self.gf('django.db.models.fields.related.ForeignKey')(related_name='logs', to=orm['corporate_memberships.Notice'])),
-            ('notice_sent_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('num_sent', self.gf('django.db.models.fields.IntegerField')()),
-        ))
-        db.send_create_signal('corporate_memberships', ['NoticeLog'])
-
-        # Adding model 'Notice'
-        db.create_table('corporate_memberships_notice', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('notice_name', self.gf('django.db.models.fields.CharField')(max_length=250)),
-            ('num_days', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('notice_time', self.gf('django.db.models.fields.CharField')(max_length=20)),
-            ('notice_type', self.gf('django.db.models.fields.CharField')(max_length=20)),
-            ('system_generated', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('corporate_membership_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['corporate_memberships.CorporateMembershipType'], null=True, blank=True)),
-            ('subject', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('content_type', self.gf('django.db.models.fields.CharField')(max_length=10)),
-            ('sender', self.gf('django.db.models.fields.EmailField')(max_length=255, null=True, blank=True)),
-            ('sender_display', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
-            ('email_content', self.gf('tinymce.models.HTMLField')()),
-            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('update_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('creator', self.gf('django.db.models.fields.related.ForeignKey')(related_name='corporate_membership_notice_creator', null=True, to=orm['auth.User'])),
-            ('creator_username', self.gf('django.db.models.fields.CharField')(max_length=50, null=True)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(related_name='corporate_membership_notice_owner', null=True, to=orm['auth.User'])),
-            ('owner_username', self.gf('django.db.models.fields.CharField')(max_length=50, null=True)),
-            ('status_detail', self.gf('django.db.models.fields.CharField')(default='active', max_length=50)),
-            ('status', self.gf('django.db.models.fields.BooleanField')(default=True)),
-        ))
-        db.send_create_signal('corporate_memberships', ['Notice'])
-
-        # Adding model 'NoticeLogRecord'
-        db.create_table('corporate_memberships_noticelogrecord', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('guid', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('notice_log', self.gf('django.db.models.fields.related.ForeignKey')(related_name='log_records', to=orm['corporate_memberships.NoticeLog'])),
-            ('corp_membership', self.gf('django.db.models.fields.related.ForeignKey')(related_name='log_records', to=orm['corporate_memberships.CorpMembership'])),
-            ('action_taken', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('action_taken_dt', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
-            ('create_dt', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-        ))
-        db.send_create_signal('corporate_memberships', ['NoticeLogRecord'])
-
-        # Changing field 'CorpMembershipApp.memb_app'
-        db.alter_column('corporate_memberships_corpmembershipapp', 'memb_app_id', self.gf('django.db.models.fields.related.OneToOneField')(unique=True, to=orm['memberships.MembershipApp']))
-
+        if "tendenci.apps.notifications" in settings.INSTALLED_APPS:
+            from tendenci.apps.notifications import models as notification
+            # this is for existing databases.
+            # no need to check if exists as the create_notice_type function
+            # will do so.
+            notification.create_notice_type(
+                    "corp_memb_notice_email",
+                    _("Corporate Membership Notice Email"),
+                    _("Custom Notice for Corporate Memberships"))
 
     def backwards(self, orm):
-        
-        # Deleting model 'NoticeLog'
-        db.delete_table('corporate_memberships_noticelog')
-
-        # Deleting model 'Notice'
-        db.delete_table('corporate_memberships_notice')
-
-        # Deleting model 'NoticeLogRecord'
-        db.delete_table('corporate_memberships_noticelogrecord')
-
-        # Changing field 'CorpMembershipApp.memb_app'
-        db.alter_column('corporate_memberships_corpmembershipapp', 'memb_app_id', self.gf('django.db.models.fields.related.OneToOneField')(unique=True, null=True, to=orm['memberships.MembershipApp']))
+        pass
 
 
     models = {
@@ -91,7 +40,7 @@ class Migration(SchemaMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 3, 27, 5, 3, 20, 513834)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 4, 4, 17, 41, 26, 889161)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -99,7 +48,7 @@ class Migration(SchemaMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 3, 27, 5, 3, 20, 513720)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 4, 4, 17, 41, 26, 889054)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -535,7 +484,7 @@ class Migration(SchemaMigration):
         },
         'corporate_memberships.notice': {
             'Meta': {'object_name': 'Notice'},
-            'content_type': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'content_type': ('django.db.models.fields.CharField', [], {'default': "'html'", 'max_length': '10'}),
             'corporate_membership_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['corporate_memberships.CorporateMembershipType']", 'null': 'True', 'blank': 'True'}),
             'create_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'corporate_membership_notice_creator'", 'null': 'True', 'to': "orm['auth.User']"}),
