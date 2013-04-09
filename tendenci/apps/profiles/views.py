@@ -44,7 +44,7 @@ from tendenci.apps.user_groups.forms import GroupMembershipEditForm
 
 from tendenci.apps.profiles.models import Profile
 from tendenci.apps.profiles.forms import (ProfileForm, ExportForm, UserPermissionForm, 
-UserGroupsForm, ValidatingPasswordChangeForm, UserMembershipForm, ProfileMergeForm)
+UserGroupsForm, ValidatingPasswordChangeForm, UserMembershipForm, ProfileMergeForm, ProfileSearchForm)
 from tendenci.apps.profiles.tasks import ExportProfilesTask
 from tendenci.apps.profiles.utils import get_member_reminders
 from tendenci.addons.events.models import Registrant
@@ -180,7 +180,6 @@ def search(request, template_name="profiles/search.html"):
     allow_anonymous_search = get_setting('module', 'users', 'allowanonymoususersearchuser')
     allow_user_search = get_setting('module', 'users', 'allowusersearch')
     membership_view_perms = get_setting('module', 'memberships', 'memberprotection')
-    only_members = request.GET.get('members', None)
 
     # hide "only members" checkbox
     # special occasion when box does nothing
@@ -209,26 +208,52 @@ def search(request, template_name="profiles/search.html"):
                 if not allow_user_search:
                     raise Http403
 
-    query = request.GET.get('q', None)
     filters = get_query_filters(request.user, 'profiles.view_profile')
+    profiles = Profile.objects.filter(Q(filters)).distinct()
 
-    profiles = Profile.objects.filter(Q(status=True), Q(status_detail="active"), Q(filters)).distinct()
+    if not request.user.profile.is_superuser:
+        profiles = profiles.filter(Q(status=True), Q(status_detail="active"))
 
-    if query:
-        db_filters = (
-            Q(user__first_name__icontains=query) |
-            Q(user__last_name__icontains=query) |
-            Q(user__email__icontains=query) |
-            Q(user__username__icontains=query) |
-            Q(display_name__icontains=query) |
-            Q(company__icontains=query))
+    form = ProfileSearchForm(request, request.GET or None)
+    if form.is_valid():
+        first_name = form.cleaned_data['f_name']
+        last_name = form.cleaned_data['l_name']
+        email = form.cleaned_data['email']
+        group = form.cleaned_data['group']
+        member = form.cleaned_data['member']
+        search_criteria = form.cleaned_data['search_criteria']
+        search_text = form.cleaned_data['search_text'].lower()
+        search_method = form.cleaned_data['search_method']
 
-        full_name_filter = Q()
+        search_filters = {
+            'user__first_name__%s' %(search_method): first_name,
+            'user__last_name__%s' %(search_method): last_name,
+            'user__email__%s' %(search_method): email
+        }
+        if group:
+            search_filters.update({'user__group': group})
 
-        if " " in query:
-            full_name_filter = (Q(user__first_name__icontains=query.split(' ', 1)[0]) & Q(user__last_name__icontains=query.split(' ', 1)[1]))
-
-        profiles = profiles.filter(db_filters | full_name_filter)
+        if search_criteria:
+            if search_criteria == 'security_level':
+                if search_text == 'superuser':
+                    search_filters.update({'user__is_superuser': True,})
+                elif search_text == 'staff':
+                    search_filters.update({
+                        'user__is_superuser': False,
+                        'user__is_staff': True,
+                    })
+                else:
+                    search_filters.update({
+                        'user__is_superuser': False,
+                        'user__is_staff': False,
+                    })
+            else:
+                search_filters.update({
+                    '%s__%s' %(search_criteria, search_method): search_text,
+                })
+        profiles = profiles.filter(**search_filters)
+        if member:
+            profiles = profiles.exclude(member_number='')  # exclude non-members
 
     # if non-superuser
         # if is member
@@ -255,10 +280,7 @@ def search(request, template_name="profiles/search.html"):
             if membership_view_perms != 'public':
                 profiles = profiles.exclude(~Q(member_number=''))  # exclude all members
 
-        profiles = profiles.exclude(hide_in_search=True)
-
-    if only_members:
-        profiles = profiles.exclude(member_number='')  # exclude non-members
+        profiles = profiles.exclude(hide_in_search=True)  
 
     if not request.user.profile.is_superuser:
         profiles = profiles.exclude(hide_in_search=True)
@@ -266,7 +288,9 @@ def search(request, template_name="profiles/search.html"):
     profiles = profiles.order_by('user__last_name', 'user__first_name')
 
     EventLog.objects.log()
-    return render_to_response(template_name, {'profiles': profiles, 'show_checkbox': show_checkbox, 'user_this': None},
+    return render_to_response(
+        template_name, 
+        {'profiles': profiles, 'show_checkbox': show_checkbox, 'user_this': None, 'form':form},
         context_instance=RequestContext(request))
 
 

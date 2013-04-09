@@ -1,12 +1,39 @@
-{% load i18n %}
-
-
-<form class="search-form" action="{% url profile.search %}" method="get">
-<input type="text" name="q" value="{{ request.GET.q|striptags }}" />
-<input type="submit" value="Search" />
-
-{% if show_checkbox %}
-<p><label for="members">{% trans 'Only Show Members' %}</label><input type="checkbox" name="members" value="&#x2713;" onchange="this.form.submit();" {% if request.GET.members %}checked=checked{% endif %} /></p>
+{% if form.errors.values %}
+{% for error in form.errors.values %}
+<p>{{ error }}</p>
+{% endfor %}
 {% endif %}
 
+<form class="search-form2" action="{% url profile.search %}" method="get">
+<table width="545" border="0">
+    <tr>
+        <td nowrap>
+            {{ form.f_name.label|title }}: {{ form.f_name }}
+        </td>
+        <td nowrap>
+            {{ form.l_name.label|title }}: {{ form.l_name }}
+        </td>
+    </tr>
+    <tr>
+        <td nowrap>
+            {{ form.email.label|title }}: {{ form.email }}
+        </td>
+        <td nowrap>
+            {{ form.group.label|title }}: {{ form.group }}
+        </td>
+        {% if show_checkbox %}
+        <td nowrap>
+            {{ form.member.label|title }}: {{ form.member }}
+        </td>
+        {% endif %}
+    </tr>
+    <tr>
+        <td colspan="2">
+            {{ form.search_criteria }} {{ form.search_text }} {{ form.search_method }}
+            <input type="submit" value="Search" />
+        </td>
+    </tr>
+</table>
 </form>
+
+

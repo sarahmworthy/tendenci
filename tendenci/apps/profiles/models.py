@@ -119,6 +119,10 @@ class Profile(Person):
 
         return self.display_name or name or user.email or user.username
 
+    def get_address(self):
+        city_zip = ', '.join([s for s in (self.city, self.state) if s])
+        return ' '.join([s for s in (city_zip, self.zipcode) if s])
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.guid = str(uuid.uuid1())

@@ -10,11 +10,8 @@
 <div class="profile-wrap">
     <h2>
         <a href="{{ profile.get_absolute_url }}">
-        {% if profile.display_name %}
-            {{ profile.display_name }}
-        {% else %}
-            {{ profile.user.last_name }}{% if profile.user.first_name %}, {{ profile.user.first_name }} {% endif %}
-        {% endif %}({{ profile.user.username }})</a> 	
+        {{ profile.user.last_name }}{% if profile.user.first_name %}, {{ profile.user.first_name }}{% endif %}
+        {% if profile.display_name %} ("{{ profile.display_name }}"){% endif %}</a> ({{ profile.user.username }})
         {% if profile.is_member %}
         <span style="font-size: 12px;">Member</span> <!-- replace with Icon -->
         {% endif %}
@@ -27,30 +24,67 @@
     </div>
 
 
-    <div class="content" style="float: left; margin-left:5px;">
-        {% if profile.user.email %}
-        {% if request.user.profile.is_superuser or not profile.hide_email %}
-        <b>{% trans "Email:" %}</b> {{ profile.user.email|obfuscate_email }}<br />
-        {% endif %}
-        {% endif %}
-        {% if profile.phone %}
-        {% if request.user.profile.is_superuser or not profile.hide_phone %}
-        <b>{% trans "Phone:" %}</b> {{ profile.phone|phonenumber }}<br />
-        {% endif %}
-        {% endif %}
-        {% if profile.company %}
-        <b>{% trans "Company:" %}</b> {{ profile.company }}<br />
-        {% endif %}
+    <div class="content" style="width:65%; float: left; margin-left:5px;">
+        <table width="100%" border="0" cellspacing="1" cellpadding="1">
+            <tr>
+                <td nowrap>
+                    {% if profile.user.email %}
+                    {% if request.user.profile.is_superuser or not profile.hide_email %}
+                    <b>{% trans "Email:" %}</b> {{ profile.user.email|obfuscate_email }}<br />
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td nowrap>
+                    {% if request.user.profile.is_superuser or not profile.hide_phone %}
+                    {% if profile.phone %}
+                    <b>{% trans "Phone:" %}</b> {{ profile.phone|phonenumber }}<br />
+                    {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td nowrap>
+                    {% if request.user.profile.is_superuser or not profile.hide_address %}
+                    {% if profile.get_address %}
+                    <b>{% trans "Location:" %}</b> {{ profile.get_address }}<br />
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td nowrap>
+                    {% if request.user.profile.is_superuser or not profile.hide_phone %}
+                    {% if profile.mobile_phone %}
+                    <b>{% trans "Mobile:" %}</b> {{ profile.mobile_phone|phonenumber }}<br />
+                    {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td nowrap>
+                    {% if profile.company %}
+                    <b>{% trans "Company:" %}</b> {{ profile.company }}<br />
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+    {% if profile.hide_in_search %}
+    <em>{% trans "this record is not searchable unless you are administrator." %}</em><br/>
+    {% endif %}
+    {% if profile.hide_email or profile.hide_address or profile.hide_phone %}
+    <em>{% trans "the following items are hidden unless you are administrator: " %}
+        {% if profile.hide_email %}email{% endif %}{% if profile.hide_address %}, location{% endif %}{% if profile.hide_phone %}, phone{% endif %}.</em>
+    {% endif %}
+
     </div>
+
 		{% if profile.is_member %}
         	{% if profile|allow_edit_by:user %}
             	<div style="float: right;">
             	<span class="member-icon">Member ID: {{ profile.member_number }}</span>
             	</div>
         	{% endif %}
-            
     	{% endif %}
-    	
+
     <div class="clear"></div>
 
 </div>

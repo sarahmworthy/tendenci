@@ -8,6 +8,10 @@
 	width:60%;
 }
 
+.t form.search-form2 td {
+    vertical-align: middle;
+}
+
 .profile-icon img {
     float: left;
     margin-right: 20px;
