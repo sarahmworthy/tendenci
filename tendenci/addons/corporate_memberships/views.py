@@ -115,12 +115,12 @@ def get_app_fields_json(request):
 
 
 @login_required
-def app_preview(request, app_id,
+def app_preview(request, slug,
                     template='corporate_memberships/applications/preview.html'):
     """
     Corporate membership application preview.
     """
-    app = get_object_or_404(CorpMembershipApp, pk=app_id)
+    app = get_object_or_404(CorpMembershipApp, slug=slug)
     is_superuser = request.user.profile.is_superuser
     app_fields = app.fields.filter(display=True)
     if not is_superuser:
@@ -160,7 +160,8 @@ def corpmembership_add_pre(request,
             EventLog.objects.log(instance=creator)
 
             # redirect to add
-            return HttpResponseRedirect('%s%s' % (reverse('corpmembership.add'),
+            return HttpResponseRedirect('%s%s' % (reverse('corpmembership.add',
+                                                          args=[app.slug]),
                                               '?hash=%s' % hash))
 
     context = {"form": form,
@@ -168,15 +169,11 @@ def corpmembership_add_pre(request,
     return render_to_response(template, context, RequestContext(request))
 
 
-def corpmembership_add(request,
+def corpmembership_add(request, slug='',
                        template='corporate_memberships/applications/add.html'):
     """
     Corporate membership add.
     """
-    app = CorpMembershipApp.objects.current_app()
-    if not app:
-        raise Http404
-    is_superuser = request.user.profile.is_superuser
     creator = None
     hash = request.GET.get('hash', '')
     if not request.user.is_authenticated():
@@ -187,11 +184,24 @@ def corpmembership_add(request,
             # contact email before processing
             return HttpResponseRedirect(reverse('corpmembership.add_pre'))
 
+    if not slug:
+        app = CorpMembershipApp.objects.current_app()
+        if not app:
+            raise Http404
+    else:
+        app = get_object_or_404(CorpMembershipApp, slug=slug)
+        current_app = CorpMembershipApp.objects.current_app()
+
+        if app.id != current_app.id:
+            return HttpResponseRedirect(reverse('corpmembership_app.preview',
+                                                args=[app.slug]))
+    is_superuser = request.user.profile.is_superuser
+
     app_fields = app.fields.filter(display=True)
     if not is_superuser:
         app_fields = app_fields.filter(admin_only=False)
     app_fields = app_fields.exclude(field_name='expiration_dt')
-    app_fields = app_fields.order_by('order')
+    app_fields = app_fields.order_by('position')
 
     corpprofile_form = CorpProfileForm(app_fields,
                                      request.POST or None,
@@ -337,7 +347,7 @@ def corpmembership_edit(request, id,
         # if it is expired, remove the expiration_dt field so they can
         # renew this corporate membership
         app_fields = app_fields.exclude(field_name='expiration_dt')
-    app_fields = app_fields.order_by('order')
+    app_fields = app_fields.order_by('position')
 
     corpprofile_form = CorpProfileForm(app_fields,
                                      request.POST or None,
@@ -440,7 +450,7 @@ def corpmembership_view(request, id,
             fields_to_exclude = ['authorized_domain']
         app_fields = app_fields.exclude(field_name__in=fields_to_exclude)
 
-    app_fields = list(app_fields.order_by('order'))
+    app_fields = list(app_fields.order_by('position'))
 
     if can_edit:
         app_field = CorpMembershipAppField(label='Join Date',
@@ -484,7 +494,16 @@ def corpmembership_view(request, id,
             app_field.short_label = False
 
     EventLog.objects.log(instance=corp_membership)
+
+    # all records for this corp_profile - use to display the timeline
+    if is_superuser or corp_membership.is_rep(request.user):
+        all_records = CorpMembership.objects.filter(
+                                corp_profile=corp_membership.corp_profile
+                                ).order_by('-create_dt')
+    else:
+        all_records = []
     context = {"corporate_membership": corp_membership,
+               'all_records': all_records,
                'app_fields': app_fields,
                'app': app}
     return render_to_response(template, context, RequestContext(request))
@@ -505,7 +524,7 @@ def corpmembership_search(request, my_corps_only=False,
 
     query = request.GET.get('q')
     try:
-        cp_id = request.GET.get('cp_id')
+        cp_id = int(request.GET.get('cp_id'))
     except:
         cp_id = 0
 
@@ -529,7 +548,8 @@ def corpmembership_search(request, my_corps_only=False,
 
     if query:
         corp_members = corp_members.filter(
-                            corp_profile__name__icontains=query)
+                            Q(corp_profile__name__icontains=query
+                              ) | Q(corp_profile__zip=query))
 
     if cp_id:
         corp_members = corp_members.filter(corp_profile_id=cp_id)
@@ -685,7 +705,6 @@ def corpmembership_approve(request, id,
 def corp_renew(request, id,
                template='corporate_memberships/renewal.html'):
     corp_membership = get_object_or_404(CorpMembership, id=id)
-    new_corp_membership = corp_membership.copy()
 
     if not has_perm(request.user,
                     'corporate_memberships.change_corpmembership',
@@ -701,6 +720,7 @@ def corp_renew(request, id,
         return HttpResponseRedirect(reverse('corpmembership.view',
                                         args=[corp_membership.id]))
     corpmembership_app = CorpMembershipApp.objects.current_app()
+    new_corp_membership = corp_membership.copy()
     form = CorpMembershipRenewForm(
                             request.POST or None,
                             instance=new_corp_membership,
@@ -847,7 +867,7 @@ def corp_renew_conf(request, id,
     if not has_perm(request.user,
                     'corporate_memberships.change_corporatemembership',
                     corp_membership):
-        if not corp_membership.allow_edit_by(request.user):
+        if not corp_membership.allow_view_by(request.user):
             raise Http403
 
     corpmembership_app = CorpMembershipApp.objects.current_app()
@@ -858,7 +878,6 @@ def corp_renew_conf(request, id,
                'corp_app': corpmembership_app,
                }
     return render_to_response(template, context, RequestContext(request))
-
 
 @login_required
 def roster_search(request,
@@ -1226,6 +1245,7 @@ def download_template(request):
                                if not name in base_field_list]
     corp_memb_field_list.remove('guid')
     corp_memb_field_list.remove('corp_profile')
+    corp_memb_field_list.remove('anonymous_creator')
 
     title_list = corp_profile_field_list + corp_memb_field_list \
                      + base_field_list
@@ -1263,6 +1283,7 @@ def corpmembership_export(request,
                              if not field.__class__ == AutoField]
             corp_memb_field_list.remove('guid')
             corp_memb_field_list.remove('corp_profile')
+            corp_memb_field_list.remove('anonymous_creator')
 
             title_list = corp_profile_field_list + corp_memb_field_list
 
@@ -1343,8 +1364,9 @@ def edit_corp_reps(request, id, form_class=CorpMembershipRepForm,
 
 def corp_reps_lookup(request):
     q = request.REQUEST['term']
-    use_search_index = get_setting('site', 'global', 'searchindex')
-
+    #use_search_index = get_setting('site', 'global', 'searchindex')
+    # TODO: figure out a way of assigning search permission to dues_reps.
+    use_search_index = False
     if use_search_index:
         profiles = Profile.objects.search(
                             q,
@@ -2009,58 +2031,7 @@ def view(request, id, template="corporate_memberships/view.html"):
 
 
 def search(request, template_name="corporate_memberships/search.html"):
-    allow_anonymous_search = get_setting('module', 
-                                     'corporate_memberships', 
-                                     'anonymoussearchcorporatemembers')
-
-    if not request.user.is_authenticated() and not allow_anonymous_search:
-        raise Http403
-    
-    query = request.GET.get('q', None)
-    
-    if query == 'is_pending:true' and request.user.profile.is_superuser:
-        # pending list only for admins
-        pending_rew_entry_ids = CorpMembRenewEntry.objects.filter(
-                                    status_detail__in=['pending', 'paid - pending approval']
-                                    ).values_list('id', flat=True)
-        q_obj = Q(status_detail__in=['pending', 'paid - pending approval'])
-        if pending_rew_entry_ids:
-            q_obj = q_obj | Q(renew_entry_id__in=pending_rew_entry_ids)
-        corp_members = CorporateMembership.objects.filter(q_obj)
-    else:
-    
-        filter_and, filter_or = CorporateMembership.get_search_filter(request.user)
-        q_obj = None
-        if filter_and:
-            q_obj = Q(**filter_and)
-        if filter_or:
-            q_obj_or = reduce(operator.or_, [Q(**{key: value}) for key, value in filter_or.items()])
-            if q_obj:
-                q_obj = reduce(operator.and_, [q_obj, q_obj_or])
-            else:
-                q_obj = q_obj_or
-        
-        if get_setting('site', 'global', 'searchindex') and query:
-            corp_members = CorporateMembership.objects.search(query, user=request.user)
-            if q_obj:
-                corp_members = corp_members.filter(q_obj)
-            corp_members = corp_members.order_by('name_exact')
-        else:
-            if q_obj:
-                corp_members = CorporateMembership.objects.filter(q_obj)
-            else:
-                corp_members = CorporateMembership.objects.all()
-        
-    #        if request.user.is_authenticated():
-    #            corp_members = corp_members.select_related()
-            
-        
-    corp_members = corp_members.order_by('name')
-
-    EventLog.objects.log()
-
-    return render_to_response(template_name, {'corp_members': corp_members}, 
-        context_instance=RequestContext(request))
+    return HttpResponseRedirect(reverse('corpmembership.search'))
 
 @login_required
 def delete(request, id, template_name="corporate_memberships/delete.html"):
@@ -2576,7 +2547,7 @@ def corp_export(request):
     if request.method == 'POST':
         if form.is_valid():
             # reset the password_promt session
-            request.session['password_promt'] = False
+            del request.session['password_promt']
             corp_app = form.cleaned_data['corp_app']
             
             filename = "corporate_memberships_%d_export.csv" % corp_app.id

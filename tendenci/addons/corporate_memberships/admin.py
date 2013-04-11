@@ -2,22 +2,32 @@ from django.contrib import admin
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.contrib.admin import SimpleListFilter
+from django.utils.encoding import force_unicode
+from django.utils.translation import ugettext_lazy as _
 
 from tendenci.addons.corporate_memberships.models import (
-                                            CorporateMembershipType,
-                                            CorpMembershipApp,
-                                            CorpMembershipAppField,
-                                            CorpMembership,
-                                            CorporateMembership)
+    CorporateMembershipType,
+    CorpMembershipApp,
+    CorpMembershipAppField,
+    CorpMembership,
+    CorporateMembership,
+    Notice)
 from tendenci.addons.corporate_memberships.models import CorpApp, CorpField
 from tendenci.addons.corporate_memberships.forms import (
-                                            CorporateMembershipTypeForm,
-                                            CorpMembershipAppForm,
-                                            CorpFieldForm,
-                                            CorpAppForm)
-from tendenci.addons.corporate_memberships.utils import get_corpapp_default_fields_list, update_authenticate_fields, edit_corpapp_update_memb_app
+    CorporateMembershipTypeForm,
+    CorpMembershipAppForm,
+    CorpFieldForm,
+    CorpAppForm,
+    NoticeForm,
+    CorpMembershipAppFieldAdminForm)
+from tendenci.addons.corporate_memberships.utils import (
+    get_corpapp_default_fields_list,
+    update_authenticate_fields,
+    edit_corpapp_update_memb_app)
 
 from tendenci.core.event_logs.models import EventLog
+from tendenci.core.site_settings.utils import get_setting
 
 
 class CorporateMembershipTypeAdmin(admin.ModelAdmin):
@@ -64,13 +74,13 @@ class CorporateMembershipTypeAdmin(admin.ModelAdmin):
 class CorpMembershipAppFieldAdmin(admin.TabularInline):
     model = CorpMembershipAppField
     fields = ('label', 'field_name', 'display',
-              'required', 'admin_only', 'order',
+              'required', 'admin_only', 'position',
               )
 #    readonly_fields = ('field_name',)
     extra = 0
     can_delete = False
     verbose_name = 'Section Break'
-    ordering = ("order",)
+    ordering = ("position",)
     template = "corporate_memberships/admin/corpmembershipapp/tabular.html"
 
 
@@ -84,6 +94,7 @@ class CorpMembershipAppAdmin(admin.ModelAdmin):
                            'description',
                            'confirmation_text', 'notes',
                            'corp_memb_type', 'payment_methods',
+                           'memb_app'
                            )},),
         ('Permissions', {'fields': ('allow_anonymous_view',)}),
         ('Advanced Permissions', {'classes': ('collapse',), 'fields': (
@@ -280,7 +291,162 @@ class CorpMembershipAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(reverse('corpmembership.view',
                                             args=[object_id]))
 
+
+class NoticeAdmin(admin.ModelAdmin):
+    def notice_log(self):
+        if self.notice_time == 'attimeof':
+            return '--'
+        return '<a href="%s%s?notice_id=%d">View logs</a>' % (get_setting('site', 'global', 'siteurl'),
+                         reverse('corporate_membership.notice.log.search'), self.id)
+    notice_log.allow_tags = True
+
+    list_display = ['notice_name', notice_log, 'content_type',
+                     'corporate_membership_type', 'status', 'status_detail']
+    list_filter = ['notice_type', 'status_detail']
+
+    fieldsets = (
+        (None, {'fields': ('notice_name', 'notice_time_type', 'corporate_membership_type')}),
+        ('Email Fields', {'fields': ('subject', 'content_type', 'sender', 'sender_display', 'email_content')}),
+        ('Other Options', {'fields': ('status', 'status_detail')}),
+    )
+
+    form = NoticeForm
+
+    class Media:
+        js = (
+            "%sjs/jquery-1.4.2.min.js" % settings.STATIC_URL,
+            '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
+        )
+
+    def save_model(self, request, object, form, change):
+        instance = form.save(commit=False)
+
+        # save the expiration method fields
+        notice_time_type = form.cleaned_data['notice_time_type']
+        notice_time_type_list = notice_time_type.split(",")
+        instance.num_days = notice_time_type_list[0]
+        instance.notice_time = notice_time_type_list[1]
+        instance.notice_type = notice_time_type_list[2]
+
+        if not change:
+            instance.creator = request.user
+            instance.creator_username = request.user.username
+            instance.owner = request.user
+            instance.owner_username = request.user.username
+
+        instance.save()
+
+        return instance
+
+
+class AppListFilter(SimpleListFilter):
+    title = _('Corp. Memb. App')
+    parameter_name = 'corp_app_id'
+
+    def lookups(self, request, model_admin):
+        apps_list = CorpMembershipApp.objects.filter(
+                        status=True,
+                        status_detail__in=['active', 'published']
+                        ).values_list('id', 'name'
+                        ).order_by('id')
+        return [(app_tuple[0], app_tuple[1]) for app_tuple in apps_list]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            queryset = queryset.filter(
+                    corp_app_id=int(self.value()))
+        queryset = queryset.filter(display=True)
+        return queryset
+
+
+class CorpMembershipAppField2Admin(admin.ModelAdmin):
+    model = CorpMembershipAppField
+    list_display = ['label', 'field_name', 'display',
+              'required', 'admin_only', 'position',
+              ]
+
+    readonly_fields = ('corp_app', 'field_name')
+
+    list_editable = ['position']
+    ordering = ("position",)
+    list_filter = (AppListFilter,)
+    form = CorpMembershipAppFieldAdminForm
+
+    class Media:
+        js = (
+            '%sjs/jquery-1.6.2.min.js' % settings.STATIC_URL,
+            'js/jquery-ui-1.8.17.custom.min.js',
+            '%sjs/admin/admin-list-reorder.js' % settings.STATIC_URL,
+        )
+
+    def get_fieldsets(self, request, obj=None):
+        extra_fields = ['description', 'help_text',
+                        'choices', 'default_value', 'css_class']
+        if obj:
+            if obj.field_name:
+                extra_fields.remove('description')
+            else:
+                extra_fields.remove('help_text')
+                extra_fields.remove('choices')
+                extra_fields.remove('default_value')
+        fields = ('corp_app', 'label', 'field_name', 'field_type',
+                    ('display', 'required', 'admin_only'),
+                             ) + tuple(extra_fields)
+
+        return ((None, {'fields': fields
+                        }),)
+
+    def get_object(self, request, object_id):
+        obj = super(CorpMembershipAppField2Admin, self).get_object(request, object_id)
+
+        # assign default field_type
+        if obj:
+            if not obj.field_type:
+                if not obj.field_name:
+                    obj.field_type = 'section_break'
+                else:
+                    obj.field_type = CorpMembershipAppField.get_default_field_type(obj.field_name)
+
+        return obj
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_actions(self, request):
+        return None
+
+    def response_change(self, request, obj):
+        """
+        If the 'Save' button is clicked, redirect to fields list
+        with the selected app.
+        """
+        if "_save" in request.POST:
+            opts = obj._meta
+            verbose_name = opts.verbose_name
+            module_name = opts.module_name
+            if obj._deferred:
+                opts_ = opts.proxy_for_model._meta
+                verbose_name = opts_.verbose_name
+                module_name = opts_.module_name
+
+            msg = _('The %(name)s "%(obj)s" was changed successfully.') % {
+                        'name': force_unicode(verbose_name),
+                        'obj': force_unicode(obj)}
+            self.message_user(request, msg)
+            post_url = '%s?corp_app_id=%d' % (
+                            reverse('admin:%s_%s_changelist' %
+                                   (opts.app_label, module_name),
+                                   current_app=self.admin_site.name),
+                            obj.corp_app_id)
+            return HttpResponseRedirect(post_url)
+        else:
+            return super(CorpMembershipAppField2Admin, self).response_change(request, obj)
+
 admin.site.register(CorpMembership, CorpMembershipAdmin)
 admin.site.register(CorporateMembershipType, CorporateMembershipTypeAdmin)
 admin.site.register(CorpMembershipApp, CorpMembershipAppAdmin)
-
+admin.site.register(CorpMembershipAppField, CorpMembershipAppField2Admin)
+admin.site.register(Notice, NoticeAdmin)

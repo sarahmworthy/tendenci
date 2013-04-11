@@ -60,23 +60,34 @@ class NavItem(OrderingBaseModel):
         """
         returns the item's direct children
         """
-        #get the first sibling among the ones with greater ordering
-        siblings = NavItem.objects.filter(nav=self.nav,
-            position__gt=self.position,
-            level=self.level).order_by('position')
+        level = self.level or 0
+        level_down = level + 1
+        position = self.position or 0
+
+        # get the first sibling among the ones with greater ordering
+        siblings = NavItem.objects.filter(
+            nav=self.nav,
+            position__gt=position,
+            level=level
+        ).order_by('position')
         if siblings:
             sibling = siblings[0]
-            #return all the items between the adjacent siblings.
-            children = NavItem.objects.filter(nav=self.nav,
-                level = self.level+1,
-                position__gt=self.position,
-                position__lt=sibling.position).order_by('position')
+            sibling_position = sibling.position or 0
+            # return all the items between the adjacent siblings.
+            children = NavItem.objects.filter(
+                nav=self.nav,
+                level=level_down,
+                position__gt=position,
+                position__lt=sibling_position
+            ).order_by('position')
             return children
         else:
             # get children for the last item in a list
-            children = NavItem.objects.filter(nav=self.nav,
-                level = self.level+1,
-                position__gt=self.position).order_by('position')
+            children = NavItem.objects.filter(
+                nav=self.nav,
+                level=level_down,
+                position__gt=position
+            ).order_by('position')
             return children
     
     @property
