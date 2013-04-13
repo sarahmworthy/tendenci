@@ -223,3 +223,16 @@ def get_member_reminders(user):
             expired_list.append(membership.membership_type.name)
         
     return renewal_list, expiring_list, expired_list
+
+
+def clean_username(username):
+    """
+    Removes improper characters from a username
+    """
+    bad_characters = " !#$%^&*()[]'\""
+
+    for char in bad_characters:
+        if char in username:
+            username = username.replace(char, '')
+
+    return username
