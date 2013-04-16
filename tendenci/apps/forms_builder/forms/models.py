@@ -40,11 +40,28 @@ FIELD_CHOICES = (
 )
 
 FIELD_FUNCTIONS = (
-    ("GroupSubscription", _("Subscribe to Group")),
-    ("EmailFirstName", _("First Name")),
-    ("EmailLastName", _("Last Name")),
-    ("EmailFullName", _("Full Name")),
-    ("EmailPhoneNumber", _("Phone Number")),
+    ("group_subscription", _("Subscribe to Group")),
+    ("first_name", _("First Name")),
+    ("last_name", _("Last Name")),
+    ("email", _("Email")),
+    ("url", _("URL")),
+
+    ("address", _("Address")),
+    ("city", _("City")),
+    ("state", _("State")),
+    ("zipcode", _("Zip Code")),
+    ("country", _("Country")),
+    ("phone", _("Phone")),
+    ("position_title", _("Position Title")),
+    ("comments", _("Comments")),
+
+    ("company_name", _("Company Name")),
+    ("company_address", _("Company Address")),
+    ("company_city", _("Company City")),
+    ("company_state", _("Company State")),
+    ("company_zipcode", _("Company Zip Code")),
+    ("company_country", _("Company Country")),
+    ("company_phone", _("Company Phone")),
 )
 
 BILLING_PERIOD_CHOICES = (
@@ -89,12 +106,39 @@ class Form(TendenciBaseModel):
         help_text=_("Redirect to this page after form completion."))
     template = models.CharField(_('Template'), max_length=50, blank=True)
 
+    create_user = models.BooleanField(default=True,
+        help_text=_("Create a user if one does not exist"))
+
     # payments
     custom_payment = models.BooleanField(_("Is Custom Payment"), default=False,
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
     recurring_payment = models.BooleanField(_("Is Recurring Payment"), default=False,
         help_text=_("If checked, please add pricing options below. Leave the price blank if users can enter their own amount."))
     payment_methods = models.ManyToManyField("payments.PaymentMethod", blank=True)
+
+    # popular fields -------------------------------------------------
+    first_name = models.BooleanField(_('First Name'), default=False)
+    last_name = models.BooleanField(_('Last Name'), default=False)
+    email = models.BooleanField(_('Email'), default=False)
+    position_title = models.BooleanField(_('Position Title'), default=False)
+    url = models.BooleanField(_('URL'), default=False)
+    comments = models.BooleanField(_('Comments'), default=False)
+    group_subscription = models.BooleanField(_('Group Subscription'), default=False)
+
+    address = models.BooleanField(_('Address'), default=False)
+    city = models.BooleanField(_('City'), default=False)
+    state = models.BooleanField(_('State'), default=False)
+    zipcode = models.BooleanField(_('Zipcode'), default=False)
+    country = models.BooleanField(_('Country'), default=False)
+    phone = models.BooleanField(_('Phone'), default=False)
+
+    company_name = models.BooleanField(_('Company Name'), default=False)
+    company_address = models.BooleanField(_('Company Address'), default=False)
+    company_city = models.BooleanField(_('Company City'), default=False)
+    company_state = models.BooleanField(_('Company State'), default=False)
+    company_zipcode = models.BooleanField(_('Company Zipcode'), default=False)
+    company_country = models.BooleanField(_('Company Country'), default=False)
+    company_phone = models.BooleanField(_('Company Phone'), default=False)
 
     perms = generic.GenericRelation(ObjectPermission,
         object_id_field="object_id", content_type_field="content_type")
@@ -156,7 +200,7 @@ class Field(OrderingBaseModel):
     "GroupSubscription"
     - Subscribes form entries to the group specified
     - Required to be a BooleanField
-    "EmailFirstName", "EmailLastName", "EmailPhoneNumber", "EmailFullName"
+    "first_name", "last_name", "phone_number"
     - Markers for specific fields that need to be referenced in emails
     - Required to be a CharField
     - Includes their respective values to the email's subject
@@ -164,11 +208,10 @@ class Field(OrderingBaseModel):
 
     form = models.ForeignKey("Form", related_name="fields")
     label = models.CharField(_("Label"), max_length=LABEL_MAX_LENGTH)
-    field_type = models.CharField(_("Type"), choices=FIELD_CHOICES,
-        max_length=64)
-    field_function = models.CharField(_("Special Functionality"),
+    field_function = models.CharField(_('Field Function'),
         choices=FIELD_FUNCTIONS, max_length=64, null=True, blank=True)
-    function_params = models.CharField(_("Group Name or Names"),
+    field_type = models.CharField(_("Type"), choices=FIELD_CHOICES, max_length=64)
+    function_params = models.CharField(_("Group Name(s)"),
         max_length=100, null=True, blank=True, help_text="Comma separated if more than one")
     required = models.BooleanField(_("Required"), default=True)
     visible = models.BooleanField(_("Visible"), default=True)
@@ -182,7 +225,6 @@ class Field(OrderingBaseModel):
     class Meta:
         verbose_name = _("Field")
         verbose_name_plural = _("Fields")
-        #order_with_respect_to = "form"
 
     def __unicode__(self):
         return self.label
@@ -202,7 +244,7 @@ class Field(OrderingBaseModel):
         return field_widget
 
     def execute_function(self, entry, value, user=None):
-        if self.field_function == "GroupSubscription":
+        if self.field_function == "group_subscription":
             if value:
                 for val in self.function_params.split(','):
                     group = Group.objects.get(name=val)
@@ -231,9 +273,32 @@ class FormEntry(models.Model):
     entry_path = models.CharField(max_length=200, blank=True, default="")
     payment_method = models.ForeignKey('payments.PaymentMethod', null=True)
     pricing = models.ForeignKey('Pricing', null=True)
-    creator = models.ForeignKey(User, related_name="formentry_creator",  null=True, on_delete=models.SET_NULL)
+    creator = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     create_dt = models.DateTimeField(auto_now_add=True)
     update_dt = models.DateTimeField(auto_now=True)
+
+    # popular field --------------------------------------------------------
+    first_name = models.CharField(max_length=200, blank=True, editable=False)
+    last_name = models.CharField(max_length=200, blank=True, editable=False)
+    email = models.CharField(max_length=200, blank=True, editable=False)
+    position_title = models.CharField(max_length=500, blank=True, editable=False)
+    url = models.URLField(blank=True, editable=False)
+    comments = models.TextField(blank=True, editable=False)
+
+    address = models.CharField(max_length=100, blank=True, editable=False)
+    city = models.CharField(max_length=100, blank=True, editable=False)
+    state = models.CharField(max_length=100, blank=True, editable=False)
+    zipcode = models.CharField(max_length=100, blank=True, editable=False)
+    country = models.CharField(max_length=100, blank=True, editable=False)
+    phone = models.CharField(max_length=50, blank=True, editable=False)
+
+    company_name = models.CharField(max_length=500, blank=True, editable=False)
+    company_address = models.CharField(max_length=100, blank=True, editable=False)
+    company_city = models.CharField(max_length=100, blank=True, editable=False)
+    company_state = models.CharField(max_length=100, blank=True, editable=False)
+    company_zipcode = models.CharField(max_length=100, blank=True, editable=False)
+    company_country = models.CharField(max_length=100, blank=True, editable=False)
+    company_phone = models.CharField(max_length=50, blank=True, editable=False)
 
     class Meta:
         verbose_name = _("Form entry")
@@ -270,7 +335,46 @@ class FormEntry(models.Model):
             pass
 
     def entry_fields(self):
-        return self.fields.all().order_by('field__position')
+        """
+        Returns native and custom fields
+        (list of dicts) combined and sorted.
+        Field must exist in form in order to display.
+        Non visible form fields will display.
+        """
+        native_qs = self.form.fields.filter(
+            field_function__isnull=False).exclude(
+            field_function='group_subscription')
+        foreign_qs = self.fields.all()
+
+        native_fields = []
+        for form_field in native_qs:
+
+            native_fields.append({
+                'pk': form_field.pk,
+                'label': form_field.label,
+                'type': 'text',
+                'value': getattr(self, form_field.field_function),
+                'native': True,
+                'position': form_field.position,
+            })
+
+        foreign_fields = []
+        for form_field in foreign_qs:
+            foreign_fields.append({
+                'pk': form_field.pk,
+                'label': form_field.field.label,
+                'type': form_field.field.field_type,
+                'value': form_field.value,
+                'position': form_field.field.position,
+                'field': form_field.field,
+                'field_entry': form_field,
+            })
+
+        # combine fields and sort
+        fields = native_fields + foreign_fields
+        fields.sort(key=lambda f: f['position'])
+
+        return fields
 
     def get_name_email(self):
         """Try to figure out the name and email from this entry
@@ -313,7 +417,7 @@ class FormEntry(models.Model):
 
         return (name, email)
 
-    def get_value_of(self, field_function):
+    def get(self, field_function):
         """
         Returns the value of the a field entry based
         on the field_function specified
@@ -321,7 +425,7 @@ class FormEntry(models.Model):
         for entry in self.fields.all():
             if entry.field.field_function == field_function:
                 return entry.value
-        return ''
+        return u''
 
     def get_type_of(self, field_type):
         """
@@ -331,19 +435,19 @@ class FormEntry(models.Model):
         for entry in self.fields.all():
             if entry.field.field_type.lower() == field_type:
                 return entry.value
-        return ''
+        return u''
 
     def get_first_name(self):
-        return self.get_value_of("EmailFirstName")
+        return self.get("first_name")
 
     def get_last_name(self):
-        return self.get_value_of("EmailLastName")
+        return self.get("last_name")
 
     def get_full_name(self):
-        return self.get_value_of("EmailFullName")
+        return self.get("full_name")
 
     def get_phone_number(self):
-        return self.get_value_of("EmailPhoneNumber")
+        return self.get("phone")
 
     def get_email_address(self):
         return self.get_type_of("emailverificationfield")

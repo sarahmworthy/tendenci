@@ -4,11 +4,13 @@ from tendenci.core.perms.managers import TendenciBaseManager
 class ProfileManager(TendenciBaseManager):
 
     def create_profile(self, user):
-        return self.create(user=user,
-                           creator_id=user.id,
-                           creator_username=user.username,
-                           owner_id=user.id,
-                           owner_username=user.username)
+        return self.create(
+          user=user,
+          creator_id=user.id,
+          creator_username=user.username,
+          owner_id=user.id,
+          owner_username=user.username,
+        )
 
     def search(self, query=None, *args, **kwargs):
         """

@@ -1,16 +1,16 @@
 position_field = 'position'; // Name of inline model field (integer) used for ordering. Defaults to "position".
 
-jQuery(function($) {    
+jQuery(function($) {
     // This script is applied to all TABULAR inlines
     $('div.inline-group div.tabular').each(function() {
         table = $(this).find('table');
 
         // Drag and drop functionality - only used if a position field exists
-        if (position_field != '' && table.find('td').is('.field-' + position_field))
+        if (position_field !== '' && table.find('td').is('.' + position_field))
         {
             // Hide "position"-field (both td:s and th:s)
-            $(this).find('td.field-' + position_field).hide();
-            td_pos_field_index = table.find('tbody tr td').index($(this).find('td.field-' + position_field));
+            $(this).find('td.' + position_field).hide();
+            td_pos_field_index = table.find('tbody tr td').index($(this).find('td.' + position_field));
             $(this).find('th:eq(' + (td_pos_field_index-1) + ')').hide();
             
             // Hide "original"-field and set any colspan to 1 (why show in the first case?)
@@ -35,11 +35,11 @@ jQuery(function($) {
             // which the rest of this script (hopefully) guarantees.
             rows = [];
             table.find('tbody tr').each(function() {
-                position = $(this).find('td.field-' + position_field + ' input').val();
+                position = $(this).find('td.' + position_field + ' input').val();
                 rows[position] = $(this);
                 
                 // Add move cursor to table row.
-                table.find('tr:has(td)').css('cursor', 'move')
+                table.find('tr:has(td)').css('cursor', 'move');
             });
             
             for (var i in rows) { table.append(rows[i]); } // Move <tr> to its correct position
@@ -53,16 +53,16 @@ jQuery(function($) {
 // Updates "position"-field values based on row order in table
 function update_positions(table, update_ids)
 {
-    even = true
-    num_rows = 0
+    even = true;
+    num_rows = 0;
     position = 0;
 
     // Set correct position: Filter through all trs, excluding first th tr and last hidden template tr
     table.find('tbody tr:not(.add_template):not(.deleted_row)').each(function() {
-        if (position_field != '')
+        if (position_field !== '')
         {
             // Update position field
-            $(this).find('td.field-' + position_field + ' input').val(position + 1);
+            $(this).find('td.' + position_field + ' input').val(position + 1);
             position++;
             
             // Update row coloring
@@ -93,12 +93,12 @@ function update_id_fields(row, new_position)
         // id=...
         old_id = $(this).attr('id').toString();
         new_id = old_id.replace(/([^ ]+\-)[0-9]+(\-[^ ]+)/i, "$1" + new_position + "$2");
-        $(this).attr('id', new_id)
+        $(this).attr('id', new_id);
         
         // name=...
         old_id = $(this).attr('name').toString();
         new_id = old_id.replace(/([^ ]+\-)[0-9]+(\-[^ ]+)/i, "$1" + new_position + "$2");
-        $(this).attr('name', new_id)
+        $(this).attr('name', new_id);
     });
     
     // <input ...>
@@ -106,12 +106,12 @@ function update_id_fields(row, new_position)
         // id=...
         old_id = $(this).attr('id').toString();
         new_id = old_id.replace(/([^ ]+\-)[0-9]+(\-[^ ]+)/i, "$1" + new_position + "$2");
-        $(this).attr('id', new_id)
+        $(this).attr('id', new_id);
         
         // name=...
         old_id = $(this).attr('name').toString();
         new_id = old_id.replace(/([^ ]+\-)[0-9]+(\-[^ ]+)/i, "$1" + new_position + "$2");
-        $(this).attr('name', new_id)
+        $(this).attr('name', new_id);
     });
     
     // <a ...>
@@ -119,8 +119,6 @@ function update_id_fields(row, new_position)
         // id=...
         old_id = $(this).attr('id').toString();
         new_id = old_id.replace(/([^ ]+\-)[0-9]+(\-[^ ]+)/i, "$1" + new_position + "$2");
-        $(this).attr('id', new_id)
+        $(this).attr('id', new_id);
     });
-    
-    // Are there other element types...? Add here.
 }

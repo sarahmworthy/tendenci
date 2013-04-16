@@ -3,8 +3,8 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns("tendenci.apps.forms_builder.forms.views",
     url(r"^$", "search", name="forms"),
-    url(r"^entries/export/(?P<id>\d+)/full$", "entries_export", 
-            {'include_files': True,}, name="form_entries_export_full"),
+    url(r"^entries/export/(?P<id>\d+)/full$", "entries_export",
+            {'include_files': True}, name="form_entries_export_full"),
     url(r'^entries/export/(?P<task_id>[-\w]+)/status/$', 'entries_export_status', name="form_entries_export_status"),
     url(r'^entries/export/(?P<task_id>[-\w]+)/check/$', 'entries_export_check', name="form_entries_export_check"),
     url(r'^entries/export/(?P<task_id>[-\w]+)/download/$', 'entries_export_download', name="form_entries_export_download"),
@@ -24,5 +24,3 @@ urlpatterns = patterns("tendenci.apps.forms_builder.forms.views",
     url(r"^(?P<slug>.*)/sent/$", "form_sent", name="form_sent"),
     url(r"^(?P<slug>.*)/$", "form_detail", name="form_detail"),
 )
-
-

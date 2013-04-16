@@ -1,8 +1,10 @@
 
+import re
 from csv import writer
+from os.path import join
 from datetime import datetime
 from mimetypes import guess_type
-from os.path import join
+from collections import namedtuple
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
@@ -49,21 +51,22 @@ class FieldAdmin(admin.TabularInline):
     form = FieldAdminForm
     extra = 0
     ordering = ("position",)
+    template = "forms/admin/tabular.html"
 
 
 class FormAdmin(TendenciBaseModelAdmin):
+
+    form = FormAdminForm
 
     inlines = (PricingAdmin, FieldAdmin,)
     list_display = ("title", "id", "intro", "email_from", "email_copies",
         "admin_link_export", "admin_link_view")
     list_display_links = ("title",)
-#    list_filter = ("status",)
     search_fields = ("title", "intro", "response", "email_from",
         "email_copies")
-#    radio_fields = {"status": admin.HORIZONTAL}
     prepopulated_fields = {'slug': ['title']}
     fieldsets = (
-        (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template")}),
+        (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template", "create_user")}),
         (_("Email"), {"fields": ('subject_template', "email_from", "email_copies", "send_email", "email_text")}),
         ('Permissions', {'fields': ('allow_anonymous_view',)}),
         ('Advanced Permissions', {'classes': ('collapse',), 'fields': (
@@ -75,18 +78,14 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status',
             'status_detail'
         )}),
+        ("Predefined Fields", {"fields": (("first_name", "last_name", "email", "url", "group_subscription"), ("address", "city", "state", "zipcode", "country", "phone", "comments"), ("company_name", "company_address", "company_city", "company_state", "company_zipcode", "company_country", "company_phone", "position_title")), 'classes': ('predefined-fields',)}),
         (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods")}),
     )
-
-    form = FormAdminForm
 
     class Media:
         js = (
             '%sjs/jquery-1.6.2.min.js' % settings.STATIC_URL,
-            #'%sjs/jquery_ui_all_custom/jquery-ui-1.8.5.custom.min.js' % settings.STATIC_URL,
-            #'https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js',
             'https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js',
-            '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
             '%sjs/admin/form-fields-inline-ordering.js' % settings.STATIC_URL,
             '%sjs/admin/form-field-dynamic-hiding.js' % settings.STATIC_URL,
         )
@@ -115,50 +114,53 @@ class FormAdmin(TendenciBaseModelAdmin):
         response = HttpResponse(mimetype="text/csv")
         csvname = "%s-%s.csv" % (form.slug, slugify(datetime.now().ctime()))
         response["Content-Disposition"] = "attachment; filename=%s" % csvname
-        csv = writer(response)
-        # Write out the column names and store the index of each field
-        # against its ID for building each entry row. Also store the IDs of
-        # fields with a type of FileField for converting their field values
-        # into download URLs.
-        columns = []
-        field_indexes = {}
-        file_field_ids = []
-        for field in form.fields.all():
-            columns.append(field.label.encode("utf-8"))
-            field_indexes[field.id] = len(field_indexes)
-            if field.field_type == "FileField":
-                file_field_ids.append(field.id)
-        entry_time_name = FormEntry._meta.get_field("entry_time").verbose_name
-        columns.append(unicode(entry_time_name))
-        columns.append(unicode("Pricing"))
-        columns.append(unicode("Price"))
-        columns.append(unicode("Payment Method"))
-        csv.writerow(columns)
-        # Loop through each field value order by entry, building up each
-        # entry as a row.
-        entries = FormEntry.objects.filter(form=form).order_by('pk')
-        for entry in entries:
-            values = FieldEntry.objects.filter(entry=entry)
-            row = [""] * len(columns)
-            entry_time = entry.entry_time.strftime("%Y-%m-%d %H:%M:%S")
-            row[-4] = entry_time
-            if entry.pricing:
-                row[-3] = entry.pricing.label
-                row[-2] = entry.pricing.price
-            row[-1] = entry.payment_method
-            for field_entry in values:
-                value = field_entry.value.encode("utf-8")
-                # Create download URL for file fields.
-                if field_entry.field_id in file_field_ids:
-                    url = reverse("admin:forms_form_file", args=(field_entry.id,))
-                    value = request.build_absolute_uri(url)
-                # Only use values for fields that currently exist for the form.
-                try:
-                    row[field_indexes[field_entry.field_id]] = value
-                except KeyError:
-                    pass
-            # Write out the row.
-            csv.writerow(row)
+        w = writer(response)
+
+        dt_format = '%Y-%m-%d %H:%M:%S'
+        form_fields = [f for f in form.fields.order_by('position')]
+        entry_column_name = unicode(FormEntry._meta.get_field('entry_time').verbose_name)
+
+        price_columns = [
+            entry_column_name,
+            'Pricing',
+            'Price',
+            'Payment Method',
+        ]
+
+        # header row
+        column_names = [f.label for f in form_fields] + price_columns
+        w.writerow(column_names)
+
+        column_keys = [re.sub('\W+', '_', c.lower()) for c in column_names]
+        EntryTuple = namedtuple('Entry', column_keys)
+
+        entry_dict = {}
+        for c in column_keys:
+            entry_dict.setdefault(c, u'')
+
+        # the rest of the rows
+        for e in form.entries.order_by('pk'):
+            for f in e.entry_fields():
+
+                # replace value with URL
+                if f.get('field') and f['field'].field_type == 'FileField':
+                    url = reverse('form_files', args=[f['field_entry'].pk])
+                    f['value'] = request.build_absolute_uri(url)
+
+                entry_dict[re.sub('\W+', '_', f['label'].lower())] = f['value']
+
+            # extra [price] columns -----------------------------
+            entry_dict[re.sub('\W+', '_', entry_column_name.lower())] = e.entry_time.strftime(dt_format)
+
+            if e.pricing:
+                entry_dict['pricing'] = e.pricing.label
+                entry_dict['price'] = e.pricing.price
+
+            entry_dict['payment_method'] = e.payment_method
+            # ---------------------------------------------------
+
+            w.writerow(EntryTuple(**entry_dict))
+
         return response
 
     def file_view(self, request, field_entry_id):

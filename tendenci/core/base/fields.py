@@ -131,7 +131,7 @@ class EmailVerificationField(fields.MultiValueField):
             if not (data_list[0] and data_list[1]):
                 raise ValidationError("Please enter the email twice to verify.")
             if data_list[0] != data_list[1]:
-                raise ValidationError("Please enter similar email addresses.")
+                raise ValidationError("Please enter same email addresses.")
             email_data = "%s" % (data_list[0])
             return email_data
         return ''

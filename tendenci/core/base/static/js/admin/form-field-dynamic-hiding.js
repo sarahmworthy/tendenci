@@ -35,12 +35,11 @@ jQuery(function($) {
             var $select_dd = fieldset.find(".field-field_function select")
             $select_dd.find('option').removeAttr("disabled")
             if(selected_value == 'CharField'){
-                $select_dd.find('option[value="GroupSubscription"]').attr('disabled','disabled');
+                $select_dd.find('option[value="group_subscription"]').attr('disabled','disabled');
             }else {
-                $select_dd.find('option[value="EmailFirstName"]').attr('disabled','disabled');
-                $select_dd.find('option[value="EmailLastName"]').attr('disabled','disabled');
-                $select_dd.find('option[value="EmailFullName"]').attr('disabled','disabled');
-                $select_dd.find('option[value="EmailPhoneNumber"]').attr('disabled','disabled');
+                $select_dd.find('option[value="first_name"]').attr('disabled','disabled');
+                $select_dd.find('option[value="last_name"]').attr('disabled','disabled');
+                $select_dd.find('option[value="phone_number"]').attr('disabled','disabled');
             }
     	}
     	else {

@@ -27,6 +27,7 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.profiles.models import Profile
+from tendenci.apps.profiles.utils import spawn_username
 from tendenci.addons.recurring_payments.models import RecurringPayment
 from tendenci.core.exports.utils import run_export_task
 
@@ -273,10 +274,10 @@ def entry_detail(request, id, template_name="forms/entry_detail.html"):
     entry = get_object_or_404(FormEntry, pk=id)
 
     # check permission
-    if not has_perm(request.user,'forms.change_form',entry.form):
+    if not has_perm(request.user, 'forms.change_form', entry.form):
         raise Http403
 
-    return render_to_response(template_name, {'entry':entry},
+    return render_to_response(template_name, {'entry': entry},
         context_instance=RequestContext(request))
 
 
@@ -285,7 +286,7 @@ def entries_export(request, id, include_files=False):
     form_instance = get_object_or_404(Form, pk=id)
 
     # check permission
-    if not has_perm(request.user,'forms.change_form',form_instance):
+    if not has_perm(request.user, 'forms.change_form', form_instance):
         raise Http403
 
     EventLog.objects.log(instance=form_instance)
@@ -371,7 +372,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
     published = Form.objects.published(for_user=request.user)
     form = get_object_or_404(published, slug=slug)
 
-    if not has_view_perm(request.user,'forms.view_form',form):
+    if not has_view_perm(request.user, 'forms.view_form', form):
         raise Http403
 
     # If form has a recurring payment, make sure the user is logged in
@@ -389,40 +390,68 @@ def form_detail(request, slug, template="forms/form_detail.html"):
 
     if request.method == "POST":
         if form_for_form.is_valid():
-            entry = form_for_form.save()
-            entry.entry_path = request.POST.get("entry_path", "")
-            if request.user.is_anonymous():
-                if entry.get_email_address():
-                    emailfield = entry.get_email_address()
-                    firstnamefield = entry.get_first_name()
-                    lastnamefield = entry.get_last_name()
-                    phonefield = entry.get_phone_number()
-                    password = ''
-                    for i in range(0, 10):
-                        password += random.choice(string.ascii_lowercase + string.ascii_uppercase)
 
-                    user_list = User.objects.filter(email=emailfield).order_by('-last_login')
+            entry = form_for_form.save()
+            entry.entry_path = request.POST.get('entry_path', u'')
+
+            if request.user.is_anonymous():
+                if entry.email:
+
+                    user_list = User.objects.filter(
+                        email=entry.email).order_by('-last_login')
+
+                    anon = None
+
                     if user_list:
-                        anonymous_creator = user_list[0]
+                        anon = user_list[0]
                     else:
-                        anonymous_creator = User(username=emailfield[:30], email=emailfield, 
-                                                 first_name=firstnamefield, last_name=lastnamefield)
-                        anonymous_creator.set_password(password)
-                        anonymous_creator.is_active = False
-                        anonymous_creator.save()
-                        anonymous_profile = Profile(user=anonymous_creator, owner=anonymous_creator,
-                                                    creator=anonymous_creator, phone=phonefield)
-                        anonymous_profile.save()
-                    entry.creator = anonymous_creator
-            else:
+
+                        if form.create_user:
+                            # create user ------------------
+                            anon = User(
+                                username=spawn_username(
+                                    fn=entry.first_name,
+                                    ln=entry.last_name,
+                                    em=entry.email,
+                                ),
+                                email=entry.email,
+                                first_name=entry.first_name,
+                                last_name=entry.last_name
+                            )
+
+                            anon.is_active = False
+                            anon.save()
+
+                            Profile.objects.create(
+                                phone=entry.phone,
+                                address=entry.address,
+                                city=entry.city,
+                                state=entry.state,
+                                zipcode=entry.zipcode,
+                                position_title=entry.position_title,
+                                company=entry.company_name,
+                                user=anon,
+                                creator=anon,
+                                owner=anon,
+                                creator_username=anon.username,
+                                owner_username=anon.username,
+                            )
+
+                    entry.creator = anon
+
+            else:  # user is authenticated
+
+                # If you're going to update user/profile
+                # info. Now is the time.
                 entry.creator = request.user
+
             entry.save()
 
             # Email
             subject = generate_email_subject(form, entry)
             email_headers = {}  # content type specified below
             if form.email_from:
-                email_headers.update({'Reply-To':form.email_from})
+                email_headers.update({'Reply-To': form.email_from})
 
             # Email to submitter
             # fields aren't included in submitter body to prevent spam
@@ -438,9 +467,10 @@ def form_detail(request, slug, template="forms/form_detail.html"):
 
             # Email copies to admin
             admin_body = generate_admin_email_body(entry, form_for_form)
-            email_from = email_to or email_from # Send from the email entered.
+            email_from = email_to or email_from  # Send from the email entered.
             email_headers = {}  # Reset the email_headers
-            email_headers.update({'Reply-To':email_from})
+            email_headers.update({'Reply-To': email_from})
+
             email_copies = [e.strip() for e in form.email_copies.split(",")
                 if e.strip()]
             if email_copies:
@@ -510,6 +540,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             if form.completion_url:
                 return redirect(form.completion_url)
             return redirect("form_sent", form.slug)
+
     # set form's template to default if no template or template doesn't exist
     if not form.template or not template_exists(form.template):
         form.template = "default.html"
@@ -519,6 +550,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
         'form_template': form.template,
     }
     return render_to_response(template, context, RequestContext(request))
+
 
 def form_sent(request, slug, template="forms/form_sent.html"):
     """
