@@ -3,6 +3,7 @@ import datetime, random, string
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.core.mail import EmailMessage
+from django.db import IntegrityError
 from django.db.models import Q
 from django.template import RequestContext
 from django.shortcuts import get_object_or_404, redirect
@@ -39,6 +40,7 @@ from tendenci.apps.forms_builder.forms.utils import (generate_admin_email_body,
     make_invoice_for_entry, update_invoice_for_entry)
 from tendenci.apps.forms_builder.forms.formsets import BaseFieldFormSet
 from tendenci.apps.forms_builder.forms.tasks import FormEntriesExportTask
+from tendenci.apps.user_groups.models import Group, GroupMembership
 
 
 @is_enabled('forms')
@@ -412,8 +414,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                                 username=spawn_username(
                                     fn=entry.first_name,
                                     ln=entry.last_name,
-                                    em=entry.email,
-                                ),
+                                    em=entry.email),
                                 email=entry.email,
                                 first_name=entry.first_name,
                                 last_name=entry.last_name
@@ -444,6 +445,15 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                 # If you're going to update user/profile
                 # info. Now is the time.
                 entry.creator = request.user
+
+            for group in entry.get_groups():
+
+                try:
+                    GroupMembership.add_to_group(
+                        member=entry.creator,
+                        group=group)
+                except IntegrityError:
+                    pass
 
             entry.save()
 

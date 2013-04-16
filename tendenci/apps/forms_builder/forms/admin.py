@@ -44,6 +44,14 @@ class PricingAdmin(admin.StackedInline):
 class FieldAdminForm(FormForField):
     class Meta:
         model = Field
+        fields = (
+            'label',
+            'field_function',
+            'field_type',
+            'required',
+            'visible',
+            'choices',
+            'default')
 
 
 class FieldAdmin(admin.TabularInline):

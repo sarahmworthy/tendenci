@@ -449,6 +449,10 @@ class FormEntry(models.Model):
     def get_phone_number(self):
         return self.get("phone")
 
+    def get_groups(self):
+        group_names = self.get("group_subscription").split(',')
+        return Group.objects.filter(name__in=group_names)
+
     def get_email_address(self):
         return self.get_type_of("emailverificationfield")
 

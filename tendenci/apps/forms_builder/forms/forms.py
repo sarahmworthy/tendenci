@@ -166,13 +166,13 @@ class FormForForm(forms.ModelForm):
             if value and self.fields[field_key].widget.needs_multipart_form:
                 value = default_storage.save(join("forms", str(uuid4()), value.name), value)
 
-            # if the value is a list convert is to a comma delimited string
+            # if the value is a list convert it to a comma delimited string
             if isinstance(value, list):
                 value = ','.join(value)
 
             value = value or u''
 
-            if field.field_function:
+            if field.field_function and hasattr(entry, field.field_function):
                 setattr(entry, field.field_function, value)
             else:
                 field_entry = FieldEntry(
@@ -269,8 +269,6 @@ class FormAdminForm(TendenciBaseForm):
 
     def __init__(self, *args, **kwargs):
         super(FormAdminForm, self).__init__(*args, **kwargs)
-
-        print 'self.fields', self.fields['first_name'].initial
 
         if self.instance.pk:
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = self.instance.pk
@@ -393,7 +391,14 @@ class FormForm(TendenciBaseForm):
 class FormForField(forms.ModelForm):
     class Meta:
         model = Field
-        exclude = ["position"]
+        fields = (
+            'label',
+            'field_function',
+            'field_type',
+            'required',
+            'visible',
+            'choices',
+            'default')
 
     def clean_function_params(self):
         function_params = self.cleaned_data['function_params']
