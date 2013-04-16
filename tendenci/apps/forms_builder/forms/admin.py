@@ -51,7 +51,8 @@ class FieldAdminForm(FormForField):
             'required',
             'visible',
             'choices',
-            'default')
+            'default',
+            'position')
 
 
 class FieldAdmin(admin.TabularInline):
