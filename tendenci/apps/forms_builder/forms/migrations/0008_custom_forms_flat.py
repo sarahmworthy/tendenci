@@ -32,6 +32,12 @@ class Migration(DataMigration):
             if new_field:
                 form_field.field_function = field[form_field.field_function]
 
+            if new_field == 'group_subscription':
+                form_field.field_type = 'MultipleChoiceField/django.forms.CheckboxSelectMultiple'
+                form_field.choices = form_field.function_params
+
+            form_field.save()
+
         # form entries attached to a user
         form_entries = FormEntry.objects.filter(creator__isnull=False)
 
