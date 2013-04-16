@@ -87,8 +87,8 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status',
             'status_detail'
         )}),
-        ("Predefined Fields", {"fields": (("first_name", "last_name", "email", "url", "group_subscription"), ("address", "city", "state", "zipcode", "country", "phone", "comments"), ("company_name", "company_address", "company_city", "company_state", "company_zipcode", "company_country", "company_phone", "position_title")), 'classes': ('predefined-fields',)}),
         (_("Payment"), {"fields": ("custom_payment", 'recurring_payment', "payment_methods")}),
+        ("Predefined Fields", {"fields": (("first_name", "last_name", "email", "url", "group_subscription"), ("address", "city", "state", "zipcode", "country", "phone", "comments"), ("company_name", "company_address", "company_city", "company_state", "company_zipcode", "company_country", "company_phone", "position_title")), 'classes': ('predefined-fields',)}),
     )
 
     class Media:
