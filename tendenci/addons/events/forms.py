@@ -104,7 +104,7 @@ class FormForCustomRegForm(forms.ModelForm):
         Dynamically add each of the form fields for the given form model
         instance and its related field model instances.
         """
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop('user', AnonymousUser)
         self.custom_reg_form = kwargs.pop('custom_reg_form', None)
         self.event = kwargs.pop('event', None)
         self.entry = kwargs.pop('entry', None)
@@ -244,12 +244,17 @@ class FormForCustomRegForm(forms.ModelForm):
 
         # The setting anonymousregistration can be set to 'open', 'validated' and 'strict'
         # Both 'validated' and 'strict' require validation.
-        if self.event.anony_setting <> 'open':
+        if self.event.anony_setting != 'open':
+
             # check if user is eligiable for this pricing
-            email = self.cleaned_data.get('email', '')
+            email = self.cleaned_data.get('email', u'')
             registrant_user = self.get_user(email)
 
             if not registrant_user.is_anonymous():
+
+                if registrant_user.profile.is_superuser:
+                    return pricing
+
                 if pricing.allow_user:
                     return pricing
 
@@ -261,13 +266,11 @@ class FormForCustomRegForm(forms.ModelForm):
                 if pricing.group and pricing.group.is_member(registrant_user):
                     return pricing
 
-
             currency_symbol = get_setting("site", "global", "currencysymbol") or '$'
             err_msg = ""
             if not email:
                 err_msg = 'An email address is required for this price %s%s %s. ' % (
-                                             currency_symbol, pricing.price, pricing.title
-                                                )
+                    currency_symbol, pricing.price, pricing.title)
             else:
                 if pricing.allow_user:
                     err_msg = 'We do not detect %s as a site user.' % email
@@ -280,9 +283,10 @@ class FormForCustomRegForm(forms.ModelForm):
                 if not err_msg:
 
                     err_msg = 'Not eligible for the price.%s%s %s.' % (
-                                                                currency_symbol,
-                                                                pricing.price,
-                                                                pricing.title,)
+                        currency_symbol,
+                        pricing.price,
+                        pricing.title,)
+
                 err_msg += ' Please choose another price option.'
             raise forms.ValidationError(err_msg)
 
@@ -300,18 +304,20 @@ class FormForCustomRegForm(forms.ModelForm):
             if not (pricing.allow_anonymous and pricing.allow_user):
                 price_requires_member = True
 
-        if price_requires_member:
-            if not memberid:
-                raise forms.ValidationError("We don't detect you as a member. " + \
-                                            "Please choose another price option. ")
-        else:
-            if memberid:
-                raise forms.ValidationError("You have entered a member id but " + \
-                                            "have selected an option that does not " + \
-                                            "require membership." + \
-                                            "Please either choose the member option " + \
-                                            "or remove your member id.")
-
+        if not self.user.is_superuser:
+            if price_requires_member:
+                if not memberid:
+                    raise forms.ValidationError(
+                        "We don't detect you as a member. "
+                        "Please choose another price option. ")
+            else:
+                if memberid:
+                    raise forms.ValidationError(
+                        "You have entered a member id but "
+                        "have selected an option that does not "
+                        "require membership."
+                        "Please either choose the member option "
+                        "or remove your member id.")
 
         return memberid
 
@@ -429,7 +435,12 @@ class EventForm(TendenciBaseForm):
 
     photo_upload = forms.FileField(label=_('Photo'), required=False)
     remove_photo = forms.BooleanField(label=_('Remove the current photo'), required=False)
-    group = forms.ModelChoiceField(queryset=Group.objects.filter(status=True, status_detail="active"), required=True, empty_label=None)
+    group = forms.ModelChoiceField(
+                queryset=Group.objects.filter(
+                        status=True,
+                        status_detail="active").order_by('name'),
+                required=True,
+                empty_label=None)
 
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
@@ -494,6 +505,9 @@ class EventForm(TendenciBaseForm):
             self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.pk
         else:
             self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
+            group = Group.objects.first(**{'entity_id': 1})
+            if group:
+                self.fields['group'].initial = group.pk
 
         if self.instance.image:
             self.fields['photo_upload'].help_text = '<input name="remove_photo" id="id_remove_photo" type="checkbox"/> Remove current image: <a target="_blank" href="/files/%s/">%s</a>' % (self.instance.image.pk, basename(self.instance.image.file.name))
@@ -1178,7 +1192,8 @@ class RegistrationForm(forms.Form):
         if self.is_valid() and hasattr(self.cleaned_data, 'discount_code') and \
                 self.cleaned_data['discount_code']:
             try:
-                discount = Discount.objects.get(discount_code=self.cleaned_data['discount_code'])
+                discount = Discount.objects.get(discount_code=self.cleaned_data['discount_code'],
+                                                apps__model=RegistrationConfiguration._meta.module_name)
                 if discount.available_for(self.count):
                     return discount
             except:
@@ -1210,7 +1225,7 @@ class RegistrantForm(forms.Form):
         max_length=300, widget=forms.Textarea, required=False)
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop('user', AnonymousUser)
         self.event = kwargs.pop('event', None)
         self.form_index = kwargs.pop('form_index', None)
         self.pricings = kwargs.pop('pricings', None)
@@ -1373,18 +1388,21 @@ class RegistrantForm(forms.Form):
             if not (pricing.allow_anonymous and pricing.allow_user):
                 price_requires_member = True
 
-        if price_requires_member:
-            if not memberid:
-                raise forms.ValidationError("We don't detect you as a member. " + \
-                                            "Please choose another price option. ")
-        else:
-            if memberid:
-                raise forms.ValidationError("You have entered a member id but " + \
-                                            "have selected an option that does not " + \
-                                            "require membership." + \
-                                            "Please either choose the member option " + \
-                                            "or remove your member id.")
+        if not self.user.is_superuser:
 
+            if price_requires_member:
+                if not memberid:
+                    raise forms.ValidationError(
+                        "We don't detect you as a member. "
+                        "Please choose another price option. ")
+            else:
+                if memberid:
+                    raise forms.ValidationError(
+                        "You have entered a member id but "
+                        "have selected an option that does not "
+                        "require membership."
+                        "Please either choose the member option "
+                        "or remove your member id.")
 
         return memberid
 

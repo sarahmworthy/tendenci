@@ -15,16 +15,46 @@ Membership Module
 Membership
 ------------------
 
-#. A membership record is an agreement between a user and your website.  This agreement may come at a cost to the user or be free.  Having a membership record on your website means that this person is now considered a "member."
+#. A membership record is an agreement between a user and your website.  This agreement may be offered at a price or for free.  Having a membership record on your website means that this person is now considered a "member."
 
 #. A membership record mostly tells your website that this person is a "member."  A membership record could also hold custom information about that member.
 
 #. All members have a membership of a specific type.  In fact a person can have multiple memberships all of different types.  A person cannot have multiple memberships of the same "membership type."
 
-.. Membership Type
-.. ----------------
+Membership Type
+----------------
+
+#. A membership type holds meta information about a membership record.
+
+    #. The length of a membership (e.g. expiration date/time, renewal period)
+    #. Prices; join, renew, and admin fees
+    #. Used for grouping and managing of members
+
+#. Membership types are powerful because they allow you to group members into specific sets and target these groups specifically.  You can offer discounts or invite them to privileged information or events.  As well as send targeted emails to these specific types of members.
+
+Membership Application
+------------------------
+
+#. A membership application is literally the form that someone fills out in order to become a member or to renew their membership.
+
+#. A membership application collects basic information about a person such as who they are, where they work, and contact information.  It can also collect custom information.
+
+#. Common information is collected in the person's profile.
+
+#. Custom information is located within the membership record.
+
+#. All information can be exported.
+
+#. Detailed reports and graphs are created from profile information.  Detailed reports and graphs are not created from custom information.  Because custom information is custom, it's difficult for us to know how to report on that information.
+
+#. Your website can have as many applications as you would like.
+
+#. Visiblity of an application can be limited to any group or type of person.
+
+#. An application can allow you to sign up for one or many membership types.
+
+#. You decide the different ways of paying for a membership.
+
+#. You can fill out the application for someone else and have them receive the confirmation.
 
 
-
-.. Membership Application
-.. ------------------------
