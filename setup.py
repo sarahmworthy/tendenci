@@ -14,7 +14,7 @@ def read(*path):
 
 # Provided as an attribute, so you can append to these instead
 # of replicating them:
-standard_exclude = ["*.pyc", "*~", "*.bak"]
+standard_exclude = ["*.pyc", "*~", "*.bak", ".DS_Store"]
 standard_exclude_directories = [
     ".*", "CVS", "_darcs", "./build",
     "./dist", "EGG-INFO", "*.egg-info"
@@ -115,6 +115,7 @@ setup(
     version=version,
     packages=find_packages(),
     package_data=package_data,
+    include_package_data=True,
     author='Schipul',
     author_email='programmers@schipul.com',
     url='http://github.com/tendenci/tendenci/',
@@ -144,9 +145,8 @@ setup(
             create-tendenci-project=tendenci.bin.create_tendenci_project:create_project
             update-tendenci-project=tendenci.bin.update_tendenci_project:update_project
         """,
-    include_package_data=True,
     dependency_links=[
-        "http://b.pypi.python.org/",
+        "http://a.pypi.python.org/",
         "http://g.pypi.python.org/",
     ],
     install_requires=[
