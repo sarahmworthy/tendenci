@@ -115,7 +115,7 @@ setup(
     version=version,
     packages=find_packages(),
     package_data=package_data,
-    include_package_data=True,
+    #include_package_data=True,
     author='Schipul',
     author_email='programmers@schipul.com',
     url='http://github.com/tendenci/tendenci/',
