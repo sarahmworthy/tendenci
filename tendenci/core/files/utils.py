@@ -60,10 +60,9 @@ def build_image(file, size, pre_key, crop=False, quality=90, cache=False, unique
     """
     Builds a resized image based off of the original image.
     """
-
     try:
         quality = int(quality)
-    except:
+    except TypeError:
         quality = 90
 
     if settings.USE_S3_STORAGE:
@@ -75,19 +74,32 @@ def build_image(file, size, pre_key, crop=False, quality=90, cache=False, unique
         else:
             raise Http404
 
-    # handle infamous error
-    # IOError: cannot write mode P as JPEG
-    if image.mode != "RGB":
-        image = image.convert("RGB")
+    format = image.format
+    if image.format in ('GIF', 'PNG'):
+        if image.mode != "RGBA":
+            image = image.convert("RGBA")
+        image.format = format  # this is lost in conversion
+
+    elif image.format == 'JPEG':
+        # handle infamous error
+        # IOError: cannot write mode P as JPEG
+        if image.mode != "RGB":
+            image = image.convert("RGB")
 
     if crop:
         image = image_rescale(image, size)  # thumbnail image
     else:
+        format = image.format
         image = image.resize(size, Image.ANTIALIAS)  # resize image
+        image.format = format
+
+    params = {'quality': quality}
+    if image.format == 'GIF':
+        params['transparency'] = 0
 
     # mission: get binary
     output = StringIO()
-    image.save(output, "JPEG", quality=quality)
+    image.save(output, image.format, **params)
     binary = output.getvalue()  # mission accomplished
     output.close()
 
