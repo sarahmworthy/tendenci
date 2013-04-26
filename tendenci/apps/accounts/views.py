@@ -44,9 +44,11 @@ def login(request, form_class=LoginForm, template_name="account/login.html"):
             return HttpResponseRedirect(reverse('auth_password_reset'))
     else:
         form = form_class()
+
+    sso_enabled = get_setting('module', 'sso', 'enabled')
     
     return render_to_response(template_name, {
-        "form": form
+        "form": form, 'sso_enabled': sso_enabled
     }, context_instance=RequestContext(request))
     
 @ssl_required    

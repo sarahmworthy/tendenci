@@ -90,6 +90,8 @@ urlpatterns += patterns('',
     (r'^discounts/', include('tendenci.apps.discounts.urls')),
     (r'^versions/', include('tendenci.core.versions.urls')),
     (r'^reports/', include('tendenci.apps.reports.urls')),
+    (r'^sso/', include('tendenci.core.sso.urls')),
+
     url(r'social_auth/', include('tendenci.addons.social_auth.urls')),
     url(r'navs/', include('tendenci.apps.navs.urls')),
     url(r'tendenci/', include('tendenci.addons.tendenci_guide.urls')),

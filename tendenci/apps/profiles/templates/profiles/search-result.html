@@ -11,9 +11,12 @@
     <h2>
         <a href="{{ profile.get_absolute_url }}">
         {{ profile.user.last_name }}{% if profile.user.first_name %}, {{ profile.user.first_name }}{% endif %}
-        {% if profile.display_name %} ("{{ profile.display_name }}"){% endif %}</a> ({{ profile.user.username }})
+        {% if profile.display_name %} ("{{ profile.display_name }}"){% endif %} ({{ profile.user.username }})</a>
         {% if profile.is_member %}
         <span style="font-size: 12px;">Member</span> <!-- replace with Icon -->
+        {% endif %}
+        {% if profile.sso_user %}
+        <span style="font-size: 12px;">SSO user</span> <!-- replace with Icon -->
         {% endif %}
     </h2>
     

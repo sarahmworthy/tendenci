@@ -67,6 +67,8 @@ class Profile(Person):
     agreed_to_tos = models.BooleanField(_('agrees to tos'), default=False)
     original_username = models.CharField(max_length=50)
 
+    sso_user = models.BooleanField(default=False)
+
     objects = ProfileManager()
     actives = ProfileActiveManager()
 
