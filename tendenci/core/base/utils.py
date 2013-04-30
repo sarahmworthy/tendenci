@@ -14,6 +14,8 @@ from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
+from simple_salesforce import Salesforce
+
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.theme.utils import get_theme_root
 
@@ -664,3 +666,21 @@ class UnicodeWriter:
     def writerows(self, rows):
         for row in rows:
             self.writerow(row)
+
+
+def get_salesforce_access():
+
+    required_settings = (hasattr(settings, 'SALESFORCE_USERNAME'),
+                         hasattr(settings, 'SALESFORCE_PASSWORD'),
+                         hasattr(settings, 'SALESFORCE_SECURITY_TOKEN'))
+
+    if all(required_settings):
+        try:
+            sf = Salesforce(username=settings.SALESFORCE_USERNAME,
+                            password=settings.SALESFORCE_PASSWORD,
+                            security_token=settings.SALESFORCE_SECURITY_TOKEN)
+            return sf
+        except:
+            print 'Salesforce authentication failed'
+
+    return None
