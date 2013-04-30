@@ -1817,13 +1817,27 @@ class ExportForm(forms.Form):
 
 class ReportForm(forms.Form):
     STATUS_CHOICES = (
-        ('', '----------'),
-        ('ACTIVE', 'ACTIVE'),
-        ('EXPIRED', 'EXPIRED'),
+        ('', 'All Statuses'),
+        ('active', 'Active'),
+        ('expired', 'Expired'),
     )
 
-    membership_type = forms.ModelChoiceField(queryset=MembershipType.objects.all(), required=False)
-    membership_status = forms.ChoiceField(choices=STATUS_CHOICES, required=False)
+    start_date = forms.DateField(
+        widget=forms.TextInput(
+            attrs={'class': 'input-small', 'placeholder': 'Start Date'}))
+
+    end_date = forms.DateField(
+        widget=forms.TextInput(
+            attrs={'class': 'input-small', 'placeholder': 'End Date'}))
+
+    membership_type = forms.ModelChoiceField(
+        queryset=MembershipType.objects.all(),
+        empty_label='All Types',
+        required=False)
+
+    membership_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        required=False)
 
 
 class MembershipDefaultForm(TendenciBaseForm):

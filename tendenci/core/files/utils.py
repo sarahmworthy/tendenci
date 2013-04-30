@@ -74,6 +74,10 @@ def build_image(file, size, pre_key, crop=False, quality=90, cache=False, unique
         else:
             raise Http404
 
+    image_options = {'quality': quality}
+    if image.format == 'GIF':
+        image_options['transparency'] = 0
+
     format = image.format
     if image.format in ('GIF', 'PNG'):
         if image.mode != "RGBA":
@@ -93,19 +97,25 @@ def build_image(file, size, pre_key, crop=False, quality=90, cache=False, unique
         image = image.resize(size, Image.ANTIALIAS)  # resize image
         image.format = format
 
-    params = {'quality': quality}
-    if image.format == 'GIF':
-        params['transparency'] = 0
-
-    # mission: get binary
-    output = StringIO()
-    image.save(output, image.format, **params)
-    binary = output.getvalue()  # mission accomplished
-    output.close()
+    binary = get_image_binary(image, **image_options)
 
     if cache:
         key = generate_image_cache_key(file, size, pre_key, crop, unique_key, quality, constrain)
         django_cache.add(key, binary, 60 * 60 * 24 * 30)  # cache for 30 days #issue/134
+
+    return binary
+
+
+def get_image_binary(image, **options):
+    """
+    Returns image binary
+    """
+    image.format = image.format or 'JPEG'
+
+    output = StringIO()
+    image.save(output, image.format, **options)
+    binary = output.getvalue()
+    output.close()
 
     return binary
 
@@ -126,7 +136,7 @@ def validate_image_size(size):
         else:
             new_size.append(item[0])
 
-    return new_size
+    return tuple(new_size)
 
 
 def aspect_ratio(image_size, new_size, constrain=False):

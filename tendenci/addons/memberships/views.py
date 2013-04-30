@@ -3,7 +3,7 @@ import math
 import hashlib
 from decimal import Decimal
 from hashlib import md5
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import time as ttime
 import subprocess
 from sets import Set
@@ -1978,40 +1978,49 @@ def verify_email(request,
 
 @staff_member_required
 def membership_join_report(request):
-    now = datetime.now()
+    TODAY = date.today()
     mems = MembershipDefault.objects.all()
-    mem_type = ''
-    mem_stat = ''
+    mem_type = u''
+    mem_stat = u''
+    start_date = u''
+    end_date = u''
+
+    start_date = TODAY - timedelta(days=30)
+    end_date = TODAY
+
     if request.method == 'POST':
         form = ReportForm(request.POST)
+
         if form.is_valid():
-            if form.cleaned_data['membership_type']:
-                mem_type = form.cleaned_data['membership_type']
-                mems = mems.filter(membership_type=form.cleaned_data['membership_type'])
-            if form.cleaned_data['membership_status']:
-                mem_stat = form.cleaned_data['membership_status']
-                if form.cleaned_data['membership_status'] == 'ACTIVE':
-                    mems = mems.filter(expire_dt__gte=now, subscribe_dt__lte=now)
-                else:
-                    mems = mems.exclude(expire_dt__gte=now, subscribe_dt__lte=now)
+
+            mem_type = form.cleaned_data.get('membership_type', u'')
+            mem_status = form.cleaned_data.get('membership_status', u'')
+            start_date = form.cleaned_data.get('start_date', u'')
+            end_date = form.cleaned_data.get('end_date', u'')
+
+            if mem_type:
+                mems = mems.filter(membership_type=mem_type)
+
+            if mem_status:
+                mems = mems.filter(status_detail=mem_status)
     else:
-        form = ReportForm()
-    mems30days = mems.filter(join_dt__gte=now - timedelta(days=30))
-    mems60days = mems.filter(join_dt__gte=now - timedelta(days=60))
-    mems90days = mems.filter(join_dt__gte=now - timedelta(days=90))
+        form = ReportForm(initial={
+            'start_date': start_date.strftime('%m/%d/%Y'),
+            'end_date': end_date.strftime('%m/%d/%Y')})
+
+    mems = mems.filter(join_dt__gte=start_date, join_dt__lte=end_date).order_by('join_dt')
 
     EventLog.objects.log()
 
     return render_to_response(
-                'reports/membership_joins.html', {
-                    'mems30days': mems30days,
-                    'mems60days': mems60days,
-                    'mems90days': mems90days,
-                    'form': form,
-                    'mem_type': mem_type,
-                    'mem_stat': mem_stat,
-                },
-                context_instance=RequestContext(request))
+        'reports/membership_joins.html', {
+        'mem_type': mem_type,
+        'mem_stat': mem_stat,
+        'start_date': start_date,
+        'end_date': end_date,
+        'mems': mems,
+        'form': form,
+        }, context_instance=RequestContext(request))
 
 
 @staff_member_required
@@ -2048,6 +2057,10 @@ def membership_join_report_pdf(request):
         else:
             mems = mems.exclude(expire_dt__gte=now, join_dt__lte=now)
     mems = mems.filter(join_dt__gte=now - timedelta(days=int(days)))
+
+    if not mems:
+        raise Http404
+
     report = ReportNewMems(queryset=mems)
     resp = HttpResponse(mimetype='application/pdf')
     report.generate_by(PDFGenerator, filename=resp)
