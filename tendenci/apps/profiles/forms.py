@@ -14,6 +14,7 @@ from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.user_groups.models import Group, GroupMembership
 from tendenci.addons.memberships.models import App, Membership
+from tendenci.addons.memberships.models import MembershipType
 from tendenci.core.event_logs.models import EventLog
 from tendenci.apps.profiles.models import Profile
 from tendenci.apps.profiles.utils import get_groups, get_memberships, group_choices, update_user
@@ -26,6 +27,52 @@ APPS = ('profiles', 'user_groups', 'articles',
         'stories', 'actions', 'photos', 'entities',
         'locations', 'files', 'directories', 'resumes',
         'memberships', 'corporate_memberships')
+
+
+class ProfileSearchForm(forms.Form):
+    SEARCH_CRITERIA_CHOICES = (
+                        ('', _('SELECT ONE')),
+                        ('username', _('Username')),
+                        ('member_number', _('Member Number')),
+                        ('company', _('Company')),
+                        ('position_title', _('Position Title')),
+                        ('phone', _('Phone')),
+                        ('city', _('City')),
+                        ('state', _('State')),
+                        ('zipcode', _('Zip Code')),
+                        ('country', _('Country'))
+                               )
+    SEARCH_METHOD_CHOICES = (
+                             ('starts_with', _('Starts With')),
+                             ('contains', _('Contains')),
+                             ('exact', _('Exact')),
+                             )
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
+    email = forms.CharField(required=False)
+    member_only = forms.BooleanField(label=_('Show Member Only'),
+                                     widget=forms.CheckboxInput(),
+                                     initial=True, required=False)
+    membership_type = forms.IntegerField(required=False)
+    search_criteria = forms.ChoiceField(choices=SEARCH_CRITERIA_CHOICES,
+                                        required=False)
+    search_text = forms.CharField(max_length=100, required=False)
+    search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
+                                        required=False)
+
+    def __init__(self, *args, **kwargs):
+        mts = kwargs.pop('mts')
+        super(ProfileSearchForm, self).__init__(*args, **kwargs)
+
+        if not mts:
+            del self.fields['membership_type']
+            del self.fields['member_only']
+        else:
+            choices = [(0, 'SELECT ONE')]
+            choices += [(mt.id, mt.name) for mt in mts]
+            self.fields['membership_type'].widget = forms.widgets.Select(
+                                    choices=choices)
+
 
 class ProfileForm(TendenciBaseForm):
 
@@ -638,78 +685,3 @@ class ProfileMergeForm(forms.Form):
 
         if queryset.count() == 2:
             self.fields['user_list'].initial = queryset
-
-
-class ProfileSearchForm(forms.Form):
-    ID_CRITERIA = ['entity__id', 'user__id', 'owner__id', 'user__is_active', 'status', 'first_responder']
-    SECURITY_CHOICES = ['', 'user', 'staff', 'superuser']
-
-    f_name = forms.CharField(label=_("first name"), required=False)
-    l_name = forms.CharField(label=_("last name"), required=False)
-    email = forms.CharField(label=_("email"), required=False)
-    group = forms.ChoiceField(label=_("user group"), required=False, choices=[])
-    member = forms.BooleanField(label=_("members only"), required=False)
-    search_criteria = forms.ChoiceField(label="", required=False)
-    search_text = forms.CharField(label="", required=False)
-    search_method = forms.ChoiceField(label="", required=False)
-
-    def __init__(self, request, *args, **kwargs):
-        super(ProfileSearchForm, self).__init__(*args, **kwargs)
-
-        self.fields["search_method"].choices = [
-            ('istartswith', u'Starts With'),
-            ('icontains', u'Contains'),
-            ('iendswith', u'Ends With'),
-        ]
-
-        group_choices = [('', u'SELECT ONE')]
-        group_choices += GroupMembership.objects.values_list('group', 'group__name').distinct()
-        self.fields["group"].choices = group_choices
-
-        criteria_choices = [('', u'SELECT ONE'),
-                            ('company', u'Company'),
-                            ('position_title', u'Title'),
-                            ('department', u'Department'),
-                            ('display_name', u'Display Name'),
-                            ('mailing_name', u'Mailing Name'),
-                            ('email2', u'Email 2'),
-                            ('user__username', u'Username'),
-                            ('member_number', u'Member #'),
-                            ('phone', u'Phone'),
-                            ('phone2', u'Phone 2'),
-                            ('fax', u'Fax'),
-                            ('mobile_phone', u'Cell'),
-                            ('city', u'City'),
-                            ('state', u'State'),
-                            ('zipcode', u'Zipcode'),
-                            ('country', u'Country'),
-                            ('url', u'Url'),
-                            ('entity__id', u'EntityID'),
-                            ('user__id', u'UserID'),
-                            ('owner__id', u'Owner UserID')]
-
-        if request.user.is_authenticated:
-            if request.user.profile.is_superuser:
-                criteria_choices += [('user__is_active', u'Interactive (1/0)'),
-                                     ('status_detail', u'Status Detail'),
-                                     ('status', u'Status (1/0)'),
-                                     ('notes', u'Notes'),
-                                     ('admin_notes', u'Admin Notes'),   
-                                     ('security_level', u'Security Level'),
-                                     ('first_responder', u'First Responder (1/0)')]
-
-        criteria_choices += [('guid', u'GUID')]
-        self.fields["search_criteria"].choices = criteria_choices
-
-    def clean(self):
-        data = self.cleaned_data
-
-        text = data.get('search_text', u'').lower().strip()
-        criteria = data.get('search_criteria', u'')
-
-        if criteria in self.ID_CRITERIA and not text.isdigit():
-            raise forms.ValidationError(_('Selected search criteria requires integer value for search text.'))
-        elif criteria == 'security_level' and not text in self.SECURITY_CHOICES:
-            raise forms.ValidationError(_('Security level criteria only accepts the following values: user, staff or superuser.'))
-
-        return data

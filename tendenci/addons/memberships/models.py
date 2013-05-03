@@ -440,8 +440,8 @@ class MembershipDefault(TendenciBaseModel):
     chapter = models.CharField(max_length=150, blank=True)
     areas_of_expertise = models.CharField(max_length=1000, blank=True)
     corp_profile_id = models.IntegerField(blank=True, default=0)
-    corporate_membership_id = models.IntegerField(_('Corporate Membership'),
-                                                  blank=True, null=True)
+    corporate_membership_id = models.IntegerField(
+        _('Corporate Membership'), blank=True, null=True)
     home_state = models.CharField(max_length=50, blank=True, default=u'')
     year_left_native_country = models.IntegerField(blank=True, null=True)
     network_sectors = models.CharField(max_length=250, blank=True, default=u'')
@@ -561,6 +561,31 @@ class MembershipDefault(TendenciBaseModel):
         Returns memberships of status_detail='pending'
         """
         return MembershipDefault.objects.filter(status_detail__iexact='pending')
+
+    def get_corporate_profile(self):
+        """
+        Returns corporate profile object
+        else returns None type object.
+        """
+        from tendenci.addons.corporate_memberships.models import CorpProfile
+        [corporate_profile] = CorpProfile.objects.filter(
+            pk=self.corp_profile_id) or [None]
+
+        return corporate_profile
+
+    def get_corporate_membership(self):
+        """
+        Returns corporate membership object
+        else returns None type object.
+        """
+        from tendenci.addons.corporate_memberships.models import CorpMembership
+        [corporate_membership] = CorpMembership.objects.filter(
+            pk=self.corp_profile_id) or [None]
+
+        return corporate_membership
+
+
+
 
     def send_email(self, request, notice_type):
         """
@@ -885,11 +910,16 @@ class MembershipDefault(TendenciBaseModel):
         status=True, status_detail='active' and has expired,
         includes the grace period.
         """
+        if not self.get_expire_dt():
+            # there is no grace period, so the member isn't in it
+            in_grace_period = False
+        else:
+            in_grace_period = self.get_expire_dt() < datetime.now()
         is_good = (
             self.status,
             self.status_detail.lower() == 'expired',
             self.get_expire_dt(),
-            self.get_expire_dt() < datetime.now())
+            in_grace_period)
 
         return all(is_good)
 
@@ -1146,6 +1176,67 @@ class MembershipDefault(TendenciBaseModel):
         start_dt, end_dt = renewal_period
 
         return datetime.now() > end_dt
+
+    def get_since_dt(self):
+        memberships = MembershipDefault.objects.filter(
+            user=self.user,
+            status=True,
+            join_dt__isnull=False
+        ).order_by('pk')
+
+        return memberships[0].join_dt if memberships else self.create_dt
+
+    def get_actions(self, **kwargs):
+        """
+        Returns dictionary of actions (key) with label (value)
+
+        Possible actions:
+            approve
+            disapprove
+            make pending
+            archive
+        """
+        from collections import OrderedDict
+        actions = OrderedDict()
+        status = self.get_status()
+
+        is_superuser = kwargs.get('is_superuser', False)
+
+        form_link = '%s?username=%s&amp;membership_type=%s' % (
+            reverse('membership_default.add', kwargs={'slug': self.app.slug}),
+            self.user.username,
+            self.membership_type.pk)
+
+        approve_link = reverse('admin:membership.admin_approve', args=[self.pk])
+        disapprove_link = reverse('admin:membership.admin_disapprove', args=[self.pk])
+        expire_link = reverse('admin:membership.admin_expire', args=[self.pk])
+
+        if self.user.profile.can_renew():
+            renew = {form_link: u'Renew Membership'}
+        elif is_superuser:
+            renew = {form_link: u'Renew Membership'}
+        else:
+            renew = {}
+
+        if status == 'active':
+            actions.update(renew)
+            actions.update({
+                # '?action=pend': u'Make Pending',
+                expire_link: u'Expire Membership'})
+        elif status == 'disapproved':
+            actions.update({
+                # '?action=pend': u'Make Pending',
+                expire_link: u'Expire Membership'})
+        elif status == 'pending':
+            actions.update({
+                approve_link: u'Approve',
+                disapprove_link: u'Disapprove',
+                expire_link: u'Expire Membership'})
+        elif status == 'expired':
+            actions.update({
+                approve_link: u'Approve Membership'})
+
+        return actions
 
     def get_invoice(self):
         """
@@ -1571,12 +1662,12 @@ class MembershipDefault(TendenciBaseModel):
             acct = Acct.objects.get(account_number=acct_number)
             AcctTran.objects.create_acct_tran(user, ae, acct, amount * (-1))
 
-    # to lookup for the number, go to /accountings/account_numbers/
     def get_acct_number(self, discount=False):
-        if discount:
-            return 464700
-        else:
-            return 404700
+        # reference: /accountings/account_numbers/
+        return 464700 if discount else 404700
+
+    # def custom_fields(self):
+    #     return self.membershipfield_set.order_by('field__position')
 
 
 class Membership(TendenciBaseModel):

@@ -5,6 +5,8 @@ from django.http import HttpResponseRedirect
 from django.contrib.admin import SimpleListFilter
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext_lazy as _
+from django.conf.urls.defaults import patterns, url
+from django.shortcuts import get_object_or_404, redirect
 
 from tendenci.addons.corporate_memberships.models import (
     CorporateMembershipType,
@@ -272,17 +274,43 @@ class CorpAppAdmin(admin.ModelAdmin):
         super(CorpAppAdmin, self).log_addition(request, object)
 
 
+class StatusDetailFilter(SimpleListFilter):
+    title = _('status detail')
+    parameter_name = 'status_detail'
+
+    def lookups(self, request, model_admin):
+        status_detail_list = CorpMembership.objects.exclude(
+                        status_detail='archive'
+                        ).distinct('status_detail'
+                        ).values_list('status_detail',
+                        flat=True).order_by('status_detail')
+        return [(status_detail, status_detail
+                 ) for status_detail in status_detail_list]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            queryset = queryset.filter(
+                    status_detail=self.value())
+        return queryset
+
+
 class CorpMembershipAdmin(admin.ModelAdmin):
     list_display = ['corp_profile', 'join_dt',
                     'renewal', 'renew_dt',
                     'expiration_dt',
                     'approved', 'status_detail']
-    list_filter = ['status_detail', 'join_dt', 'expiration_dt']
+    list_filter = [StatusDetailFilter, 'join_dt', 'expiration_dt']
     search_fields = ['corp_profile__name']
 
     fieldsets = (
         (None, {'fields': ()}),
     )
+
+    def queryset(self, request):
+        return super(CorpMembershipAdmin, self).queryset(request
+                    ).exclude(status_detail='archive'
+                              ).order_by('status_detail',
+                                         'corp_profile__name')
 
     def add_view(self, request, form_url='', extra_context=None):
         return HttpResponseRedirect(reverse('corpmembership.add'))
@@ -338,6 +366,44 @@ class NoticeAdmin(admin.ModelAdmin):
         instance.save()
 
         return instance
+
+    def get_urls(self):
+        urls = super(NoticeAdmin, self).get_urls()
+        extra_urls = patterns('',
+            url("^clone/(?P<pk>\d+)/$",
+                self.admin_site.admin_view(self.clone),
+                name='corporate_membership_notice.admin_clone'),
+        )
+        return extra_urls + urls
+
+    def clone(self, request, pk):
+        """
+        Make a clone of this notice.
+        """
+        notice = get_object_or_404(Notice, pk=pk)
+        notice_clone = Notice()
+
+        ignore_fields = ['guid', 'id', 'create_dt', 'update_dt',
+                         'creator', 'creator_username',
+                         'owner', 'owner_username']
+        field_names = [field.name
+                        for field in notice.__class__._meta.fields
+                        if field.name not in ignore_fields]
+
+        for name in field_names:
+            setattr(notice_clone, name, getattr(notice, name))
+
+        notice_clone.notice_name = 'Clone of %s' % notice_clone.notice_name
+        notice_clone.creator = request.user
+        notice_clone.creator_username = request.user.username
+        notice_clone.owner = request.user
+        notice_clone.owner_username = request.user.username
+        notice_clone.save()
+
+        return redirect(reverse(
+            'admin:corporate_memberships_notice_change',
+            args=[notice_clone.pk],
+        ))
 
 
 class AppListFilter(SimpleListFilter):

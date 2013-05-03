@@ -3,6 +3,7 @@ import math
 import hashlib
 from decimal import Decimal
 from hashlib import md5
+from dateutil.parser import parse
 from datetime import datetime, timedelta, date
 import time as ttime
 import subprocess
@@ -39,6 +40,7 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.core.base.http import Http403
 from tendenci.core.base.decorators import password_required
 from tendenci.core.base.utils import send_email_notification
+from tendenci.core.perms.decorators import superuser_required
 from tendenci.core.perms.utils import has_perm, update_perms_and_save, get_query_filters
 from tendenci.apps.invoices.models import Invoice
 from tendenci.addons.corporate_memberships.models import (CorpMembership,
@@ -84,7 +86,7 @@ def membership_search(request, template_name="memberships/search.html"):
     membership_view_perms = get_setting('module', 'memberships', 'memberprotection')
 
     if not membership_view_perms == "public":
-        return HttpResponseRedirect(reverse('profile.search') + "?members=on")
+        return HttpResponseRedirect(reverse('profile.search') + "?member_only=on")
 
     query = request.GET.get('q')
     mem_type = request.GET.get('type')
@@ -114,15 +116,21 @@ def membership_details(request, id=0, template_name="memberships/details.html"):
     """
     Membership details.
     """
-    membership = get_object_or_404(Membership, pk=id)
+    membership = get_object_or_404(MembershipDefault, pk=id)
 
-    if not has_perm(request.user, 'memberships.view_membership', membership):
+    super_user_or_owner = (
+        request.user.profile.is_superuser,
+        request.user == membership.user)
+
+    if not any(super_user_or_owner):
         raise Http403
 
     EventLog.objects.log(instance=membership)
 
-    return render_to_response(template_name, {'membership': membership},
-        context_instance=RequestContext(request))
+    return render_to_response(
+        template_name, {
+            'membership': membership
+        }, context_instance=RequestContext(request))
 
 
 @login_required
@@ -1627,7 +1635,9 @@ def membership_default_add(request, slug='',
             'department': user.profile.department,
         }
 
-    profile_form = ProfileForm(app_fields, request.POST or None,
+    profile_form = ProfileForm(
+        app_fields,
+        request.POST or None,
         initial=profile_initial
     )
 
@@ -1712,10 +1722,9 @@ def membership_default_add(request, slug='',
 
                 user = user_form.save()
 
-                profile_form.instance = user.profile
-                profile_form.save(
-                    request_user=request.user
-                )
+                if hasattr(user, 'profile'):
+                    profile_form.instance = user.profile
+                    profile_form.save(request_user=request.user)
 
                 # save demographics
                 demographics = demographics_form.save(commit=False)
@@ -1979,9 +1988,9 @@ def verify_email(request,
 @staff_member_required
 def membership_join_report(request):
     TODAY = date.today()
-    mems = MembershipDefault.objects.all()
-    mem_type = u''
-    mem_stat = u''
+    memberships = MembershipDefault.objects.all()
+    membership_type = u''
+    membership_status = u''
     start_date = u''
     end_date = u''
 
@@ -1993,32 +2002,33 @@ def membership_join_report(request):
 
         if form.is_valid():
 
-            mem_type = form.cleaned_data.get('membership_type', u'')
-            mem_status = form.cleaned_data.get('membership_status', u'')
+            membership_type = form.cleaned_data.get('membership_type', u'')
+            membership_status = form.cleaned_data.get('membership_status', u'')
             start_date = form.cleaned_data.get('start_date', u'')
             end_date = form.cleaned_data.get('end_date', u'')
 
-            if mem_type:
-                mems = mems.filter(membership_type=mem_type)
+            if membership_type:
+                memberships = memberships.filter(membership_type=membership_type)
 
-            if mem_status:
-                mems = mems.filter(status_detail=mem_status)
+            if membership_status:
+                memberships = memberships.filter(status_detail=membership_status)
     else:
         form = ReportForm(initial={
             'start_date': start_date.strftime('%m/%d/%Y'),
             'end_date': end_date.strftime('%m/%d/%Y')})
 
-    mems = mems.filter(join_dt__gte=start_date, join_dt__lte=end_date).order_by('join_dt')
+    memberships = memberships.filter(
+        join_dt__gte=start_date, join_dt__lte=end_date).order_by('join_dt')
 
     EventLog.objects.log()
 
     return render_to_response(
         'reports/membership_joins.html', {
-        'mem_type': mem_type,
-        'mem_stat': mem_stat,
+        'membership_type': membership_type,
+        'membership_status': membership_status,
         'start_date': start_date,
         'end_date': end_date,
-        'mems': mems,
+        'memberships': memberships,
         'form': form,
         }, context_instance=RequestContext(request))
 
@@ -2044,30 +2054,43 @@ def membership_export(request):
 
 @staff_member_required
 def membership_join_report_pdf(request):
-    now = datetime.now()
-    days = request.GET.get('days', 30)
-    mem_type = request.GET.get('mem_type', None)
-    mem_stat = request.GET.get('mem_stat', None)
+    TODAY = date.today()
+    mem_type = request.GET.get('mem_type', u'')
+    mem_stat = request.GET.get('mem_stat', u'')
+    start_date = request.GET.get('start_date', u'')
+    end_date = request.GET.get('end_date', u'')
+
     mems = MembershipDefault.objects.all()
+
     if mem_type:
         mems = mems.filter(membership_type=mem_type)
+
     if mem_stat:
-        if mem_stat == 'ACTIVE':
-            mems = mems.filter(expire_dt__gte=now, join_dt__lte=now)
-        else:
-            mems = mems.exclude(expire_dt__gte=now, join_dt__lte=now)
-    mems = mems.filter(join_dt__gte=now - timedelta(days=int(days)))
+        mems = mems.filter(status_detail=mem_stat.lower())
+
+    if start_date:
+        start_date = parse(start_date)  # make date object
+    else:
+        start_date = TODAY - timedelta(days=30)
+
+    if end_date:
+        end_date = parse(end_date)  # make date object
+    else:
+        end_date = TODAY
+
+    mems = mems.filter(
+        join_dt__gte=start_date, join_dt__lte=end_date).order_by('join_dt')
 
     if not mems:
         raise Http404
 
     report = ReportNewMems(queryset=mems)
-    resp = HttpResponse(mimetype='application/pdf')
-    report.generate_by(PDFGenerator, filename=resp)
+    response = HttpResponse(mimetype='application/pdf')
+    report.generate_by(PDFGenerator, filename=response)
 
     EventLog.objects.log()
 
-    return resp
+    return response
 
 
 @staff_member_required
