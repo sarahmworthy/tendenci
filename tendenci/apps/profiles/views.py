@@ -144,22 +144,9 @@ def index(request, username='', template_name="profiles/index.html"):
     else:
         membership_apps = None
 
+    membership_reminders = ()
     if request.user == user_this:
         membership_reminders = get_member_reminders(user_this)
-
-        if membership_reminders[0]:
-            messages.add_message(
-                request, messages.INFO,
-                'Memberships that are available for renewal: %s' % ', '.join(membership_reminders[0]))
-        elif membership_reminders[1]:
-            messages.add_message(
-                request, messages.INFO,
-                'Memberships that are expiring soon: %s' % ', '.join(membership_reminders[1]))
-        elif membership_reminders[2]:
-            messages.add_message(
-                request, messages.INFO,
-                'Memberships that have expired: %s' % ', '.join(membership_reminders[2]))
-
 
     return render_to_response(template_name, {
         'can_edit': can_edit,
@@ -173,7 +160,8 @@ def index(request, username='', template_name="profiles/index.html"):
         'memberships': memberships,
         'registrations': registrations,
         'membership_apps': membership_apps,
-        'multiple_apps': multiple_apps
+        'multiple_apps': multiple_apps,
+        'membership_reminders': membership_reminders,
         }, context_instance=RequestContext(request))
 
 

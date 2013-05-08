@@ -4,6 +4,7 @@ from random import choice
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.db.models import Q
 
 from tendenci.apps.user_groups.models import GroupMembership, Group
@@ -203,9 +204,9 @@ def spawn_username(fn=u'', ln=u'', em=u''):
 
 
 def get_member_reminders(user):
-    renewal_list = []
-    expiring_list = []
-    expired_list = []
+    renewal_list = ()
+    expiring_list = ()
+    expired_list = ()
 
     active_qs = Q(status_detail__iexact='active')
     expired_qs = Q(status_detail__iexact='expired')
@@ -215,14 +216,39 @@ def get_member_reminders(user):
                 active_qs | expired_qs)
 
     for membership in memberships:
+        renew_link = '%s%s?username=%s&membership_type_id=%s' % (
+            get_setting('site', 'global', 'siteurl'),
+            reverse('membership_default.add', kwargs={'slug': membership.app.slug}),
+            membership.user.username,
+            membership.membership_type.pk)
+
         if membership.can_renew():
-            renewal_list.append(membership.membership_type.name)
+            message = 'Your membership for %s is available for renewal' % (
+                membership.membership_type.name)
+            renewal_list += ((message,
+                              renew_link,
+                              'Renew your membership here'),)
+
         elif membership.is_expired():
-            expiring_list.append(membership.membership_type.name)
+            message = 'Your membership for %s is expiring soon' % (
+                membership.membership_type.name)
+            expiring_list += ((message,
+                              renew_link,
+                              'Renew your membership here'),)
+
         elif membership.get_status() == 'expired':
-            expired_list.append(membership.membership_type.name)
-        
-    return renewal_list, expiring_list, expired_list
+            message = 'Your membership for %s has expired' % (
+                membership.membership_type.name)
+            expired_list += ((message,
+                              renew_link,
+                              'Re-register as a member here'),)
+
+    if renewal_list:
+        return renewal_list
+    elif expiring_list:
+        return expiring_list
+    else:
+        return expired_list
 
 
 def clean_username(username):
