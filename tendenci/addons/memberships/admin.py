@@ -5,11 +5,13 @@ from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.conf.urls.defaults import patterns, url
 from django.template.defaultfilters import slugify
 from django.http import HttpResponse
 from django.utils.html import escape
+from django.utils.encoding import iri_to_uri
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
@@ -335,10 +337,9 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         Intercept add page and redirect to form.
         """
         apps = MembershipApp.objects.filter(
-                                status=True,
-                                status_detail__in=['published',
-                                                   'active']
-                                            )
+            status=True,
+            status_detail__in=['published', 'active'])
+
         count = apps.count()
         if count == 1:
             app = apps[0]
@@ -355,6 +356,25 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
                 reverse('admin:memberships_membershipapp_changelist')
             )
 
+    def response_change(self, request, obj):
+        """
+        When the change page is submitted we can redirect
+        to a URL specified in the next parameter.
+        """
+        POST_KEYS = request.POST.keys()
+        GET_KEYS = request.GET.keys()
+        NEXT_URL = iri_to_uri('%s') % request.GET.get('next')
+
+        do_next_url = (
+            not '_addanother' in POST_KEYS,
+            not '_continue' in POST_KEYS,
+            'next' in GET_KEYS)
+
+        if all(do_next_url):
+            return HttpResponseRedirect(NEXT_URL)
+
+        return super(MembershipDefaultAdmin, self).response_change(request, obj)
+
     def queryset(self, request):
         qs = super(MembershipDefaultAdmin, self).queryset(request)
         return qs.order_by('-application_approved_dt')
@@ -365,7 +385,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         urls = super(MembershipDefaultAdmin, self).get_urls()
 
-        extra_urls = patterns('',
+        extra_urls = patterns(
+            u'',
             url("^approve/(?P<pk>\d+)/$",
                 self.admin_site.admin_view(self.approve),
                 name='membership.admin_approve'),
@@ -395,6 +416,12 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
             # notify corp reps
             m.email_corp_reps(request)
 
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            'Successfully Approved'
+        )
+
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
             args=[pk],
@@ -408,6 +435,12 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.renew(request_user=request.user)
         m.send_email(request, 'renewal')
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            'Successfully Renewed'
+        )
 
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
@@ -423,6 +456,12 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         m.disapprove(request_user=request.user)
         m.send_email(request, 'disapprove')
 
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            'Successfully Disapproved'
+        )
+
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',
             args=[pk],
@@ -435,6 +474,12 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         """
         m = get_object_or_404(MembershipDefault, pk=pk)
         m.expire(request_user=request.user)
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            'Successfully Expired'
+        )
 
         return redirect(reverse(
             'admin:memberships_membershipdefault_change',

@@ -6,6 +6,7 @@ import operator
 from hashlib import md5
 from sets import Set
 import subprocess
+import mimetypes
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.template import RequestContext
@@ -126,7 +127,7 @@ def app_preview(request, slug,
     app_fields = app.fields.filter(display=True)
     if not is_superuser:
         app_fields = app_fields.filter(admin_only=False)
-    app_fields = app_fields.order_by('order')
+    app_fields = app_fields.order_by('position')
 
     corpprofile_form = CorpProfileForm(app_fields,
                                      request_user=request.user,
@@ -206,10 +207,12 @@ def corpmembership_add(request, slug='',
 
     corpprofile_form = CorpProfileForm(app_fields,
                                      request.POST or None,
+                                     request.FILES or None,
                                      request_user=request.user,
                                      corpmembership_app=app)
     corpmembership_form = CorpMembershipForm(app_fields,
                                              request.POST or None,
+                                             request.FILES or None,
                                              request_user=request.user,
                                              corpmembership_app=app)
     if request.method == 'POST':
@@ -357,11 +360,13 @@ def corpmembership_edit(request, id,
 
     corpprofile_form = CorpProfileForm(app_fields,
                                      request.POST or None,
+                                     request.FILES or None,
                                      instance=corp_profile,
                                      request_user=request.user,
                                      corpmembership_app=app)
     corpmembership_form = CorpMembershipForm(app_fields,
                                              request.POST or None,
+                                             request.FILES or None,
                                              instance=corp_membership,
                                              request_user=request.user,
                                              corpmembership_app=app)
@@ -520,6 +525,38 @@ def corpmembership_view(request, id,
     return render_to_response(template, context, RequestContext(request))
 
 
+@login_required
+def download_file(request, cm_id, field_id):
+    """
+    Download a user uploaded file.
+    """
+    corp_membership = get_object_or_404(CorpMembership, id=cm_id)
+    app_field = get_object_or_404(CorpMembershipAppField, id=field_id)
+    corp_profile = corp_membership.corp_profile
+
+    if not has_perm(request.user,
+                    'corporate_memberships.view_corpmembership',
+                    corp_membership):
+        if not corp_membership.allow_view_by(request.user):
+            raise Http403
+    if app_field.field_type == 'FileField':
+        value = ''
+        if hasattr(corp_profile, app_field.field_name):
+            value = getattr(corp_profile, app_field.field_name)
+
+            if default_storage.exists(value):
+                file_name = os.path.split(value)[1]
+                mimetype = mimetypes.guess_type(file_name)[0]
+                if not mimetype:
+                    mimetype = 'application/octet-stream'
+                response = HttpResponse(default_storage.open(value).read(),
+                                        mimetype=mimetype)
+                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+                return response
+
+    raise Http404
+
+
 def corpmembership_search(request, my_corps_only=False,
             template_name="corporate_memberships/applications/search.html"):
     allow_anonymous_search = get_setting('module',
@@ -608,13 +645,15 @@ def corpmembership_delete(request, id,
 #                }
 #                send_email_notification('corp_memb_deleted', recipients,
 #                                        extra_context)
-            EventLog.objects.log()
-            corp_profile = corp_memb.corp_profile
+            description = 'Corporate membership - %s (id=%d, corp_profile_id=%d) - deleted' % (
+                                            corp_memb.corp_profile.name,
+                                            corp_memb.id,
+                                            corp_memb.corp_profile.id)
+            EventLog.objects.log(instance=corp_memb,
+                                 request=request,
+                                 description=description)
             corp_memb.delete()
-            # delete the corp profile if none of the corp memberships
-            # associating with it.
-            if not corp_profile.corp_memberships.all():
-                corp_profile.delete()
+            # the corp_profile deletion will be handled in post_delete signal
 
             return HttpResponseRedirect(reverse('corpmembership.search'))
 
@@ -960,18 +999,18 @@ def roster_search(request,
     # check form fields - first_name, last_name and email
     filter_and = {}
     if first_name:
-        filter_and.update({'user__first_name': first_name})
+        filter_and.update({'user__first_name__iexact': first_name})
     if last_name:
-        filter_and.update({'user__last_name': last_name})
+        filter_and.update({'user__last_name__iexact': last_name})
     if email:
-        filter_and.update({'user__email': email})
+        filter_and.update({'user__email__iexact': email})
     if active_only:
         filter_and.update({'status_detail': 'active'})
-    search_type = ''
+    search_type = '__iexact'
     if search_method == 'starts_with':
-        search_type = '__startswith'
+        search_type = '__istartswith'
     elif search_method == 'contains':
-        search_type = '__contains'
+        search_type = '__icontains'
 
     # check search criteria
     if search_criteria and search_text:

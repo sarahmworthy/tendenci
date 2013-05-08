@@ -17,6 +17,7 @@ from django.contrib.contenttypes import generic
 from django.utils.safestring import mark_safe
 from django.db.models import Q
 from django.core.urlresolvers import reverse
+from django.db.models.signals import post_delete
 
 #from django.contrib.contenttypes.models import ContentType
 from tinymce import models as tinymce_models
@@ -44,6 +45,7 @@ from tendenci.core.base.fields import DictField
 
 from tendenci.apps.notifications import models as notification
 from tendenci.core.base.utils import send_email_notification, day_validate, fieldify
+from tendenci.core.event_logs.models import EventLog
 from tendenci.addons.corporate_memberships.settings import use_search_index
 from tendenci.addons.corporate_memberships.utils import (
                                             corp_membership_update_perms,
@@ -319,11 +321,14 @@ class CorpProfile(TendenciBaseModel):
     referral_source_member_number = models.CharField(max_length=50,
                              blank=True, default='')
 
-    ud1 = models.CharField(max_length=100, blank=True, default='')
-    ud2 = models.CharField(max_length=100, blank=True, default='')
-    ud3 = models.CharField(max_length=100, blank=True, default='')
-    ud4 = models.CharField(max_length=100, blank=True, default='')
-    ud5 = models.CharField(max_length=100, blank=True, default='')
+    ud1 = models.TextField(blank=True, default='', null=True)
+    ud2 = models.TextField(blank=True, default='', null=True)
+    ud3 = models.TextField(blank=True, default='', null=True)
+    ud4 = models.TextField(blank=True, default='', null=True)
+    ud5 = models.TextField(blank=True, default='', null=True)
+    ud6 = models.TextField(blank=True, default='', null=True)
+    ud7 = models.TextField(blank=True, default='', null=True)
+    ud8 = models.TextField(blank=True, default='', null=True)
 
     perms = generic.GenericRelation(ObjectPermission,
                                       object_id_field="object_id",
@@ -1275,6 +1280,14 @@ class CorpMembershipApp(TendenciBaseModel):
             self.memb_app.use_for_corp = True
             self.memb_app.save()
 
+    def application_form_link(self):
+        if self.is_current():
+            return '<a href="%s">%s</a>' % (reverse('corpmembership.add'),
+                                            self.slug)
+        return '--'
+
+    application_form_link.allow_tags = True
+
 
 class CorpMembershipAppField(OrderingBaseModel):
     corp_app = models.ForeignKey("CorpMembershipApp", related_name="fields")
@@ -1322,6 +1335,14 @@ class CorpMembershipAppField(OrderingBaseModel):
             return '%s (field name: %s)' % (self.label, self.field_name)
         return '%s' % self.label
 
+    def app_link(self):
+        return '<a href="%s">%s</a>' % (
+                reverse('admin:corporate_memberships_corpmembershipapp_change',
+                        args=[self.corp_app.id]),
+                self.corp_app.id)
+
+    app_link.allow_tags = True
+
     def get_field_class(self, initial=None):
         """
             Generate the form field class for this field.
@@ -1331,6 +1352,8 @@ class CorpMembershipAppField(OrderingBaseModel):
                 field_class, field_widget = self.field_type.split("/")
             else:
                 field_class, field_widget = self.field_type, None
+            if field_class == 'TextField':
+                field_class = 'CharField'
             field_class = getattr(forms, field_class)
             field_args = {"label": self.label,
                           "required": self.required,
@@ -2621,3 +2644,28 @@ class NoticeLogRecord(models.Model):
     action_taken = models.BooleanField(default=0)
     action_taken_dt = models.DateTimeField(blank=True, null=True)
     create_dt = models.DateTimeField(auto_now_add=True)
+
+
+def delete_corp_profile(sender, **kwargs):
+    corp_membership = kwargs['instance']
+    corp_profile = corp_membership.corp_profile
+
+    if not corp_profile.corp_memberships.exists():
+        # delete auth domains
+        for auth_domain in corp_profile.authorized_domains.all():
+            auth_domain.delete()
+
+        # delete reps
+        for rep in corp_profile.reps.all():
+            rep.delete()
+        # delete email verifications
+        for email_veri in corp_profile.indivemailverification_set.all():
+            email_veri.delete()
+
+        description = 'Corp profile - %s (id=%d) - deleted' % (
+                                            corp_profile.name,
+                                            corp_profile.id)
+        corp_profile.delete()
+        EventLog.objects.log(description=description)
+
+post_delete.connect(delete_corp_profile, sender=CorpMembership, weak=False)

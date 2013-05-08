@@ -83,10 +83,10 @@ def membership_index(request):
 
 
 def membership_search(request, template_name="memberships/search.html"):
-    membership_view_perms = get_setting('module', 'memberships', 'memberprotection')
+    #membership_view_perms = get_setting('module', 'memberships', 'memberprotection')
 
-    if not membership_view_perms == "public":
-        return HttpResponseRedirect(reverse('profile.search') + "?member_only=on")
+    #if not membership_view_perms == "public":
+    return HttpResponseRedirect(reverse('profile.search') + "?member_only=on")
 
     query = request.GET.get('q')
     mem_type = request.GET.get('type')
@@ -124,6 +124,24 @@ def membership_details(request, id=0, template_name="memberships/details.html"):
 
     if not any(super_user_or_owner):
         raise Http403
+
+    if request.user.profile.is_superuser:
+        GET_KEYS = request.GET.keys()
+
+        if 'approve' in GET_KEYS:
+            membership.approve(request_user=request.user)
+            messages.add_message(request, messages.SUCCESS, 'Successfully Approved')
+
+        if 'disapprove' in GET_KEYS:
+            membership.disapprove(request_user=request.user)
+            messages.add_message(request, messages.SUCCESS, 'Successfully Disapproved')
+
+        if 'expire' in GET_KEYS:
+            membership.expire(request_user=request.user)
+            messages.add_message(request, messages.SUCCESS, 'Successfully Expired')
+
+        if 'print' in GET_KEYS:
+            template_name = 'memberships/details_print.html'
 
     EventLog.objects.log(instance=membership)
 

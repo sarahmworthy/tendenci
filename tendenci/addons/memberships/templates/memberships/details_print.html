@@ -1,4 +1,4 @@
-{% extends "memberships/base-wide.html" %}
+{% extends 'base-print.html' %}
 {% load membership_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -13,46 +13,56 @@
 {{ block.super }}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/memberships.css">
 <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-navbar.css">
+
+<style>
+    .t .membership-details-status {
+        border-left: none;
+        width: 220px;
+        text-align: right;
+    }
+    .t .membership-details-status .status-label {
+        color: black;
+        font-size: 1.2em;
+        background-color: white;
+        padding: 0;
+        border-bottom: none;
+    }
+    .t .membership-detail-nav {
+        display: none;
+    }
+</style>
+
 {% endblock %}
 
 {% block body %}
 <div class="t">
-{% membership_nav request.user membership %}
-
     <div class="membership-detail-wrap">
 
         <fieldset>
-            <div class="fieldset-label">Membership Details</div>
-            <div class="membership-detail-nav">
-                {% if request.user.is_authenticated %}
-                <a href="{% url profile membership.user.username %}">
-                    {% trans "View Profile" %}</a>
-                {% endif %}
-
-                <a href="{% url membership.details membership.pk %}?print">
-                    {% trans "Print Page" %}</a>
-
-                {% if user.is_superuser %}
-                <a href="{% url admin:memberships_membershipdefault_change membership.pk %}?next={{ request.path }}">
-                    {% trans "Edit Membership" %}</a>
-                {% endif %}
-            </div>
-            <div style="clear:both;"></div>
-
             <div class="membership-details-inner-wrap">
-
                 <div class="membership-details-name">
                     <h1>{% blocktrans with membership.user.get_full_name as memname %}
                     {{ memname }}{% endblocktrans %}</h1>
 
-                    {% if membership.get_invoice %}
-                        <div class="membership-details-balance"><a href="{% url invoice.view membership.get_invoice.pk membership.get_invoice.guid %}">Balance Due: ${{ membership.get_invoice.balance|floatformat:"2" }}</a></div>
-                    {% endif %}
+                    <div class="membership-detail-nav">
+                        {% if request.user.is_authenticated %}
+                        <a href="{% url profile membership.user.username %}">
+                            {% trans "Profile" %}</a>
+                        {% endif %}
 
+                        {% if membership.get_invoice %}
+                        <a href="{% url invoice.view membership.get_invoice.pk membership.get_invoice.guid %}">
+                            {% trans "Invoice" %}</a>
+                        {% endif %}
+
+                        {% if user.is_superuser %}
+                        <a href="{% url admin:memberships_membershipdefault_change membership.pk %}?next={{ request.path }}">
+                            {% trans "Edit Membership" %}</a>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="membership-details-info">
-
                     <p>Member <strong>{{ membership.member_number }}</strong></p>
 
                     <p>Group <strong>{{ membership.membership_type }}</strong></p>
@@ -89,37 +99,9 @@
                         <div class="status-label {{ membership.get_status }}">
                             {{ membership.get_status|capfirst }} Membership</div>
 
-                        {% if user.is_superuser %}
-                        <div class="status-action">
-                            <ul class="nav nav-pills nav-stacked">
-                                {% for address, label in membership|get_actions:request.user %}
-                                    {% if address %}
-                                    <li><a href="{{ address }}">{{ label }}</a></li>
-                                    {% else %}
-                                    <li>{{ label }}</li>
-                                    {% endif %}
-                                {% empty %}
-                                    <li>{{ membership.status_note }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% else %}
-                        <div class="status-action">
-                        {% if membership.user == request.user %}
-                        {% if membership.can_renew %}
-                            <a href="{% url membership.application_details membership.ma.slug %}?username={{ membership.user.username }}">Renew your membership.</a>
-                        {% else %}
-                            {% if membership.app %}
-                                {% if membership.is_expired %}
-                                <a href="{% url membership.application_details membership.app.slug %}?username={{ membership.user.username }}">Oh no you're expired, sign up for membership.</a>
-                                {% else %}
-                                    <div>No pending actions required, good job!</div>
-                                {% endif %}
-                            {% endif %}
-                        {% endif %}
-                        {% endif %}
-                        </div>
-                        {% endif %}
+                        <div class="status-label">
+                            Balance Due: ${{ membership.get_invoice.balance|floatformat:"2" }}</div>
+
                     </div>
 
                 </div>
@@ -128,8 +110,7 @@
         </fieldset>
 
         <fieldset>
-            <div class="fieldset-label">More Details</div>
-            <div style="clear:both;"></div>
+            <label>More Details</label>
 
             {% if membership.certifications %}
             <div class="field">
@@ -407,9 +388,7 @@
 
         {% if membership.get_demographics %}
         <fieldset>
-            <div class="fieldset-label">Even More Details (custom fields)</div>
-            <div style="clear:both;"></div>
-
+            <label>Even More Details (custom fields)</label>
             {% for label, value in membership.get_demographics %}
                 {% if value %}
                 <div class="field">

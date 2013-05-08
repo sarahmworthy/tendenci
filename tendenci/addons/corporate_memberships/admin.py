@@ -90,7 +90,7 @@ class CorpMembershipAppFieldAdmin(admin.TabularInline):
 class CorpMembershipAppAdmin(admin.ModelAdmin):
     inlines = (CorpMembershipAppFieldAdmin, )
     prepopulated_fields = {'slug': ['name']}
-    list_display = ('name', 'status', 'status_detail')
+    list_display = ('name', 'application_form_link', 'status', 'status_detail')
     search_fields = ('name', 'status', 'status_detail')
     fieldsets = (
         (None, {'fields': ('name', 'slug', 'authentication_method',
@@ -320,6 +320,14 @@ class CorpMembershipAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(reverse('corpmembership.view',
                                             args=[object_id]))
 
+    def log_deletion(self, request, object, object_repr):
+        description = 'Corporate membership - %s (id=%d, corp_profile_id=%d) - deleted' % (
+                                            object.corp_profile.name,
+                                            object.id,
+                                            object.corp_profile.id)
+        EventLog.objects.log(instance=object, description=description)
+        super(CorpMembershipAdmin, self).log_deletion(request, object, object_repr)
+
 
 class NoticeAdmin(admin.ModelAdmin):
     def notice_log(self):
@@ -428,7 +436,7 @@ class AppListFilter(SimpleListFilter):
 
 class CorpMembershipAppField2Admin(admin.ModelAdmin):
     model = CorpMembershipAppField
-    list_display = ['label', 'field_name', 'display',
+    list_display = ['label', 'app_link', 'field_name', 'display',
               'required', 'admin_only', 'position',
               ]
 

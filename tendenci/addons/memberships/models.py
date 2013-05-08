@@ -405,29 +405,29 @@ class MembershipDefault(TendenciBaseModel):
     # workflow fields ------------------------------------------
     application_abandoned = models.BooleanField(default=False)
     application_abandoned_dt = models.DateTimeField(null=True, default=None)
-    application_abandoned_user = models.ForeignKey(User,
-        related_name='application_abandond_set', null=True)
+    application_abandoned_user = models.ForeignKey(
+        User, related_name='application_abandond_set', null=True)
 
     application_complete = models.BooleanField(default=True)
     application_complete_dt = models.DateTimeField(null=True, default=None)
-    application_complete_user = models.ForeignKey(User,
-        related_name='application_complete_set', null=True)
+    application_complete_user = models.ForeignKey(
+        User, related_name='application_complete_set', null=True)
 
     application_approved = models.BooleanField(default=False)
     application_approved_dt = models.DateTimeField(null=True, default=None)
-    application_approved_user = models.ForeignKey(User,
-        related_name='application_approved_set', null=True)
+    application_approved_user = models.ForeignKey(
+        User, related_name='application_approved_set', null=True)
 
     application_approved_denied_dt = models.DateTimeField(null=True, default=None)
-    application_approved_denied_user = models.ForeignKey(User,
-        related_name='application_approved_denied_set', null=True)
+    application_approved_denied_user = models.ForeignKey(
+        User, related_name='application_approved_denied_set', null=True)
 
     application_denied = models.BooleanField(default=False)
 
     action_taken = models.CharField(max_length=500, blank=True)
     action_taken_dt = models.DateTimeField(null=True, default=None)
-    action_taken_user = models.ForeignKey(User,
-        related_name='action_taken_set', null=True)
+    action_taken_user = models.ForeignKey(
+        User, related_name='action_taken_set', null=True)
     # workflow fields -----------------------------------------
 
     bod_dt = models.DateTimeField(null=True)
@@ -481,7 +481,8 @@ class MembershipDefault(TendenciBaseModel):
         """
         Returns admin change_form page.
         """
-        return ('admin:memberships_membershipdefault_change', [self.pk])
+        return ('membership_details', [self.pk])
+        # return ('admin:memberships_membershipdefault_change', [self.pk])
 
     def save(self, *args, **kwargs):
         """
@@ -499,6 +500,44 @@ class MembershipDefault(TendenciBaseModel):
         if hasattr(self, 'user') and self.user:
             if hasattr(self.user, 'demographics'):
                 return self.user.demographics
+
+    def demographic_sort_key(self, field_name):
+        """
+        Returns the key to sort on when
+        using the list.sort method.
+        """
+        digit = field_name.replace('ud', u'')
+        return int(digit) if digit.isdigit() else 0
+
+    def get_demographics(self):
+        """
+        Returns a list of 2-tuples (field name, field value)
+        """
+        if not self.demographics:
+            return []  # empty list
+
+        demographic = self.demographics
+
+        field_names = demographic._meta.get_all_field_names()
+        field_names.sort(key=self.demographic_sort_key)  # sort by ud number
+
+        field_dict = {}
+
+        if self.app:
+            for field in self.app.fields.all():
+                field_dict[field.field_name] = field.label
+
+        field_list = []
+        for field_name in field_names:
+            if field_name.startswith('ud'):
+                field_label = field_dict.get(field_name, field_name)
+                if hasattr(demographic, field_name):  # catches broken db relationships
+                    field_list.append((
+                        field_label,
+                        getattr(demographic, field_name)
+                    ))
+
+        return field_list
 
     @classmethod
     def refresh_groups(cls):
@@ -583,9 +622,6 @@ class MembershipDefault(TendenciBaseModel):
             pk=self.corp_profile_id) or [None]
 
         return corporate_membership
-
-
-
 
     def send_email(self, request, notice_type):
         """
@@ -1207,9 +1243,9 @@ class MembershipDefault(TendenciBaseModel):
             self.user.username,
             self.membership_type.pk)
 
-        approve_link = reverse('admin:membership.admin_approve', args=[self.pk])
-        disapprove_link = reverse('admin:membership.admin_disapprove', args=[self.pk])
-        expire_link = reverse('admin:membership.admin_expire', args=[self.pk])
+        approve_link = '%s?approve=' % reverse('membership.details', args=[self.pk])
+        disapprove_link = '%s?disapprove' % reverse('membership.details', args=[self.pk])
+        expire_link = '%s?expire' % reverse('membership.details', args=[self.pk])
 
         if self.user.profile.can_renew():
             renew = {form_link: u'Renew Membership'}
@@ -1224,9 +1260,10 @@ class MembershipDefault(TendenciBaseModel):
                 # '?action=pend': u'Make Pending',
                 expire_link: u'Expire Membership'})
         elif status == 'disapproved':
-            actions.update({
+            pass
+            # actions.update({
                 # '?action=pend': u'Make Pending',
-                expire_link: u'Expire Membership'})
+                # expire_link: u'Expire Membership'})
         elif status == 'pending':
             actions.update({
                 approve_link: u'Approve',
