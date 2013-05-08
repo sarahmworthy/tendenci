@@ -50,15 +50,28 @@ def yesno_format(value, instance):
 def round_format(value, instance):
     return Decimal('%.2f' % Decimal(value))
 
+
 def us_date_format(value, instance):
     return value.strftime("%m/%d/%Y")
 
+
 def date_label(report, field):
     return _("Date")
+
     
 def obj_type_format(value, instance):
     obj_type = ContentType.objects.get(id=value)
     return "%s: %s" % (obj_type.app_label, obj_type.name)
+
+
+def date_from_datetime(value):
+    return value.date()
+
+
+def get_obj_type_choices():
+    DEFAULT_OBJ_TYPES = ['registration', 'membershipdefault', 'membershipset', 'makepayment', 'corpmembership', 'job']
+    choices = ContentType.objects.filter(model__in=DEFAULT_OBJ_TYPES)
+    return choices
 
 
 class ReportValue(object):
