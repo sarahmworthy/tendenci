@@ -43,10 +43,12 @@ from tendenci.apps.user_groups.models import GroupMembership
 from tendenci.apps.user_groups.forms import GroupMembershipEditForm
 
 from tendenci.apps.profiles.models import Profile
-from tendenci.apps.profiles.forms import (ProfileForm, ExportForm, UserPermissionForm, 
-UserGroupsForm, ValidatingPasswordChangeForm, UserMembershipForm, ProfileMergeForm)
+from tendenci.apps.profiles.forms import (ProfileForm, ExportForm,
+UserPermissionForm, UserGroupsForm, ValidatingPasswordChangeForm,
+UserMembershipForm, ProfileMergeForm, ProfileSearchForm)
 from tendenci.apps.profiles.tasks import ExportProfilesTask
 from tendenci.addons.events.models import Registrant
+from tendenci.addons.memberships.models import MembershipType, MembershipDefault
 
 try:
     notification = get_app('notifications')
@@ -127,6 +129,20 @@ def index(request, username='', template_name="profiles/index.html"):
     if not can_edit:
         can_edit = request.user == user_this
 
+    multiple_apps = False
+    if get_setting('module', 'memberships', 'enabled'):
+        from tendenci.addons.memberships.models import MembershipApp
+        membership_apps = MembershipApp.objects.filter(
+                               status=True,
+                               status_detail__in=['published',
+                                                  'active']
+                                ).values('id', 'name', 'slug'
+                                         ).order_by('name')
+        if len(membership_apps) > 1:
+            multiple_apps = True
+    else:
+        membership_apps = None
+
     return render_to_response(template_name, {
         'can_edit': can_edit,
         "user_this": user_this,
@@ -138,6 +154,8 @@ def index(request, username='', template_name="profiles/index.html"):
         'group_memberships': group_memberships,
         'memberships': memberships,
         'registrations': registrations,
+        'membership_apps': membership_apps,
+        'multiple_apps': multiple_apps
         }, context_instance=RequestContext(request))
 
 
@@ -146,16 +164,6 @@ def search(request, template_name="profiles/search.html"):
     allow_anonymous_search = get_setting('module', 'users', 'allowanonymoususersearchuser')
     allow_user_search = get_setting('module', 'users', 'allowusersearch')
     membership_view_perms = get_setting('module', 'memberships', 'memberprotection')
-    only_members = request.GET.get('members', None)
-
-    # hide "only members" checkbox
-    # special occasion when box does nothing
-    show_checkbox = not all((
-        not allow_user_search,
-        membership_view_perms in ['all-members', 'member-type'],
-        not request.user.profile.is_superuser,
-    ))
-
 
     if not request.user.profile.is_superuser:
         # block anon
@@ -175,58 +183,125 @@ def search(request, template_name="profiles/search.html"):
                 if not allow_user_search:
                     raise Http403
 
-    query = request.GET.get('q', None)
+    # decide whether or not to display the membership types drop down
+    display_membership_type = False
+    if membership_view_perms == 'public' or request.user.profile.is_superuser:
+        display_membership_type = True
+    else:
+        if membership_view_perms in ['all-members', 'member-type']:
+            if request.user.is_authenticated() and \
+                request.user.profile.is_member:
+                display_membership_type = True
+    mt_ids_list = None
+    if display_membership_type:
+        if membership_view_perms == 'member-type':
+            mt_ids_list = request.user.membershipdefault_set.filter(
+                                            status=True,
+                                               status_detail='active'
+                                               ).values_list(
+                                            'membership_type_id',
+                                            flat=True)
+            if mt_ids_list:
+                mts = MembershipType.objects.filter(id__in=mt_ids_list
+                                                    ).order_by('name')
+            else:
+                mts = None
+        else:
+            mts = MembershipType.objects.all().order_by('name')
+    else:
+        mts = None
+
+    show_member_option = not mts is None
+
+    form = ProfileSearchForm(request.GET, mts=mts)
+    if form.is_valid():
+        first_name = form.cleaned_data['first_name']
+        last_name = form.cleaned_data['last_name']
+        email = form.cleaned_data['email']
+        search_criteria = form.cleaned_data['search_criteria']
+        search_text = form.cleaned_data['search_text']
+        search_method = form.cleaned_data['search_method']
+        membership_type = form.cleaned_data.get('membership_type', None)
+        member_only = form.cleaned_data.get('member_only', False)
+    else:
+        first_name = None
+        last_name = None
+        email = None
+        search_criteria = None
+        search_text = None
+        search_method = None
+        membership_type = None
+        member_only = False
+
     filters = get_query_filters(request.user, 'profiles.view_profile')
 
-    profiles = Profile.objects.filter(Q(status=True), Q(status_detail="active"), Q(filters)).distinct()
+    profiles = Profile.objects.filter(Q(status=True),
+                                      Q(status_detail="active"),
+                                      Q(filters)).distinct()
+    if first_name:
+        profiles = profiles.filter(user__first_name__iexact=first_name)
+    if last_name:
+        profiles = profiles.filter(user__last_name__iexact=last_name)
+    if email:
+        profiles = profiles.filter(user__email__iexact=email)
 
-    if query:
-        profiles = profiles.filter(
-            Q(user__first_name__icontains=query) | \
-            Q(user__last_name__icontains=query) | \
-            Q(user__email__icontains=query) | \
-            Q(user__username__icontains=query) | \
-            Q(display_name__icontains=query) | \
-            Q(company__icontains=query)
-        )
+    if member_only:
+        profiles = profiles.exclude(member_number='')
 
-    # if non-superuser
-        # if is member
-        # if is user
-        # if only_members
-            # exclude non-members
+    if search_criteria and search_text:
+        search_type = '__iexact'
+        if search_method == 'starts_with':
+            search_type = '__istartswith'
+        elif search_method == 'contains':
+            search_type = '__icontains'
+        if search_criteria in ['username', 'first_name', 'last_name', 'email']:
+            search_filter = {'user__%s%s' % (search_criteria,
+                                             search_type): search_text}
+        else:
+            search_filter = {'%s%s' % (search_criteria,
+                                         search_type): search_text}
+
+        profiles = profiles.filter(**search_filter)
 
     if not request.user.profile.is_superuser:
         if request.user.profile.is_member:
 
             if membership_view_perms == 'private':
-                profiles = profiles.exclude(~Q(member_number=''))  # exclude all members
+                # show non-members only
+                profiles = profiles.filter(member_number='')  # exclude all members
             elif membership_view_perms == 'member-type':
-                profiles = profiles.exclude(  # exclude specific members
-                    ~Q(user__membershipdefault__membership_type__in=request.user.membershipdefault_set.values_list('membership_type', flat=True))
-                )
+                filter_or = Q(member_number='')
+                if mt_ids_list:
+                    filter_or = filter_or | Q(
+                    user__membershipdefault__membership_type_id__in=mt_ids_list)
+                profiles = profiles.filter(filter_or)
+
             elif membership_view_perms == 'all-members':
                 pass  # exclude nothing
 
             if not allow_user_search:
-                profiles = profiles.exclude(member_number='')  # exclude non-members
+                # exclude non-members
+                profiles = profiles.exclude(member_number='')
 
         else:
             if membership_view_perms != 'public':
-                profiles = profiles.exclude(~Q(member_number=''))  # exclude all members
+                # show non-members only
+                profiles = profiles.filter(member_number='')
 
         profiles = profiles.exclude(hide_in_search=True)
 
-    if only_members:
-        profiles = profiles.exclude(member_number='')  # exclude non-members
-
-    if not request.user.profile.is_superuser:
-        profiles = profiles.exclude(hide_in_search=True)
+    if membership_type:
+        profiles = profiles.filter(
+            user__membershipdefault__membership_type_id=membership_type)
 
     profiles = profiles.order_by('user__last_name', 'user__first_name')
 
     EventLog.objects.log()
-    return render_to_response(template_name, {'profiles': profiles, 'show_checkbox': show_checkbox, 'user_this': None},
+    return render_to_response(template_name, {
+            'profiles': profiles,
+            'user_this': None,
+            'search_form': form,
+            'show_member_option': show_member_option},
         context_instance=RequestContext(request))
 
 
@@ -776,14 +851,14 @@ def admin_users_report(request, template_name='reports/admin_users.html'):
 @staff_member_required
 def user_access_report(request):
     now = datetime.now()
-    logins_qs = EventLog.objects.filter(event_id=125200)
+    logins_qs = EventLog.objects.filter(application="accounts",action="login")
     
     total_users = User.objects.all().count()
     total_logins = logins_qs.count()
     
     day_logins = []
     for days in [30, 60, 90, 120, 182, 365]:
-        count = logins_qs.filter(create_dt__gte=now-timedelta(days=days)).count()
+        count = logins_qs.filter(create_dt__gte=now-timedelta(days=days)).values('user_id').distinct().count()
         day_logins.append((days, count))
     
     return render_to_response('reports/user_access.html', {
@@ -992,16 +1067,32 @@ def similar_profiles(request, template_name="profiles/similar_profiles.html"):
             else:
                 duplicate_emails = []
 
+    query = request.GET.get('q', '')
+    filtered_email_list = User.objects.values_list(
+        'email', flat=True)
+    filtered_name_list = User.objects.values_list(
+        'first_name', flat=True)
+
+    if query:
+        filtered_email_list = filtered_email_list.filter(
+            Q(username__icontains=query) | Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) | Q(email__icontains=query))
+
+        filtered_name_list = filtered_name_list.filter(
+            Q(username__icontains=query) | Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) | Q(email__icontains=query))
+
     for dup_name in duplicate_names:
-        if dup_name[0] and dup_name[1]:
+        if dup_name[0] and dup_name[1] and dup_name[0] in filtered_name_list:
             users = User.objects.filter(
-                        first_name=dup_name[0],
-                        last_name=dup_name[1])
+                first_name=dup_name[0],
+                last_name=dup_name[1]).order_by('-last_login')
             users_with_duplicate_name.append(users)
+
     for email in duplicate_emails:
-        if email:
+        if email and email in filtered_email_list:
             users = User.objects.filter(
-                        email=email)
+                email=email).order_by('-last_login')
             users_with_duplicate_email.append(users)
 
     return render_to_response(template_name, {

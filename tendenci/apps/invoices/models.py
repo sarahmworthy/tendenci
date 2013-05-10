@@ -9,7 +9,8 @@ from django.contrib.contenttypes import generic
 
 from tendenci.core.perms.utils import has_perm
 from tendenci.apps.invoices.managers import InvoiceManager
-from tendenci.core.event_logs.models import EventLog
+from tendenci.apps.accountings.utils import (make_acct_entries,
+                                    make_acct_entries_reversing)
 
 
 class Invoice(models.Model):
@@ -19,11 +20,15 @@ class Invoice(models.Model):
     object_id = models.IntegerField(default=0, blank=True, null=True)
     _object = generic.GenericForeignKey('object_type', 'object_id')
 
-    title = models.CharField(max_length=150, blank=True, null=True)
+    title = models.CharField(max_length=200, blank=True, null=True)
     #user
-    creator = models.ForeignKey(User, related_name="invoice_creator",  null=True, on_delete=models.SET_NULL)
+    creator = models.ForeignKey(User, related_name="invoice_creator",
+                                null=True,
+                                on_delete=models.SET_NULL)
     creator_username = models.CharField(max_length=50, null=True)
-    owner = models.ForeignKey(User, related_name="invoice_owner", null=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(User, related_name="invoice_owner",
+                              null=True,
+                              on_delete=models.SET_NULL)
     owner_username = models.CharField(max_length=50, null=True)
     #dates
     create_dt = models.DateTimeField(auto_now_add=True)
@@ -32,12 +37,31 @@ class Invoice(models.Model):
     tender_date = models.DateTimeField(null=True)
     arrival_date_time = models.DateTimeField(blank=True, null=True)
     #payment status
-    status_detail = models.CharField(max_length=50, default='estimate')
+    status_detail = models.CharField(max_length=50,
+                                     choices=(('estimate', _('Estimate')),
+                                              ('tendered', _('Tendered'))),
+                                     default='estimate')
     status = models.BooleanField(default=True)
     estimate = models.BooleanField(default=1)
-    payments_credits = models.DecimalField(max_digits=15, decimal_places=2, blank=True, default=0)
-    balance = models.DecimalField(max_digits=15, decimal_places=2, blank=True, default=0)
-    total = models.DecimalField(max_digits=15, decimal_places=2, blank=True)
+    payments_credits = models.DecimalField(max_digits=15,
+                                           decimal_places=2,
+                                           blank=True,
+                                           default=0)
+    balance = models.DecimalField(max_digits=15,
+                                  decimal_places=2,
+                                  blank=True,
+                                  default=0)
+    total = models.DecimalField(max_digits=15,
+                                decimal_places=2,
+                                blank=True)
+    #discount info
+    discount_code = models.CharField(_('Discount Code'),
+                                     max_length=100,
+                                     blank=True, null=True)
+    discount_amount = models.DecimalField(_('Discount Amount'),
+                                          max_digits=10,
+                                          decimal_places=2,
+                                          default=0)
     #other
     variance = models.DecimalField(max_digits=10, decimal_places=4, default=0)
     variance_notes = models.TextField(max_length=1000, blank=True, null=True)
@@ -61,7 +85,9 @@ class Invoice(models.Model):
     tax = models.DecimalField(max_digits=6, decimal_places=4, default=0)
     #bill/ ship
     bill_to = models.CharField(max_length=120, blank=True)
-    bill_to_first_name = models.CharField(max_length=100, blank=True, null=True)
+    bill_to_first_name = models.CharField(max_length=100,
+                                          blank=True,
+                                          null=True)
     bill_to_last_name = models.CharField(max_length=100, blank=True, null=True)
     bill_to_company = models.CharField(max_length=100, blank=True, null=True)
     bill_to_address = models.CharField(max_length=250, blank=True, null=True)
@@ -87,23 +113,31 @@ class Invoice(models.Model):
     ship_to_address_type = models.CharField(max_length=50, blank=True, null=True)
     ship_date = models.DateTimeField()
     ship_via = models.CharField(max_length=50, blank=True)
-    shipping = models.DecimalField(max_digits=6, decimal_places=2, default=0)
-    shipping_surcharge = models.DecimalField(max_digits=6, decimal_places=2, default=0)
-    box_and_packing = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    shipping = models.DecimalField(max_digits=6, decimal_places=2,
+                                   default=0)
+    shipping_surcharge = models.DecimalField(max_digits=6,
+                                             decimal_places=2,
+                                             default=0)
+    box_and_packing = models.DecimalField(max_digits=6,
+                                          decimal_places=2,
+                                          default=0)
 
     objects = InvoiceManager()
 
     class Meta:
         permissions = (("view_invoice", "Can view invoice"), )
 
-    # def __unicode__(self):
-    #     return u'%s' % (self.title)
-
     def set_creator(self, user):
+        """
+        Sets creator fields.
+        """
         self.creator = user
         self.creator_username = user.username
 
     def set_owner(self, user):
+        """
+        Sets owner fields.
+        """
         self.owner = user
         self.owner_username = user.username
 
@@ -117,15 +151,17 @@ class Invoice(models.Model):
 
         self.bill_to_first_name = user.first_name
         self.bill_to_last_name = user.last_name
-        self.bill_to_company = user.profile.company
-        self.bill_to_address = user.profile.address
-        self.bill_to_city = user.profile.city
-        self.bill_to_state = user.profile.state
-        self.bill_to_zip_code = user.profile.zipcode
-        self.bill_to_country = user.profile.country
-        self.bill_to_phone = user.profile.phone
-        self.bill_to_fax = user.profile.fax
         self.bill_to_email = user.email
+
+        if hasattr(user, 'profile'):
+            self.bill_to_company = user.profile.company
+            self.bill_to_address = user.profile.address
+            self.bill_to_city = user.profile.city
+            self.bill_to_state = user.profile.state
+            self.bill_to_zip_code = user.profile.zipcode
+            self.bill_to_country = user.profile.country
+            self.bill_to_phone = user.profile.phone
+            self.bill_to_fax = user.profile.fax
 
     def ship_to_user(self, user):
         """
@@ -137,16 +173,18 @@ class Invoice(models.Model):
 
         self.ship_to_first_name = user.first_name
         self.ship_to_last_name = user.last_name
-        self.ship_to_company = user.profile.company
-        self.ship_to_address = user.profile.address
-        self.ship_to_city = user.profile.city
-        self.ship_to_state = user.profile.state
-        self.ship_to_zip_code = user.profile.zipcode
-        self.ship_to_country = user.profile.country
-        self.ship_to_phone = user.profile.phone
-        self.ship_to_fax = user.profile.fax
         self.ship_to_email = user.email
-        self.ship_to_address_type = user.profile.address_type
+
+        if hasattr(user, 'profile'):
+            self.ship_to_company = user.profile.company
+            self.ship_to_address = user.profile.address
+            self.ship_to_city = user.profile.city
+            self.ship_to_state = user.profile.state
+            self.ship_to_zip_code = user.profile.zipcode
+            self.ship_to_country = user.profile.country
+            self.ship_to_phone = user.profile.phone
+            self.ship_to_fax = user.profile.fax
+            self.ship_to_address_type = user.profile.address_type
 
     def split_title(self):
         if ": " in self.title:
@@ -157,19 +195,20 @@ class Invoice(models.Model):
     @models.permalink
     def get_absolute_url(self):
         return ('invoice.view', [self.id])
-    
+
     def save(self, user=None):
-        if not self.id:
-            self.guid = str(uuid.uuid1())
-            if user and user.id:
-                self.creator=user
-                self.creator_username=user.username
-        if user and user.id:
-            self.owner=user
-            self.owner_username=user.username
-            
+        """
+        Set guid, creator and owner if any of
+        these fields are missing.
+        """
+        self.guid = self.guid or uuid.uuid1().get_hex()
+
+        if hasattr(user, 'pk'):
+            self.set_creator(user)
+            self.set_owner(user)
+
         super(Invoice, self).save()
-        
+
     def get_object(self):
         _object = None
         try:
@@ -177,7 +216,7 @@ class Invoice(models.Model):
         except:
             pass
         return _object
-    
+
     @property
     def is_tendered(self):
         boo = False
@@ -185,27 +224,25 @@ class Invoice(models.Model):
             if self.status_detail.lower() == 'tendered':
                 boo = True
         return boo
-    
+
     def tender(self, user):
-        from tendenci.apps.accountings.utils import make_acct_entries
-        """ mark it as tendered if we have records """ 
+        """ mark it as tendered if we have records """
         if not self.is_tendered:
             # make accounting entry
             make_acct_entries(user, self, self.total)
-            
+
             self.estimate = False
             self.status_detail = 'tendered'
             self.status = 1
             self.tender_date = datetime.now()
             self.save()
         return True
-            
-    
+
     # if this invoice allows view by user2_compare
     def allow_view_by(self, user2_compare, guid=''):
         if user2_compare.profile.is_superuser:
             return True
-        
+
         if has_perm(user2_compare, 'invoices.view_invoice'):
             return True
 
@@ -220,44 +257,57 @@ class Invoice(models.Model):
 
     def allow_payment_by(self, user2_compare,  guid=''):
         return self.allow_view_by(user2_compare,  guid)
-    
+
     # if this invoice allows edit by user2_compare
     def allow_edit_by(self, user2_compare, guid=''):
         boo = False
         if user2_compare.is_superuser:
             boo = True
         else:
-            if user2_compare and user2_compare.id > 0: 
+            if user2_compare and user2_compare.id > 0:
                 if has_perm(user2_compare, 'invoices.change_invoice'):
                     return True
-        
-                if self.creator == user2_compare or self.owner == user2_compare:
+
+                if self.creator == user2_compare or \
+                        self.owner == user2_compare:
                     if self.status == 1:
                         # user can only edit a non-tendered invoice
                         if not self.is_tendered:
                             boo = True
             else:
-                if self.guid and self.guid == guid: # for anonymous user
-                    if self.status == 1 and not self.is_tendered:  
+                if self.guid and self.guid == guid:  # for anonymous user
+                    if self.status == 1 and not self.is_tendered:
                         boo = True
         return boo
-        
-     
-    # this function is to make accounting entries    
+
     def make_payment(self, user, amount):
-        from tendenci.apps.accountings.utils import make_acct_entries
-        if self.is_tendered:
+        """
+        Updates the invoice balance by adding
+        accounting entries.
+        """
+
+        if self.is_tendered and self.balance > 0:
             self.balance -= amount
             self.payments_credits += amount
             self.save()
-            
+
             # Make the accounting entries here
             make_acct_entries(user, self, amount)
+
+            return True
+
+        return False
 
     def void_payment(self, user, amount):
         self.balance += amount
         self.payments_credits -= amount
         self.save()
-        for payment in self.payment_set.all():
+        # only void approved and non-zero payments
+        for payment in self.payment_set.filter(
+                                status_detail='approved',
+                                amount__gt=0):
             payment.status_detail = 'void'
             payment.save()
+
+        # reverse accounting entries
+        make_acct_entries_reversing(user, self, amount)

@@ -9,36 +9,42 @@ from django.forms.fields import ChoiceField
 #from django.template.defaultfilters import slugify
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.core.files.storage import default_storage
 
 from captcha.fields import CaptchaField
 from tinymce.widgets import TinyMCE
 
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.addons.memberships.fields import PriceInput
+from tendenci.addons.memberships.fields import NoticeTimeTypeField
+from tendenci.addons.corporate_memberships.widgets import NoticeTimeTypeWidget
 from tendenci.addons.corporate_memberships.models import (
-                    CorporateMembershipType,
-                    CorpMembership,
-                    CorpProfile,
-                    CorpMembershipApp,
-                    CorpMembershipRep,
-                    CorpMembershipImport,
-                    CorpApp,
-                    CorpField,
-                    CorporateMembership,
-                    Creator,
-                    CorporateMembershipRep,
-                    CorpMembRenewEntry)
+    CorporateMembershipType,
+    CorpMembership,
+    CorpProfile,
+    CorpMembershipApp,
+    CorpMembershipAppField,
+    CorpMembershipRep,
+    CorpMembershipImport,
+    CorpApp,
+    CorpField,
+    CorporateMembership,
+    Creator,
+    CorporateMembershipRep,
+    CorpMembRenewEntry,
+    Notice)
 from tendenci.addons.corporate_memberships.utils import (
-                 get_corpmembership_type_choices,
-                 get_corp_memberships_choices,
-                 get_indiv_memberships_choices,
-                 update_authorized_domains,
-                 get_corpapp_default_fields_list,
-                 update_auth_domains,
-                 get_payment_method_choices,
-                 get_indiv_membs_choices,
-                 get_corporate_membership_type_choices,
-                 csv_to_dict)
+    get_corpmembership_type_choices,
+    get_corp_memberships_choices,
+    get_indiv_memberships_choices,
+    update_authorized_domains,
+    get_corpapp_default_fields_list,
+    update_auth_domains,
+    get_payment_method_choices,
+    get_indiv_membs_choices,
+    get_corporate_membership_type_choices,
+    get_notice_token_help_text,
+    csv_to_dict)
 from tendenci.addons.corporate_memberships.settings import UPLOAD_ROOT
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.core.payments.models import PaymentMethod
@@ -136,6 +142,34 @@ class CorpMembershipAppForm(TendenciBaseForm):
             self.fields['confirmation_text'].widget.mce_attrs[
                                         'app_instance_id'] = 0
 
+
+class CorpMembershipAppFieldAdminForm(forms.ModelForm):
+    class Meta:
+        model = CorpMembershipAppField
+        fields = (
+                'corp_app',
+                'label',
+                'field_name',
+                'required',
+                'display',
+                'admin_only',
+                'field_type',
+                'description',
+                'help_text',
+                'choices',
+                'default_value',
+                'css_class'
+                  )
+
+    def save(self, *args, **kwargs):
+        self.instance = super(CorpMembershipAppFieldAdminForm, self).save(*args, **kwargs)
+        if self.instance and not self.instance.field_name:
+            if self.instance.field_type != 'section_break':
+                self.instance.field_type = 'section_break'
+                self.instance.save()
+        return self.instance
+
+
 field_size_dict = {
         'name': 36,
         'city': 24,
@@ -188,9 +222,24 @@ def assign_fields(form, app_field_objs, instance=None):
                 continue
 
         if obj.field_name in field_names:
-            field = form.fields[obj.field_name]
-            field.label = obj.label
-            field.required = obj.required
+            if obj.field_type and obj.field_name not in [
+                                    'payment_method',
+                                    'corporate_membership_type',
+                                    'status',
+                                    'status_detail',
+                                    'industry',
+                                    'region']:
+                # create form field with customized behavior
+                field = obj.get_field_class(
+                        initial=form.fields[obj.field_name].initial)
+                form.fields[obj.field_name] = field
+            else:
+                field = form.fields[obj.field_name]
+                field.label = obj.label
+                field.required = obj.required
+                if obj.help_text:
+                    field.help_text = obj.help_text
+
             obj.field_stype = field.widget.__class__.__name__.lower()
 
             if obj.field_stype == 'textinput':
@@ -201,7 +250,10 @@ def assign_fields(form, app_field_objs, instance=None):
             label_type = []
             if obj.field_name not in ['payment_method',
                                       'corporate_membership_type',
-                                      ]:
+                                      ] \
+                    and obj.field_stype not in [
+                        'radioselect',
+                        'checkboxselectmultiple']:
                 obj.field_div_class = 'inline-block'
                 label_type.append('inline-block')
                 if len(obj.label) < 16:
@@ -258,6 +310,13 @@ class CorpProfileForm(forms.ModelForm):
             )
         return self.cleaned_data['secret_code']
 
+    def clean_number_employees(self):
+        number_employees = self.cleaned_data['number_employees']
+        if not number_employees:
+            number_employees = 0
+
+        return number_employees
+
     def save(self, *args, **kwargs):
         if not self.instance.id:
             if not self.request_user.is_anonymous():
@@ -268,6 +327,15 @@ class CorpProfileForm(forms.ModelForm):
         if not self.request_user.is_anonymous():
             self.instance.owner = self.request_user
             self.instance.owner_username = self.request_user.username
+        for field_key in self.fields.keys():
+            if self.fields[field_key].widget.needs_multipart_form:
+                value = self.cleaned_data[field_key]
+                if value and hasattr(value, 'name'):
+                    value = default_storage.save(join("corporate_memberships",
+                                                      str(uuid4()),
+                                                      value.name),
+                                                 value)
+                    setattr(self.instance, field_key, value)
 
         super(CorpProfileForm, self).save(*args, **kwargs)
 
@@ -399,6 +467,7 @@ class CorpMembershipRenewForm(forms.ModelForm):
 
 class RosterSearchAdvancedForm(forms.Form):
     SEARCH_CRITERIA_CHOICES = (
+                        ('', _('SELECT ONE')),
                         ('username', _('Username')),
                         ('member_number', _('Member Number')),
                         ('phone', _('Phone')),
@@ -426,6 +495,9 @@ class RosterSearchAdvancedForm(forms.Form):
     search_text = forms.CharField(max_length=100, required=False)
     search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
                                         required=False)
+    active_only = forms.BooleanField(label=_('Show Active Only'),
+                                     widget=forms.CheckboxInput(),
+                                     initial=True, required=False)
 
     def __init__(self, *args, **kwargs):
         request_user = kwargs.pop('request_user')
@@ -1111,4 +1183,57 @@ class ExportForm(forms.Form):
 
         if not self.user.check_password(value):
             raise forms.ValidationError(_("Invalid password."))
+        return value
+
+
+class NoticeForm(forms.ModelForm):
+    notice_time_type = NoticeTimeTypeField(
+        label='When to Send', widget=NoticeTimeTypeWidget)
+    email_content = forms.CharField(
+        widget=TinyMCE(attrs={'style':'width:70%'}, 
+                       mce_attrs={'storme_app_label': Notice._meta.app_label, 
+                                  'storme_model':Notice._meta.module_name.lower()}),
+        help_text="Click here to view available tokens")
+
+    class Meta:
+        model = Notice
+        fields = (
+            'notice_name',
+            'notice_time_type',
+            'corporate_membership_type',
+            'subject',
+            'content_type',
+            'sender',
+            'sender_display',
+            'email_content',
+            'status',
+            'status_detail',)
+
+    def __init__(self, *args, **kwargs): 
+        super(NoticeForm, self).__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['email_content'].widget.mce_attrs['app_instance_id'] = self.instance.pk
+        else:
+            self.fields['email_content'].widget.mce_attrs['app_instance_id'] = 0
+        
+        initial_list = []
+        if self.instance.pk:
+            initial_list.append(str(self.instance.num_days))
+            initial_list.append(str(self.instance.notice_time))
+            initial_list.append(str(self.instance.notice_type))
+        
+        self.fields['notice_time_type'].initial = initial_list
+        
+        self.fields['email_content'].help_text = get_notice_token_help_text(self.instance)
+        
+    def clean_notice_time_type(self):
+        value = self.cleaned_data['notice_time_type']
+        
+        data_list = value.split(',')
+        d = dict(zip(['num_days', 'notice_time', 'notice_type'], data_list))
+        
+        try:
+            d['num_days'] = int(d['num_days'])
+        except:
+            raise forms.ValidationError(_("Num days must be a numeric number."))
         return value

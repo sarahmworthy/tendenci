@@ -128,14 +128,6 @@ def group_choices(user):
 
     return choices
 
-def app_choices(user):
-    """
-    returns a list of (app.pk, app.name) for apps viewable for a given user.
-    """
-    apps = App.objects.search(user=user)
-    choices = [(app.pk, app.name) for app in apps]
-    
-    return choices
 
 def update_user(user, **kwargs):
     for k, v in kwargs.iteritems():
@@ -204,3 +196,16 @@ def spawn_username(fn=u'', ln=u'', em=u''):
 
     int_string = ''.join([choice(digits) for x in xrange(10)])
     return 'user.%s' % int_string
+
+
+def clean_username(username):
+    """
+    Removes improper characters from a username
+    """
+    bad_characters = " !#$%^&*()[]'\""
+
+    for char in bad_characters:
+        if char in username:
+            username = username.replace(char, '')
+
+    return username
