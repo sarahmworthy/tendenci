@@ -64,10 +64,7 @@ class FormForForm(forms.ModelForm):
             if "max_length" in arg_names:
                 field_args["max_length"] = FIELD_MAX_LENGTH
             if "choices" in arg_names:
-                if field.field_function == 'Recipients':
-                    field_args["choices"] = field.get_choices()
-                else:
-                    field_args["choices"] = field.get_choices()
+                field_args["choices"] = field.get_choices()
                 #field_args["choices"] = zip(choices, choices)
             if "initial" in arg_names:
                 default = field.default.lower()
@@ -372,19 +369,11 @@ class FormForField(forms.ModelForm):
         for val in function_params.split(','):
             clean_params = val.strip() + ',' + clean_params
         return clean_params[0:len(clean_params)-1]
-
-    def clean_function_email_recipients(self):
-        function_params = self.cleaned_data['function_email_recipients']
-        clean_params = ''
-        for val in function_params.split(','):
-            clean_params = val.strip() + ',' + clean_params
-        return clean_params[0:len(clean_params)-1]
         
     def clean(self):
         cleaned_data = self.cleaned_data
         field_function = cleaned_data.get("field_function")
         function_params = cleaned_data.get("function_params")
-        function_email_recipients = cleaned_data.get("function_email_recipients")
         choices = cleaned_data.get("choices")
         field_type = cleaned_data.get("field_type")
         required = cleaned_data.get("required")
@@ -410,10 +399,10 @@ class FormForField(forms.ModelForm):
                                             + "or Multi-select - Select Many as field type")
 
             if field_type == "BooleanField":
-                if not function_email_recipients:
+                if not choices:
                     raise forms.ValidationError("The \"Email to Recipients\" function requires at least 1 email specified.")
                 else:
-                    for val in function_email_recipients.split(','):
+                    for val in choices.split(','):
                         if not email_re.match(val):
                             raise forms.ValidationError("\"%s\" is not a valid email address" % (val))
             else:
