@@ -27,7 +27,7 @@ from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.template import RequestContext
 
-from tendenci.core.base.utils import day_validate
+from tendenci.core.base.utils import day_validate, is_blank
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.utils import get_notice_recipients, has_perm
@@ -285,6 +285,7 @@ class MembershipType(OrderingBaseModel, TendenciBaseModel):
 
                 return expiration_dt
 
+
 class MembershipSet(models.Model):
     invoice = models.ForeignKey(Invoice)
 
@@ -322,8 +323,8 @@ class MembershipSet(models.Model):
         self.save()
 
         self.invoice.object_type = ContentType.objects.get(
-                        app_label=self._meta.app_label,
-                        model=self._meta.module_name)
+            app_label=self._meta.app_label, model=self._meta.module_name)
+
         self.invoice.object_id = self.pk
         self.invoice.save()
 
@@ -481,7 +482,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         Returns admin change_form page.
         """
-        return ('membership_details', [self.pk])
+        return ('membership.details', [self.pk])
         # return ('admin:memberships_membershipdefault_change', [self.pk])
 
     def save(self, *args, **kwargs):
@@ -537,7 +538,20 @@ class MembershipDefault(TendenciBaseModel):
                         getattr(demographic, field_name)
                     ))
 
+        if is_blank(dict(field_list).values()):
+            return []  # empty list
+
         return field_list
+
+    def get_archived_memberships(self):
+        """
+        Returns back a list of archived memberships
+        in order of newest to oldest
+        """
+        memberships = self.user.membershipdefault_set.filter(
+            status_detail='archive', membership_type=self.membership_type).order_by('join_dt')
+
+        return memberships
 
     @classmethod
     def refresh_groups(cls):
@@ -3296,36 +3310,36 @@ class AppFieldEntry(models.Model):
 class MembershipDemographic(models.Model):
     user = models.OneToOneField(User, related_name="demographics", verbose_name=_('user'))
 
-    ud1 = models.TextField(blank=True, default=u'')
-    ud2 = models.TextField(blank=True, default=u'')
-    ud3 = models.TextField(blank=True, default=u'')
-    ud4 = models.TextField(blank=True, default=u'')
-    ud5 = models.TextField(blank=True, default=u'')
-    ud6 = models.TextField(blank=True, default=u'')
-    ud7 = models.TextField(blank=True, default=u'')
-    ud8 = models.TextField(blank=True, default=u'')
-    ud9 = models.TextField(blank=True, default=u'')
-    ud10 = models.TextField(blank=True, default=u'')
-    ud11 = models.TextField(blank=True, default=u'')
-    ud12 = models.TextField(blank=True, default=u'')
-    ud13 = models.TextField(blank=True, default=u'')
-    ud14 = models.TextField(blank=True, default=u'')
-    ud15 = models.TextField(blank=True, default=u'')
-    ud16 = models.TextField(blank=True, default=u'')
-    ud17 = models.TextField(blank=True, default=u'')
-    ud18 = models.TextField(blank=True, default=u'')
-    ud19 = models.TextField(blank=True, default=u'')
-    ud20 = models.TextField(blank=True, default=u'')
-    ud21 = models.TextField(blank=True, default=u'')
-    ud22 = models.TextField(blank=True, default=u'')
-    ud23 = models.TextField(blank=True, default=u'')
-    ud24 = models.TextField(blank=True, default=u'')
-    ud25 = models.TextField(blank=True, default=u'')
-    ud26 = models.TextField(blank=True, default=u'')
-    ud27 = models.TextField(blank=True, default=u'')
-    ud28 = models.TextField(blank=True, default=u'')
-    ud29 = models.TextField(blank=True, default=u'')
-    ud30 = models.TextField(blank=True, default=u'')
+    ud1 = models.TextField(blank=True, default=u'', null=True)
+    ud2 = models.TextField(blank=True, default=u'', null=True)
+    ud3 = models.TextField(blank=True, default=u'', null=True)
+    ud4 = models.TextField(blank=True, default=u'', null=True)
+    ud5 = models.TextField(blank=True, default=u'', null=True)
+    ud6 = models.TextField(blank=True, default=u'', null=True)
+    ud7 = models.TextField(blank=True, default=u'', null=True)
+    ud8 = models.TextField(blank=True, default=u'', null=True)
+    ud9 = models.TextField(blank=True, default=u'', null=True)
+    ud10 = models.TextField(blank=True, default=u'', null=True)
+    ud11 = models.TextField(blank=True, default=u'', null=True)
+    ud12 = models.TextField(blank=True, default=u'', null=True)
+    ud13 = models.TextField(blank=True, default=u'', null=True)
+    ud14 = models.TextField(blank=True, default=u'', null=True)
+    ud15 = models.TextField(blank=True, default=u'', null=True)
+    ud16 = models.TextField(blank=True, default=u'', null=True)
+    ud17 = models.TextField(blank=True, default=u'', null=True)
+    ud18 = models.TextField(blank=True, default=u'', null=True)
+    ud19 = models.TextField(blank=True, default=u'', null=True)
+    ud20 = models.TextField(blank=True, default=u'', null=True)
+    ud21 = models.TextField(blank=True, default=u'', null=True)
+    ud22 = models.TextField(blank=True, default=u'', null=True)
+    ud23 = models.TextField(blank=True, default=u'', null=True)
+    ud24 = models.TextField(blank=True, default=u'', null=True)
+    ud25 = models.TextField(blank=True, default=u'', null=True)
+    ud26 = models.TextField(blank=True, default=u'', null=True)
+    ud27 = models.TextField(blank=True, default=u'', null=True)
+    ud28 = models.TextField(blank=True, default=u'', null=True)
+    ud29 = models.TextField(blank=True, default=u'', null=True)
+    ud30 = models.TextField(blank=True, default=u'', null=True)
 
 
 # Moved from management/__init__.py to here because it breaks

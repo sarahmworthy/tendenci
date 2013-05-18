@@ -993,24 +993,12 @@ def similar_profiles(request, template_name="profiles/similar_profiles.html"):
 
         # store the info in the session to pass to the next page
         request.session[sid] = {'users': request.POST.getlist('id_users')}
-        return HttpResponseRedirect(reverse(
-                                    'profile.merge_view',
-                                    args=[sid]))
+
+        return HttpResponseRedirect(reverse('profile.merge_view', args=[sid]))
 
     users_with_duplicate_name = []
     users_with_duplicate_email = []
 
-#    duplicate_names = User.objects.values_list('first_name', 'last_name'
-#                                          ).annotate(
-#                                        num_last=Count('last_name')
-#                                        ).annotate(
-#                                        num_first=Count('first_name')
-#                                        ).filter(num_last__gt=1,
-#                                                num_first__gt=1
-#                                        ).exclude(
-#                                        first_name='',
-#                                        last_name=''
-#                                        ).order_by('last_name', 'first_name')
     # use raw sql to get the accurate number of duplicate names
     sql = """
             SELECT first_name , last_name
@@ -1024,60 +1012,63 @@ def similar_profiles(request, template_name="profiles/similar_profiles.html"):
     cursor.execute(sql)
     duplicate_names = cursor.fetchall()
 
-    duplicate_emails = User.objects.values_list('email', flat=True
-                                    ).annotate(
-                                    num_emails=Count('email')
-                                    ).filter(num_emails__gt=1
-                                             ).exclude(email=''
-                                            ).order_by('email')
+    duplicate_emails = User.objects.values_list(
+        'email', flat=True).annotate(
+        num_emails=Count('email')).filter(num_emails__gt=1).exclude(email='').order_by('email')
+
     len_duplicate_names = len(duplicate_names)
     len_duplicate_emails = len(duplicate_emails)
-    # total groups of duplicates
+
     total_groups = len_duplicate_names + len_duplicate_emails
-
     num_groups_per_page = 20
-    num_pages = int(math.ceil(total_groups * 1.0 / num_groups_per_page))
-    try:
-        curr_page = int(request.GET.get('page', 1))
-    except:
+
+    query = request.GET.get('q', u'')
+
+    if query:
         curr_page = 1
-    if curr_page <= 0 or curr_page > num_pages:
-        curr_page = 1
-    page_range = get_pagination_page_range(num_pages,
-                                           curr_page=curr_page)
-    # slice the duplicate_names and duplicate_emails
-    start_index = (curr_page - 1) * num_groups_per_page
-    end_index = curr_page * num_groups_per_page
-    if len_duplicate_names > 1:
-        if start_index <= len_duplicate_names - 1:
+        num_pages = 1
+        page_range = []
+    else:
+        num_pages = int(math.ceil(total_groups * 1.0 / num_groups_per_page))
+        try:
+            curr_page = int(request.GET.get('page', 1))
+        except:
+            curr_page = 1
+        if curr_page <= 0 or curr_page > num_pages:
+            curr_page = 1
+        page_range = get_pagination_page_range(num_pages, curr_page=curr_page)
+
+        # slice the duplicate_names and duplicate_emails
+        start_index = (curr_page - 1) * num_groups_per_page
+        end_index = curr_page * num_groups_per_page
+        if len_duplicate_names > 1:
+            if start_index <= len_duplicate_names - 1:
+                if end_index < len_duplicate_names:
+                    duplicate_names = duplicate_names[start_index:end_index]
+                else:
+                    duplicate_names = duplicate_names[start_index:]
+            else:
+                duplicate_names = []
+
+        if len_duplicate_emails > 1:
             if end_index < len_duplicate_names:
-                duplicate_names = duplicate_names[start_index:end_index]
-            else:
-                duplicate_names = duplicate_names[start_index:]
-        else:
-            duplicate_names = []
-    if len_duplicate_emails > 1:
-        if end_index < len_duplicate_names:
-            duplicate_emails = []
-        else:
-            start_index = start_index - len_duplicate_names
-            end_index = end_index - len_duplicate_names
-            if start_index < 0:
-                start_index = 0
-
-            if end_index > len_duplicate_emails:
-                end_index = len_duplicate_emails
-
-            if start_index < end_index:
-                duplicate_emails = duplicate_emails[start_index:end_index]
-            else:
                 duplicate_emails = []
+            else:
+                start_index = start_index - len_duplicate_names
+                end_index = end_index - len_duplicate_names
+                if start_index < 0:
+                    start_index = 0
 
-    query = request.GET.get('q', '')
-    filtered_email_list = User.objects.values_list(
-        'email', flat=True)
-    filtered_name_list = User.objects.values_list(
-        'first_name', flat=True)
+                if end_index > len_duplicate_emails:
+                    end_index = len_duplicate_emails
+
+                if start_index < end_index:
+                    duplicate_emails = duplicate_emails[start_index:end_index]
+                else:
+                    duplicate_emails = []
+
+    filtered_email_list = User.objects.values_list('email', flat=True)
+    filtered_name_list = User.objects.values_list('first_name', flat=True)
 
     if query:
         filtered_email_list = filtered_email_list.filter(
@@ -1152,7 +1143,6 @@ def merge_profiles(request, sid, template_name="profiles/merge_profiles.html"):
 @login_required
 @password_required
 def merge_process(request, sid):
-
     if not request.user.profile.is_superuser:
         raise Http403
 
@@ -1189,9 +1179,11 @@ def merge_process(request, sid):
                         setattr(master, field, getattr(profile, field))
 
                 for model, fields in valnames.iteritems():
+
                     for field in fields:
                         if not isinstance(field, models.OneToOneField):
                             objs = model.objects.filter(**{field.name: profile.user})
+
                             # handle unique_together fields. for example, GroupMembership
                             # unique_together = ('group', 'member',)
                             [unique_together] = model._meta.unique_together[:1] or [None]
@@ -1209,8 +1201,11 @@ def merge_process(request, sid):
                                         obj.save()
                             else:
                                 if objs.exists():
-                                    objs.update(**{field.name: master.user})
-                        else: # OneToOne
+                                    try:
+                                        objs.update(**{field.name: master.user})
+                                    except Exception:
+                                        connection._rollback()
+                        else:  # OneToOne
                             [obj] = model.objects.filter(**{field.name: profile.user})[:1] or [None]
                             if obj:
                                 [master_obj] = model.objects.filter(**{field.name: master.user})[:1] or [None]

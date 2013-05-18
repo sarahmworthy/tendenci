@@ -1740,9 +1740,11 @@ def membership_default_add(request, slug='',
 
                 user = user_form.save()
 
-                if hasattr(user, 'profile'):
-                    profile_form.instance = user.profile
-                    profile_form.save(request_user=request.user)
+                if not hasattr(user, 'profile'):
+                    Profile.objects.create_profile(user)
+
+                profile_form.instance = user.profile
+                profile_form.save(request_user=request.user)
 
                 # save demographics
                 demographics = demographics_form.save(commit=False)
@@ -1767,8 +1769,8 @@ def membership_default_add(request, slug='',
             discount_amount = Decimal(0)
             discount_list = [Decimal(0) for i in range(len(amount_list))]
             if discount_code:
-                [discount] = Discount.objects.filter(discount_code=discount_code,
-                                apps__model=MembershipSet._meta.module_name)[:1] or [None]
+                [discount] = Discount.objects.filter(
+                    discount_code=discount_code, apps__model=MembershipSet._meta.module_name)[:1] or [None]
                 if discount and discount.available_for(1):
                     amount_list, discount_amount, discount_list, msg = assign_discount(amount_list, discount)
                     # apply discount to invoice

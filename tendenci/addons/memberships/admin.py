@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
+from django.contrib.admin import SimpleListFilter
 from django.contrib.contenttypes.models import ContentType
 from django.conf.urls.defaults import patterns, url
 from django.template.defaultfilters import slugify
@@ -15,28 +16,41 @@ from django.utils.encoding import iri_to_uri
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.admin import SimpleListFilter
 from django.utils.encoding import force_unicode
 
 from tendenci.addons.memberships.forms import MembershipTypeForm
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.base.utils import tcurrency
 from tendenci.core.perms.utils import update_perms_and_save
-from tendenci.addons.memberships.models import (Membership, MembershipDefault,
-                                                MembershipType, Notice,
-                                                AppField,
-                                                MembershipAppField,
-                                                MembershipApp)
-from tendenci.addons.memberships.forms import (MembershipDefaultForm, AppForm,
-                            NoticeForm, AppFieldForm, AppEntryForm,
-                            MembershipAppForm,
-                            MembershipAppFieldAdminForm)
-from tendenci.addons.memberships.utils import (get_default_membership_fields,
-                                               edit_app_update_corp_fields,
-                                               get_selected_demographic_field_names)
+from tendenci.addons.memberships.models import (
+    Membership, MembershipDefault, MembershipType, Notice,
+    AppField, MembershipAppField, MembershipApp)
+from tendenci.addons.memberships.forms import (
+    MembershipDefaultForm, AppForm, NoticeForm, AppFieldForm,
+    AppEntryForm, MembershipAppForm, MembershipAppFieldAdminForm)
+from tendenci.addons.memberships.utils import (
+    get_default_membership_fields,
+    edit_app_update_corp_fields,
+    get_selected_demographic_field_names)
 from tendenci.addons.memberships.middleware import ExceededMaxTypes
 from tendenci.core.payments.models import PaymentMethod
 from tendenci.core.site_settings.utils import get_setting
+
+
+class MembershipStatusDetailFilter(SimpleListFilter):
+    title = 'status detail'
+    parameter_name = 'status_detail'
+
+    def lookups(self, request, model_admin):
+        memberships = model_admin.model.objects.exclude(status_detail='archive')
+        status_detail_list = set([m.status_detail for m in memberships])
+        return zip(status_detail_list, status_detail_list)
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(status_detail=self.value())
+        else:
+            return queryset
 
 
 class MembershipAdmin(admin.ModelAdmin):
@@ -143,7 +157,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     form = MembershipDefaultForm
 
-    profile = ('Profile',
+    profile = (
+        'Profile',
         {'fields': (
             ('first_name', 'last_name'),
             ('email', 'email2'),
@@ -159,7 +174,8 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         )}
     )
 
-    membership = ('Membership',
+    membership = (
+        'Membership',
         {'fields': (
             'member_number',
             'renewal',
@@ -196,21 +212,24 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         )}
     )
 
-    money = ('Money',
+    money = (
+        'Money',
         {'fields': (
             'payment_method',
             'membership_type',
         )}
     )
 
-    extra = ('Extra',
+    extra = (
+        'Extra',
         {'fields': (
             'industry',
             'region',
         )}
     )
 
-    status = ('Status',
+    status = (
+        'Status',
         {'fields': (
             'join_dt',
             'renew_dt',
@@ -219,15 +238,15 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
     )
 
     fieldsets = (
-            profile,
-            membership,
-            money,
-            status
+        profile,
+        membership,
+        money,
+        status
     )
 
     def get_fieldsets(self, request, instance=None):
         demographics_fields = get_selected_demographic_field_names(
-                                        instance and instance.app)
+            instance and instance.app)
 
         if demographics_fields:
             demographics = (
@@ -255,9 +274,11 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
         )
         name.strip()
         return name
+    name.admin_order_field = 'user__last_name'
 
     def email(self, instance):
         return instance.user.email
+    email.admin_order_field = 'user__email'
 
     def get_status(self, instance):
         return instance.get_status().capitalize()
@@ -316,7 +337,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     list_filter = [
         'membership_type',
-        'status_detail'
+        MembershipStatusDetailFilter,
     ]
 
     actions = [
@@ -377,7 +398,7 @@ class MembershipDefaultAdmin(admin.ModelAdmin):
 
     def queryset(self, request):
         qs = super(MembershipDefaultAdmin, self).queryset(request)
-        return qs.order_by('-application_approved_dt')
+        return qs.exclude(status_detail='archive').order_by('-application_approved_dt')
 
     def get_urls(self):
         """
