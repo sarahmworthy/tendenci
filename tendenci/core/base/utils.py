@@ -684,3 +684,24 @@ def get_salesforce_access():
             print 'Salesforce authentication failed'
 
     return None
+
+
+def create_salesforce_contact(profile):
+
+    if hasattr(settings, 'SALESFORCE_AUTO_UPDATE') and settings.SALESFORCE_AUTO_UPDATE:
+        if profile.sf_contact_id:
+            return profile.sf_contact_id
+        else:
+            sf = get_salesforce_access()
+            # Make sure that user last name is not blank
+            # since that is a required field for Salesforce Contact.
+            if sf and profile.user.last_name:
+                contact = sf.Contact.create({
+                    'FirstName':profile.user.first_name,
+                    'LastName':profile.user.last_name,
+                    'Email':profile.user.email})
+                
+                profile.sf_contact_id = contact['id']
+                profile.save()
+                return contact['id']
+    return None

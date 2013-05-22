@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django.contrib.contenttypes import generic
 
+from tendenci.core.base.utils import create_salesforce_contact
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.apps.profiles.managers import ProfileManager, ProfileActiveManager
@@ -68,6 +69,7 @@ class Profile(Person):
     original_username = models.CharField(max_length=50)
 
     sso_user = models.BooleanField(default=False)
+    sf_contact_id = models.CharField(max_length=100, blank=True, null=True)
 
     objects = ProfileManager()
     actives = ProfileActiveManager()
@@ -338,7 +340,8 @@ class Profile(Person):
         user.save()
 
         if created:
-            Profile.objects.create_profile(user)
+            profile = Profile.objects.create_profile(user)
+            sf_id = create_salesforce_contact(profile)
 
         return user, created
 
