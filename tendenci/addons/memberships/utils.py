@@ -452,7 +452,7 @@ def process_export(
                         # display membership type name instead of id
                         item = membership_ids_dict[item]
                     elif field_name == 'app':
-                        # display membership type name instead of id
+                        # display membership app name instead of id
                         item = app_ids_dict[item]
                 item = smart_str(item).decode('utf-8')
                 items_list.append(item)
@@ -1525,6 +1525,13 @@ class ImportMembDefault(object):
         if not hasattr(memb, 'join_dt') or not memb.join_dt:
             if memb.status and memb.status_detail == 'active':
                 memb.join_dt = datetime.now()
+
+        # no application_approved_dt - set one
+        if not hasattr(memb, 'application_approved_dt') or not memb.application_approved_dt:
+            if memb.status and memb.status_detail == 'active':
+                memb.application_approved = True
+                memb.application_approved_dt = memb.join_dt
+                memb.application_approved_denied_dt = memb.join_dt
 
         # no expire_dt - get it via membership_type
         if not hasattr(memb, 'expire_dt') or not memb.expire_dt:
