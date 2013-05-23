@@ -1177,11 +1177,14 @@ class MembershipDefault(TendenciBaseModel):
         # the end_dt should be the end of the end_dt not start of the end_dt
         # not datetime.datetime(2013, 2, 21, 0, 0),
         # but datetime.datetime(2013, 2, 21, 23, 59, 59)
-        end_dt = self.expire_dt + timedelta(
-            days=self.membership_type.renewal_period_end + 1
-        ) - timedelta(seconds=1)
+        end_dt = self.get_renewal_period_end_dt()
 
         return (start_dt, end_dt)
+
+    def get_renewal_period_end_dt(self):
+        return self.expire_dt + timedelta(
+            days=self.membership_type.renewal_period_end + 1
+        ) - timedelta(seconds=1)
 
     def can_renew(self):
         """
