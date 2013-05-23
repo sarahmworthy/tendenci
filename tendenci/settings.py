@@ -373,6 +373,8 @@ HAYSTACK_INDEX_LIMITS = {
     'event_logs': 3000,
 }
 
+INDEX_FILE_CONTENT = False
+
 # --------------------------------------#
 # PAYMENT GATEWAYS
 # --------------------------------------#

@@ -558,6 +558,7 @@ def download_file(request, cm_id, field_id):
 
 
 def corpmembership_search(request, my_corps_only=False,
+            pending_only=False,
             template_name="corporate_memberships/applications/search.html"):
     allow_anonymous_search = get_setting('module',
                                      'corporate_memberships',
@@ -568,15 +569,27 @@ def corpmembership_search(request, my_corps_only=False,
             raise Http403
     is_superuser = request.user.profile.is_superuser
 
-    search_form = CorpMembershipSearchForm(request.GET)
-
+    # legacy pending url
     query = request.GET.get('q')
+    if query == 'is_pending:true':
+        pending_only = True
+
+    if pending_only and not is_superuser:
+        raise Http403
+
+    # field names for search criteria choices
+    names_list = ['name', 'address', 'city',
+                   'zip', 'country', 'phone',
+                   'email', 'url']
+
+    search_form = CorpMembershipSearchForm(request.GET,
+                                           names_list=names_list)
     try:
         cp_id = int(request.GET.get('cp_id'))
     except:
         cp_id = 0
 
-    if query == 'is_pending:true' and is_superuser:
+    if pending_only and is_superuser:
         # pending list only for admins
         q_obj = Q(status_detail__in=['pending', 'paid - pending approval'])
         corp_members = CorpMembership.objects.filter(q_obj)
@@ -585,25 +598,33 @@ def corpmembership_search(request, my_corps_only=False,
                                                 request.user,
                                                 my_corps_only=my_corps_only)
         corp_members = corp_members.exclude(status_detail='archive')
-    corp_members = corp_members.order_by('corp_profile__name')
 
-    # generate the choices for the cp_id field
-    corp_profiles_choices = [(0, _('Select One'))]
-    for corp_memb in corp_members:
-        t = (corp_memb.corp_profile.id, corp_memb.corp_profile.name)
-        if not t in corp_profiles_choices:
-            corp_profiles_choices.append(t)
+    if not corp_members.exists():
+        del search_form.fields['cp_id']
+    else:
+        # generate the choices for the cp_id field
+        corp_profiles_choices = [(0, _('Select One'))]
+        for corp_memb in corp_members:
+            t = (corp_memb.corp_profile.id, corp_memb.corp_profile.name)
+            if not t in corp_profiles_choices:
+                corp_profiles_choices.append(t)
 
-    search_form.fields['cp_id'].choices = corp_profiles_choices
-
-    if query:
-        corp_members = corp_members.filter(
-                            Q(corp_profile__name__icontains=query
-                              ) | Q(corp_profile__zip=query))
+        search_form.fields['cp_id'].choices = corp_profiles_choices
 
     if cp_id:
         corp_members = corp_members.filter(corp_profile_id=cp_id)
 
+    # industry
+    if 'industry' in search_form.fields:
+        try:
+            industry = int(request.GET.get('industry'))
+        except:
+            industry = 0
+
+        if industry:
+            corp_members = corp_members.filter(corp_profile__industry_id=industry)
+
+    # corporate membership type
     if not my_corps_only and is_superuser:
         # add cm_type_id for the links in the summary report
         try:
@@ -613,11 +634,40 @@ def corpmembership_search(request, my_corps_only=False,
         if cm_type_id > 0:
             corp_members = corp_members.filter(
                         corporate_membership_type_id=cm_type_id)
-    corp_members = corp_members.order_by('-expiration_dt')
+
+    # process search criteria, search_text and search_method
+    if search_form.is_valid():
+        search_criteria = search_form.cleaned_data['search_criteria']
+        search_text = search_form.cleaned_data['search_text']
+        search_method = search_form.cleaned_data['search_method']
+    else:
+        search_criteria = None
+        search_text = None
+        search_method = None
+
+    if search_criteria and search_text:
+        search_type = '__iexact'
+        if search_method == 'starts_with':
+            search_type = '__istartswith'
+        elif search_method == 'contains':
+            search_type = '__icontains'
+        if search_criteria in ['name', 'address', 'city',
+                               'zip', 'country', 'phone',
+                               'email', 'url']:
+            search_filter = {'corp_profile__%s%s' % (search_criteria,
+                                             search_type): search_text}
+        else:
+            search_filter = {'%s%s' % (search_criteria,
+                                         search_type): search_text}
+
+        corp_members = corp_members.filter(**search_filter)
+    #corp_members = corp_members.order_by('-expiration_dt')
+    corp_members = corp_members.order_by('corp_profile__name')
 
     EventLog.objects.log()
 
     return render_to_response(template_name, {
+        'pending_only': pending_only,
         'corp_members': corp_members,
         'search_form': search_form},
         context_instance=RequestContext(request))
