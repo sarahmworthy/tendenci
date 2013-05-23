@@ -1,10 +1,30 @@
 {% extends "reports/base.html" %}
 {% load i18n %}
 {% load base_filters %}
+{% load pagination_tags %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-ui/jquery-ui-1.8.2.custom.css">
+{% endblock %}
 
 {% block content %}
 <h1>{% trans "Top Spenders" %} ({{ SITE_GLOBAL_CURRENCY }})</h1>
-{% trans "Lists the top 20 users with the highest expenses." %}
+{% trans "Lists the users with the highest expenses." %}
+
+<form class="search-form" action="" method="get" style="margin-top:25px;">
+    {% trans "Filter on invoice create dates" %}
+    <div class="fieldWrapper advanced">
+		{{ form.start_dt.label }}
+		{{ form.start_dt }}
+		
+		{{ form.end_dt.label }}
+		{{ form.end_dt }}
+        <input type="submit" value="Filter" />
+    </div>
+</form>
+
+{% autopaginate entry_list 10 %}
 <table>
 <tr>
 	<th>{% trans "#" %}</th>
@@ -27,4 +47,18 @@
 </tr>
 {% endfor %}
 </table>
+{% paginate %}
 {% endblock content %}
+
+
+{% block extra_body %}
+{{ block.super }}
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.2.custom.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $(".datepicker").live('focus', function() {
+            $(this).datepicker({ dateFormat: 'yy-mm-dd' });
+        });
+    });
+</script>
+{% endblock %}

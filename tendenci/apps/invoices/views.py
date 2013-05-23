@@ -419,16 +419,30 @@ def report_top_spenders(request, template_name="reports/top_spenders.html"):
     """Show dollars per user report"""
     if not request.user.is_superuser:
         raise Http403
-    
+
+    start_dt = None
+    end_dt = None
+    form = InvoiceSearchForm(request.GET)    
+    if form.is_valid():
+        start_dt = form.cleaned_data.get('start_dt')
+        end_dt = form.cleaned_data.get('end_dt')
+
     entry_list = []
     users = User.objects.all()
     for user in users:
-        invoices = Invoice.objects.filter(Q(creator=user) | Q(owner=user) | Q(bill_to_email=user.email)).aggregate(Sum('total'))
+        invoices = Invoice.objects.filter(Q(creator=user) | Q(owner=user) | Q(bill_to_email=user.email))
+        if start_dt:
+            invoices = invoices.filter(create_dt__gte=datetime.combine(start_dt, time.min))
+        if end_dt:
+            invoices = invoices.filter(create_dt__lte=datetime.combine(end_dt, time.max))
+        invoices = invoices.aggregate(Sum('total'))
+
         if invoices['total__sum'] is not None and invoices['total__sum'] > 0:
             entry_list.append({'user':user, 'invoices':invoices})
 
-    entry_list = sorted(entry_list, key=lambda entry:entry['invoices']['total__sum'], reverse=True)[:20]
+    entry_list = sorted(entry_list, key=lambda entry:entry['invoices']['total__sum'], reverse=True)
 
     return render_to_response(template_name, {
+        'form': form,
         'entry_list': entry_list,
     }, context_instance=RequestContext(request))
