@@ -204,51 +204,51 @@ def spawn_username(fn=u'', ln=u'', em=u''):
 
 
 def get_member_reminders(user):
-    renewal_list = ()
-    expiring_list = ()
-    expired_list = ()
-
     active_qs = Q(status_detail__iexact='active')
     expired_qs = Q(status_detail__iexact='expired')
 
     memberships = user.membershipdefault_set.filter(
             status=True) & user.membershipdefault_set.filter(
-                active_qs | expired_qs)
+                active_qs | expired_qs).order_by('expire_dt')
 
+    reminders = ()
     for membership in memberships:
         renew_link = '%s%s?username=%s&membership_type_id=%s' % (
             get_setting('site', 'global', 'siteurl'),
-            reverse('membership_default.add', kwargs={'slug': membership.app.slug}),
+            reverse('membership_default.add',
+                    kwargs={'slug': membership.app.slug}),
             membership.user.username,
             membership.membership_type.pk)
 
-        if membership.can_renew():
-            message = 'Your membership for %s is available for renewal' % (
-                membership.membership_type.name)
-            renewal_list += ((message,
-                              renew_link,
-                              'Renew your membership here'),)
+        if membership.in_grace_period() or membership.is_expired():
+            if membership.can_renew():
+                # expired but can renew
+                message = 'Your membership for %s has expired. Renewal is available until %s.' % (
+                    membership.membership_type.name,
+                    membership.get_renewal_period_end_dt().strftime('%d-%b-%Y'))
+                reminders += ((message,
+                                  renew_link,
+                                  'Renew your membership now'),)
+            else:
+                # expired and out of renewal period
+                message = 'Your membership for %s has expired.' % (
+                    membership.membership_type.name)
+                reminders += ((message,
+                                  renew_link,
+                                  'Re-register as a member here'),)
+        else:
+            # not expired, but in renewal period
+            if membership.can_renew():
+                message = 'Your membership for %s will expire on %s. Renewal is available until %s.' % (
+                    membership.membership_type.name,
+                    membership.expire_dt.strftime('%d-%b-%Y'),
+                    membership.get_renewal_period_end_dt().strftime('%d-%b-%Y')
+                    )
+                reminders += ((message,
+                                  renew_link,
+                                  'Renew your membership here'),)
 
-        elif membership.is_expired():
-            message = 'Your membership for %s is expiring soon' % (
-                membership.membership_type.name)
-            expiring_list += ((message,
-                              renew_link,
-                              'Renew your membership here'),)
-
-        elif membership.get_status() == 'expired':
-            message = 'Your membership for %s has expired' % (
-                membership.membership_type.name)
-            expired_list += ((message,
-                              renew_link,
-                              'Re-register as a member here'),)
-
-    if renewal_list:
-        return renewal_list
-    elif expiring_list:
-        return expiring_list
-    else:
-        return expired_list
+    return reminders
 
 
 def clean_username(username):
