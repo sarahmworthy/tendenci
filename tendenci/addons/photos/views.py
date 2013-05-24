@@ -19,6 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import default_storage
 from django.forms.models import modelformset_factory
 from django.core.files.base import ContentFile
+from django.db.models import Q
 from django.middleware.csrf import get_token as csrf_get_token
 
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
@@ -43,13 +44,16 @@ from tendenci.addons.photos.tasks import ZipPhotoSetTask
 def search(request, template_name="photos/search.html"):
     """ Photos search """
     query = request.GET.get('q', None)
-    if get_setting('site', 'global', 'searchindex') and query:
-        photos = Image.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'photos.view_image')
-        photos = Image.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            photos = photos.select_related()
+    filters = get_query_filters(request.user, 'photos.view_image')
+    photos = Image.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        photos = photos.select_related()
+
+    if query:
+        photos = photos.filter(Q(title__icontains=query)|
+                               Q(caption__icontains=query)|
+                               Q(tags__icontains=query)|
+                               Q(license__name__icontains=query))
 
     photos = photos.order_by('-create_dt')
 

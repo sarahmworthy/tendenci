@@ -1,14 +1,8 @@
-{% load styled_forms %}
+{% load i18n %}
 
-{% if SITE_GLOBAL_SEARCHINDEX %}
 <form class="search-form" action="{% url invoice.search %}" method="get">
 	<div class="fieldWrapper">
-		{{ form.q.label }}
-        {{ form.q }}
-    </div>
-    
-    <div class="linkWrapper">
-	    <a id="advancedOptionsLink" href="#">Advanced Options</a>
+		{% trans 'Search By'%}: {{ form.search_criteria }} {{ form.search_text }} {{ form.search_method }}
     </div>
     
     <div class="fieldWrapper advanced">
@@ -34,4 +28,3 @@
     
     <input type="submit" value="Search" />
 </form>
-{% endif %}

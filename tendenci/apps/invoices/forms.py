@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models.fields import CharField, DecimalField
 from django.utils.translation import ugettext_lazy as _
 
 from tendenci.apps.invoices.models import Invoice
@@ -27,7 +28,16 @@ class InvoiceSearchForm(forms.Form):
         ('memberships', 'memberships'),
         ('jobs', 'jobs')
     )
-    q = forms.CharField(label=_("Search"), required=False, max_length=200,)
+    SEARCH_METHOD_CHOICES = (
+                             ('starts_with', _('Starts With')),
+                             ('contains', _('Contains')),
+                             ('exact', _('Exact')),
+                             )
+    search_criteria = forms.ChoiceField(choices=[],
+                                        required=False)
+    search_text = forms.CharField(max_length=100, required=False)
+    search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
+                                        required=False)
     start_dt = forms.DateField(label=_('From'), required=False)
     end_dt = forms.DateField(label=_('To'), required=False)
 
@@ -50,6 +60,13 @@ class InvoiceSearchForm(forms.Form):
             self.fields.get('end_dt').widget.attrs = {
                 'class': 'datepicker',
             }
+
+        # Set search criteria choices
+        criteria_choices = [('', 'SELECT ONE')]
+        for field in Invoice._meta.fields:
+            if isinstance(field, CharField) or isinstance(field, DecimalField):
+                criteria_choices.append((field.name, field.verbose_name))
+        self.fields['search_criteria'].choices = criteria_choices
 
         # Set invoice type choices
         invoices = Invoice.objects.all().distinct('object_type__app_label')

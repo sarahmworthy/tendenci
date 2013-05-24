@@ -159,33 +159,42 @@ def void_payment(request, id):
 
 @login_required
 def search(request, template_name="invoices/search.html"):
-    query = u''
+    search_criteria = None
+    search_text = None
+    search_method = None
     invoice_type = u''
     start_dt = None
     end_dt = None
     event = None
     event_id = None
-    
-    has_index = get_setting('site', 'global', 'searchindex')
+
+    bill_to_email = request.GET.get('bill_to_email', None)
     form = InvoiceSearchForm(request.GET)
     
     if form.is_valid():
-        query = form.cleaned_data.get('q')
+        search_criteria = form.cleaned_data.get('search_criteria')
+        search_text = form.cleaned_data.get('search_text')
+        search_method = form.cleaned_data.get('search_method')
         invoice_type = form.cleaned_data.get('invoice_type')
         start_dt = form.cleaned_data.get('start_dt')
         end_dt = form.cleaned_data.get('end_dt')
         event = form.cleaned_data.get('event')
         event_id = form.cleaned_data.get('event_id')
-    
-    bill_to_email = request.GET.get('bill_to_email', None)
 
-    if has_index and query:
-        invoices = Invoice.objects.search(query)
-    else:
-        invoices = Invoice.objects.all()
-        if bill_to_email:
-            invoices = invoices.filter(bill_to_email=bill_to_email)
+    invoices = Invoice.objects.all()
+    if bill_to_email:
+        invoices = invoices.filter(bill_to_email=bill_to_email)
     
+    if search_criteria and search_text:
+        search_type = '__iexact'
+        if search_method == 'starts_with':
+            search_type = '__istartswith'
+        elif search_method == 'contains':
+            search_type = '__icontains'
+        search_filter = {'%s%s' % (search_criteria,
+                                   search_type): search_text}
+        invoices = invoices.filter(**search_filter)
+
     if invoice_type:
         content_type = ContentType.objects.filter(app_label=invoice_type)
         invoices = invoices.filter(object_type__in=content_type)
@@ -214,7 +223,7 @@ def search(request, template_name="invoices/search.html"):
         else:
             raise Http403
     EventLog.objects.log()
-    return render_to_response(template_name, {'invoices': invoices, 'query': query, 'form':form,}, 
+    return render_to_response(template_name, {'invoices': invoices, 'form':form,}, 
         context_instance=RequestContext(request))
 
 

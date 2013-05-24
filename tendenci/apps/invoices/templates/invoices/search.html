@@ -16,6 +16,12 @@
         #id_start_dt, #id_end_dt {
 		    width: 18%;	
 		}
+        #id_search_criteria, #id_search_text{
+            width: 150px;
+        }
+        #id_search_method{
+            width: 100px;
+        }
     </style>
 {% endblock %}
 
@@ -58,22 +64,11 @@
     <script type="text/javascript">
 		$(document).ready(function() {
 			//Hide advanced options
-			$("div.advanced").hide();
 			
 		    var event_type = $("select#id_invoice_type").val();
 		    if(event_type != 'events') {
 				$('div.eventFields').hide();
 			}
-		});
-		
-		$("#advancedOptionsLink").toggle(function() {
-            $("div.advanced").show();
-            var event_type = $("select#id_invoice_type").val();
-		    if(event_type != 'events') {
-				$('div.eventFields').hide();
-			}
-		}, function() {
-		    $("div.advanced").hide();
 		});
 		
         $(".datepicker").live('focus', function() {

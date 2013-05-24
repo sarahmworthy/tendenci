@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django import forms
+from django.db.models.fields import CharField
 from django.forms.widgets import RadioSelect
 from django.utils.translation import ugettext_lazy as _
 from django.forms.formsets import BaseFormSet
@@ -21,7 +22,8 @@ from tendenci.addons.events.models import (
     Event, Place, RegistrationConfiguration, Payment,
     Sponsor, Organizer, Speaker, Type, TypeColorSet,
     RegConfPricing, Addon, AddonOption, CustomRegForm,
-    CustomRegField, CustomRegFormEntry, CustomRegFieldEntry
+    CustomRegField, CustomRegFormEntry, CustomRegFieldEntry,
+    Registrant
 )
 
 from form_utils.forms import BetterModelForm
@@ -1654,7 +1656,7 @@ class EventICSForm(forms.Form):
     user = forms.ModelChoiceField(queryset=User.objects.all())
 
 
-class RegistrantSearchForm(forms.Form):
+class GlobalRegistrantSearchForm(forms.Form):
     event = forms.ModelChoiceField(queryset=Event.objects.filter(registration__isnull=False).distinct('pk'),
                                    label=_("Event"),
                                    required=False,
@@ -1668,7 +1670,7 @@ class RegistrantSearchForm(forms.Form):
     email = forms.CharField(label=('Email'), required=False)
 
     def __init__(self, *args, **kwargs):
-        super(RegistrantSearchForm, self).__init__(*args, **kwargs)
+        super(GlobalRegistrantSearchForm, self).__init__(*args, **kwargs)
 
         # Set start date and end date
         if self.fields.get('start_dt'):
@@ -1679,3 +1681,26 @@ class RegistrantSearchForm(forms.Form):
             self.fields.get('end_dt').widget.attrs = {
                 'class': 'datepicker',
             }
+
+
+class EventRegistrantSearchForm(forms.Form):
+    SEARCH_METHOD_CHOICES = (
+                             ('starts_with', _('Starts With')),
+                             ('contains', _('Contains')),
+                             ('exact', _('Exact')),
+                             )
+    search_criteria = forms.ChoiceField(choices=[],
+                                        required=False)
+    search_text = forms.CharField(max_length=100, required=False)
+    search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
+                                        required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(EventRegistrantSearchForm, self).__init__(*args, **kwargs)
+
+        # Set search criteria choices
+        criteria_choices = [('', 'SELECT ONE')]
+        for field in Registrant._meta.fields:
+            if isinstance(field, CharField):
+                criteria_choices.append((field.name, field.verbose_name))
+        self.fields['search_criteria'].choices = criteria_choices
