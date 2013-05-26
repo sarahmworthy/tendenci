@@ -159,12 +159,17 @@ def void_payment(request, id):
 
 @login_required
 def search(request, template_name="invoices/search.html"):
+    start_amount = None
+    end_amount = None
+    tendered = None
+    balance = None
+    last_name = None
+    start_dt = None
+    end_dt = None
     search_criteria = None
     search_text = None
     search_method = None
     invoice_type = u''
-    start_dt = None
-    end_dt = None
     event = None
     event_id = None
 
@@ -172,18 +177,42 @@ def search(request, template_name="invoices/search.html"):
     form = InvoiceSearchForm(request.GET)
     
     if form.is_valid():
+        start_dt = form.cleaned_data.get('start_dt')
+        end_dt = form.cleaned_data.get('end_dt')
+        start_amount = form.cleaned_data.get('start_amount')
+        end_amount = form.cleaned_data.get('end_amount')
+        tendered = form.cleaned_data.get('tendered')
+        balance = form.cleaned_data.get('balance')
+        last_name = form.cleaned_data.get('last_name')
         search_criteria = form.cleaned_data.get('search_criteria')
         search_text = form.cleaned_data.get('search_text')
         search_method = form.cleaned_data.get('search_method')
         invoice_type = form.cleaned_data.get('invoice_type')
-        start_dt = form.cleaned_data.get('start_dt')
-        end_dt = form.cleaned_data.get('end_dt')
         event = form.cleaned_data.get('event')
         event_id = form.cleaned_data.get('event_id')
 
-    invoices = Invoice.objects.all()
+    invoices = Invoice.objects.all()            
+    if start_dt:
+        invoices = invoices.filter(create_dt__gte=datetime.combine(start_dt, time.min))
+    if end_dt:
+        invoices = invoices.filter(create_dt__lte=datetime.combine(end_dt, time.max))
+
+    if start_amount:
+        invoices = invoices.filter(total__gte=start_amount)
+    if end_amount:
+        invoices = invoices.filter(total__lte=end_amount)
+
+    if tendered:
+        invoices = invoices.filter(status_detail=tendered)
+    if balance == '0':
+        invoices = invoices.filter(balance=0)
+    elif balance == '1':
+        invoices = invoices.filter(balance__gt=0)
+
     if bill_to_email:
         invoices = invoices.filter(bill_to_email=bill_to_email)
+    if last_name:
+        invoices = invoices.filter(bill_to_last_name=last_name)
     
     if search_criteria and search_text:
         search_type = '__iexact'
@@ -207,12 +236,6 @@ def search(request, template_name="invoices/search.html"):
                 event_set.add(event_id)
             if event or event_id:
                 invoices = invoices.filter(registration__event__pk__in=event_set)
-            
-    if start_dt:
-        invoices = invoices.filter(create_dt__gte=datetime.combine(start_dt, time.min))
-     
-    if end_dt:
-        invoices = invoices.filter(create_dt__lte=datetime.combine(end_dt, time.max))
     
     if request.user.profile.is_superuser or has_perm(request.user, 'invoices.view_invoice'):
         invoices = invoices.order_by('-create_dt')
