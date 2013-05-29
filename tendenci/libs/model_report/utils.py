@@ -58,10 +58,12 @@ def us_date_format(value, instance):
 def date_label(report, field):
     return _("Date")
 
-    
+OBJECT_TYPE_DICT = dict((ct.id, '%s: %s' % (ct.app_label, ct.name))
+                        for ct in ContentType.objects.all())
+
+
 def obj_type_format(value, instance):
-    obj_type = ContentType.objects.get(id=value)
-    return "%s: %s" % (obj_type.app_label, obj_type.name)
+    return OBJECT_TYPE_DICT.get(value)
 
 
 def date_from_datetime(value):
