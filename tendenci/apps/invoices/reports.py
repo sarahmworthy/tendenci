@@ -1,5 +1,6 @@
 from django.utils.translation import ugettext_lazy as _
 from django.utils.html import mark_safe
+from django.core.urlresolvers import reverse
 
 from tendenci.libs.model_report.report import reports, ReportAdmin
 from tendenci.libs.model_report.utils import (sum_column, us_date_format, date_label, obj_type_format, date_from_datetime)
@@ -7,16 +8,15 @@ from tendenci.libs.model_report.utils import (sum_column, us_date_format, date_l
 from tendenci.apps.invoices.models import Invoice
 from tendenci.core.site_settings.utils import get_setting
 
+CURRENCY_SYMBOL = get_setting("site", "global", "currencysymbol")
     
 def id_format(value, instance):
-    invoice = Invoice.objects.get(id=value)
-    link = invoice.get_absolute_url()
+    link = reverse('invoice.view', args=[value])
     html = "<a href=\"%s\">%s</a>" % (link, value)
     return mark_safe(html)
 
 def currency_format(value, instance):
-    currencysymbol = get_setting("site", "global", "currencysymbol")
-    return "%s%s" % (currencysymbol, value)
+    return "%s%s" % (CURRENCY_SYMBOL, value)
 
 class InvoiceReport(ReportAdmin):
     # choose a title for your report for h1, title tag and report list

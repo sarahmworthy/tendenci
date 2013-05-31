@@ -4,6 +4,13 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_unicode
 from django.contrib.contenttypes.models import ContentType
 
+OBJECT_TYPE_DICT = dict((ct.id, '%s: %s' % (ct.app_label, ct.name))
+                        for ct in ContentType.objects.all())
+DEFAULT_OBJ_TYPES = ('registration', 'membershipdefault',
+                     'membershipset', 'makepayment',
+                     'corpmembership', 'job')
+
+
 def base_label(report, field):
     if hasattr(field, 'verbose_name'):
         return "%s" % field.verbose_name.title()
@@ -58,10 +65,9 @@ def us_date_format(value, instance):
 def date_label(report, field):
     return _("Date")
 
-    
+
 def obj_type_format(value, instance):
-    obj_type = ContentType.objects.get(id=value)
-    return "%s: %s" % (obj_type.app_label, obj_type.name)
+    return OBJECT_TYPE_DICT.get(value)
 
 
 def date_from_datetime(value):
@@ -69,7 +75,6 @@ def date_from_datetime(value):
 
 
 def get_obj_type_choices():
-    DEFAULT_OBJ_TYPES = ['registration', 'membershipdefault', 'membershipset', 'makepayment', 'corpmembership', 'job']
     choices = ContentType.objects.filter(model__in=DEFAULT_OBJ_TYPES)
     return choices
 
