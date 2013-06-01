@@ -514,30 +514,6 @@ class AppRetrieveFiles(object):
         return tfile
 
 
-def handle_uploads(request):
-    saved = []
-
-    uuid_hex = uuid.uuid1().get_hex()[:8]
-    
-    upload_dir = 'files/files/%s' % uuid_hex
-    upload_full_path = os.path.join(settings.MEDIA_ROOT, upload_dir)
-
-    if not os.path.exists(upload_full_path):
-        os.makedirs(upload_full_path)
-
-    for key, upload in request.FILES.iteritems():
-        upload.name = re.sub(r'[^a-z0-9._]+', '-', upload.name.lower())
-        while os.path.exists(os.path.join(upload_full_path, upload.name)):
-            upload.name = '_' + upload.name
-        dest = open(os.path.join(upload_full_path, upload.name), 'wb')
-        for chunk in upload.chunks():
-            dest.write(chunk)
-        dest.close()
-        saved.append((key, os.path.join(upload_dir, upload.name)))
-    # returns [(key1, path1), (key2, path2), ...]
-    return saved
-
-
 def get_max_file_upload_size(file_module=False):
     global_max_upload_size = (get_setting('site', 'global', 'maxfilesize') or 
                               "26214400")  # default value if ever site setting is missing

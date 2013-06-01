@@ -12,7 +12,6 @@ from tendenci.apps.user_groups.models import Group
 
 
 class FileForm(TendenciBaseForm):
-    file = forms.FileField()
 
     group = forms.ModelChoiceField(required=True, queryset=Group.objects.filter(status=True, status_detail='active'), empty_label=None)
 
@@ -20,6 +19,7 @@ class FileForm(TendenciBaseForm):
         model = File
 
         fields = (
+            'file',
             'name',
             'group',
             'tags',
@@ -62,9 +62,6 @@ class FileForm(TendenciBaseForm):
             self.user = None
 
         super(FileForm, self).__init__(*args, **kwargs)
-
-        if self.instance.id:
-            self.fields['file'].initial = self.instance.file
 
     def clean_file(self):
         data = self.cleaned_data['file']

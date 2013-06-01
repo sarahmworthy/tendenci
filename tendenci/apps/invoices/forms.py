@@ -48,7 +48,6 @@ class InvoiceSearchForm(forms.Form):
     search_text = forms.CharField(max_length=100, required=False)
     search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
                                         required=False)
-
     start_dt = forms.DateField(label=_('From'), required=False)
     end_dt = forms.DateField(label=_('To'), required=False)
 

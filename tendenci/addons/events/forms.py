@@ -32,6 +32,7 @@ from tendenci.core.payments.models import PaymentMethod
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
 from tendenci.core.emails.models import Email
+from tendenci.core.files.utils import get_max_file_upload_size
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.user_groups.models import Group
 from tendenci.apps.discounts.models import Discount
@@ -730,6 +731,7 @@ class SpeakerForm(BetterModelForm):
                 raise forms.ValidationError(_('Please keep filesize under %s. Current filesize %s') % (filesizeformat(max_upload_size), filesizeformat(data.size)))
 
         return data
+
 
 class OrganizerForm(forms.ModelForm):
     description = forms.CharField(required=False,

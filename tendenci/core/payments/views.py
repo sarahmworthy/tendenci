@@ -4,6 +4,7 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
+
 from tendenci.core.payments.forms import PaymentSearchForm
 from tendenci.core.payments.models import Payment
 from tendenci.core.payments.authorizenet.utils import prepare_authorizenet_sim_form
