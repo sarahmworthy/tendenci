@@ -63,31 +63,13 @@ jQuery(function($) {
 
     }
 
-    var manage_special_functionality_params = function(){
-        var $dd = $(this); // drop-down
-    	var selected_value = $dd.find(":selected").val();
-    	var selected_text = $dd.find(":selected").text();
-    	var fieldset = $dd.parents(".dynamic-fields");
-
-        triggers = ['BooleanField']
-
-    	// toggle help text field 
-        if (in_list(selected_value, triggers)){
-            fieldset.find(".field-function_params input").css('visibility', 'visible');
-    	}
-    	else {
-            fieldset.find(".field-function_params input").css('visibility', 'hidden');
-    	}
-
-    }
-
     var manage_default = function(){
         var $dd = $(this); // drop-down
     	var selected_value = $dd.find(":selected").val();
     	var selected_text = $dd.find(":selected").text();
     	var fieldset = $dd.parents(".dynamic-fields");
 
-        triggers = ['CharField/tendenci.apps.forms_builder.forms.widgets.Header', 'CharField/tendenci.apps.forms_builder.forms.widgets.Description', 'FileField', 'DateField/django.forms.extras.SelectDateWidget', 'DateField/django.forms.DateInput', 'DateTimeField', 'EmailField', 'CharField', 'CharField/django.forms.Textarea']
+        triggers = ['CharField/tendenci.apps.forms_builder.forms.widgets.Header', 'CharField/tendenci.apps.forms_builder.forms.widgets.Description', 'FileField', 'DateField/django.forms.extras.SelectDateWidget', 'DateField/django.forms.DateInput', 'DateTimeField', 'EmailVerificationField', 'CharField', 'CharField/django.forms.Textarea']
 
     	// toggle help text field 
         if (in_list(selected_value, triggers)){
@@ -103,7 +85,6 @@ jQuery(function($) {
     $("div.inline-group .field-field_type select")
         .each(manage_choice_field).live('change', manage_choice_field)
         .each(manage_special_functionality).live('change', manage_special_functionality)
-        .each(manage_special_functionality_params).live('change', manage_special_functionality_params)
         .each(manage_default).live('change', manage_default);
 
 });

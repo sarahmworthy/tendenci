@@ -362,18 +362,10 @@ class FormForField(forms.ModelForm):
     class Meta:
         model = Field
         exclude = ["position"]
-    
-    def clean_function_params(self):
-        function_params = self.cleaned_data['function_params']
-        clean_params = ''
-        for val in function_params.split(','):
-            clean_params = val.strip() + ',' + clean_params
-        return clean_params[0:len(clean_params)-1]
         
     def clean(self):
         cleaned_data = self.cleaned_data
         field_function = cleaned_data.get("field_function")
-        function_params = cleaned_data.get("function_params")
         choices = cleaned_data.get("choices")
         field_type = cleaned_data.get("field_type")
         required = cleaned_data.get("required")
@@ -381,12 +373,12 @@ class FormForField(forms.ModelForm):
         if field_function == "GroupSubscription":
             if field_type != "BooleanField":
                 raise forms.ValidationError("This field's function requires Checkbox as a field type")
-            if not function_params:
+            if not choices:
                 raise forms.ValidationError("This field's function requires at least 1 group specified.")
             else:
-                for val in function_params.split(','):
+                for val in choices.split(','):
                     try:
-                        Group.objects.get(name=val)
+                        Group.objects.get(name=val.strip())
                     except Group.DoesNotExist:
                         raise forms.ValidationError("The group \"%s\" does not exist" % (val))
 
@@ -403,7 +395,7 @@ class FormForField(forms.ModelForm):
                     raise forms.ValidationError("The \"Email to Recipients\" function requires at least 1 email specified.")
                 else:
                     for val in choices.split(','):
-                        if not email_re.match(val):
+                        if not email_re.match(val.strip()):
                             raise forms.ValidationError("\"%s\" is not a valid email address" % (val))
             else:
                 if not choices:
@@ -413,7 +405,7 @@ class FormForField(forms.ModelForm):
                         val = val.split(':')
                         if len(val) < 2:
                             raise forms.ValidationError("The \"Email to Recipients\" function requires choices to be in the following format: <choice_label>:<email_address>.")
-                        if not email_re.match(val[1]):
+                        if not email_re.match(val[1].strip()):
                             raise forms.ValidationError("\"%s\" is not a valid email address" % (val[1]))
                     
         if field_function != None and field_function.startswith("Email"):

@@ -224,7 +224,6 @@ def copy(request, id):
             label = field.label,
             field_type = field.field_type,
             field_function = field.field_function,
-            function_params = field.function_params,
             required = field.required,
             visible = field.visible,
             choices = field.choices,
@@ -470,8 +469,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                     pass
 
             # Email copies to recipient list indicated in the form
-            email_recipients = [e.strip() for e in entry.get_function_email_recipients().split(",")
-                if e.strip()]
+            email_recipients = entry.get_function_email_recipients()
             if email_recipients:
                 # Send message to the email addresses selected in the form.
                 msg = EmailMessage(subject, admin_body, sender, email_recipients, headers=email_headers)

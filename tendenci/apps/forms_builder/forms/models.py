@@ -169,8 +169,6 @@ class Field(OrderingBaseModel):
         max_length=64)
     field_function = models.CharField(_("Special Functionality"),
         choices=FIELD_FUNCTIONS, max_length=64, null=True, blank=True)
-    function_params = models.CharField(_("Group Name or Names"),
-        max_length=100, null=True, blank=True, help_text="Comma separated if more than one")
     required = models.BooleanField(_("Required"), default=True)
     visible = models.BooleanField(_("Visible"), default=True)
     choices = models.CharField(_("Choices"), max_length=1000, blank=True,
@@ -212,8 +210,8 @@ class Field(OrderingBaseModel):
     def execute_function(self, entry, value, user=None):
         if self.field_function == "GroupSubscription":
             if value:
-                for val in self.function_params.split(','):
-                    group = Group.objects.get(name=val)
+                for val in self.choices.split(','):
+                    group = Group.objects.get(name=val.strip())
                     if user:
                         try:
                             group_membership = GroupMembership.objects.get(group=group, member=user)
@@ -354,18 +352,18 @@ class FormEntry(models.Model):
         return self.get_value_of("EmailPhoneNumber")
 
     def get_function_email_recipients(self):
+        email_list = set()
         for entry in self.fields.order_by('field__position'):
             if entry.field.field_function == 'Recipients' and entry.value:
                 if entry.field.field_type == 'BooleanField':
-                    return entry.field.choices
+                    for email in entry.field.choices.split(","):
+                        email_list.add(email.strip())
                 else:
-                    email_list = []
                     for email in entry.value.split(","):
                         email = email.split(":")
                         if len(email) > 1:
-                            email_list.append(email[1])
-                    return ','.join(email_list)
-        return ''
+                            email_list.add(email[1].strip())
+        return email_list
 
     def get_email_address(self):
         return self.get_type_of("emailverificationfield")
