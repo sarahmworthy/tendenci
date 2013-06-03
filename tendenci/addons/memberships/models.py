@@ -27,7 +27,7 @@ from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.template import RequestContext
 
-from tendenci.core.base.utils import day_validate
+from tendenci.core.base.utils import day_validate, is_blank
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.utils import get_notice_recipients, has_perm
@@ -482,7 +482,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         Returns admin change_form page.
         """
-        return ('membership_details', [self.pk])
+        return ('membership.details', [self.pk])
         # return ('admin:memberships_membershipdefault_change', [self.pk])
 
     def save(self, *args, **kwargs):
@@ -538,7 +538,20 @@ class MembershipDefault(TendenciBaseModel):
                         getattr(demographic, field_name)
                     ))
 
+        if is_blank(dict(field_list).values()):
+            return []  # empty list
+
         return field_list
+
+    def get_archived_memberships(self):
+        """
+        Returns back a list of archived memberships
+        in order of newest to oldest
+        """
+        memberships = self.user.membershipdefault_set.filter(
+            status_detail='archive', membership_type=self.membership_type).order_by('join_dt')
+
+        return memberships
 
     @classmethod
     def refresh_groups(cls):
@@ -620,7 +633,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         from tendenci.addons.corporate_memberships.models import CorpMembership
         [corporate_membership] = CorpMembership.objects.filter(
-            pk=self.corp_profile_id) or [None]
+            pk=self.corporate_membership_id) or [None]
 
         return corporate_membership
 
@@ -686,7 +699,7 @@ class MembershipDefault(TendenciBaseModel):
 
         good = (
             not self.is_expired(),
-            self.status_detail != 'archive',
+            not self.is_archived(),
         )
 
         if not all(good):
@@ -701,6 +714,7 @@ class MembershipDefault(TendenciBaseModel):
         self.application_approved = True
         self.application_approved_dt = \
             self.application_approved_dt or NOW
+
         if request_user.is_authenticated():  # else: don't set
             self.application_approved_user = request_user
 
@@ -742,14 +756,7 @@ class MembershipDefault(TendenciBaseModel):
             - Create new invoice.
             - Archive old memberships [of same type].
             - Show member number on profile.
-
-        Will not renew:
-            - Archived memberships
         """
-
-        if self.status_detail == 'archive':
-            return False
-
         NOW = datetime.now()
 
         dupe = deepcopy(self)
@@ -760,23 +767,22 @@ class MembershipDefault(TendenciBaseModel):
         dupe.status_detail = 'active'
 
         # application approved ---------------
-        self.application_approved = True
-        self.application_approved_dt = \
-            self.application_approved_dt or NOW
+        dupe.application_approved = True
+        dupe.application_approved_dt = NOW
+
         if request_user:  # else: don't set
-            self.application_approved_user = request_user
+            dupe.application_approved_user = request_user
 
         # application approved/denied ---------------
-        self.application_approved_denied_dt = \
-            self.application_approved_denied_dt or NOW
+        dupe.application_approved_denied_dt = NOW
         if request_user:  # else: don't set
-            self.application_approved_denied_user = request_user
+            dupe.application_approved_denied_user = request_user
 
         # action_taken ------------------------------
-        self.action_taken = True
-        self.action_taken_dt = self.action_taken_dt or NOW
+        dupe.action_taken = True
+        dupe.action_taken_dt = NOW
         if request_user:  # else: don't set
-            self.action_taken_user = request_user
+            dupe.action_taken_user = request_user
 
         dupe.set_join_dt()
         dupe.set_renew_dt()
@@ -944,21 +950,14 @@ class MembershipDefault(TendenciBaseModel):
 
     def is_expired(self):
         """
-        status=True, status_detail='active' and has expired,
-        includes the grace period.
+        status=True, status_detail='active' or 'expired',
+        out of the grace period.
         """
-        if not self.get_expire_dt():
-            # there is no grace period, so the member isn't in it
-            in_grace_period = False
-        else:
-            in_grace_period = self.get_expire_dt() < datetime.now()
-        is_good = (
-            self.status,
-            self.status_detail.lower() == 'expired',
-            self.get_expire_dt(),
-            in_grace_period)
-
-        return all(is_good)
+        if self.status and self.status_detail.lower() in ('active', 'expired'):
+            if self.expire_dt:
+                return self.expire_dt <= datetime.now() and \
+                    (not self.in_grace_period())
+        return False
 
     def is_pending(self):
         """
@@ -995,14 +994,14 @@ class MembershipDefault(TendenciBaseModel):
     def is_archived(self):
         """
         self.is_active()
-        self.status_detail = 'archived'
+        self.status_detail = 'archive'
         """
         return self.status and self.status_detail.lower() == 'archive'
 
     def get_status(self):
         """
         Returns status of membership
-        'pending', 'active', 'disapproved', 'expired', 'archived'
+        'pending', 'active', 'disapproved', 'expired', 'archive'
         """
         return self.status_detail.lower()
 
@@ -1043,11 +1042,9 @@ class MembershipDefault(TendenciBaseModel):
         and of the same membership type.  Making sure not to
         archive the newest membership.
         """
-
-        memberships = self.qs_memberships() & \
-            (MembershipDefault.QS_ACTIVE() | MembershipDefault.QS_PENDING())
-
+        memberships = self.qs_memberships()
         for membership in memberships:
+
             if membership != self:
                 membership.status_detail = 'archive'
                 membership.save()
@@ -1139,12 +1136,14 @@ class MembershipDefault(TendenciBaseModel):
     def in_grace_period(self):
         """ Returns True if a member's expiration date has passed but status detail is still active.
         """
-        # if can't expire, membership is not in the grace period
-        if not self.get_expire_dt():
+        expire_with_grace_period_dt = self.get_expire_dt()
+
+        if not expire_with_grace_period_dt:
             return False
 
-        return all([self.expire_dt < datetime.now(),
-            self.get_expire_dt() > datetime.now(),
+        return all([
+            self.expire_dt < datetime.now(),
+            expire_with_grace_period_dt > datetime.now(),
             self.status_detail == "active"])
 
     def get_renewal_period_dt(self):
@@ -1164,11 +1163,23 @@ class MembershipDefault(TendenciBaseModel):
         # the end_dt should be the end of the end_dt not start of the end_dt
         # not datetime.datetime(2013, 2, 21, 0, 0),
         # but datetime.datetime(2013, 2, 21, 23, 59, 59)
-        end_dt = self.expire_dt + timedelta(
+        end_dt = self.get_renewal_period_end_dt()
+
+        return (start_dt, end_dt)
+
+    def get_renewal_period_end_dt(self):
+        return self.expire_dt + timedelta(
             days=self.membership_type.renewal_period_end + 1
         ) - timedelta(seconds=1)
 
-        return (start_dt, end_dt)
+    def is_renewal(self):
+        """
+        Checks if there are older memberships
+        of this same membership type
+        """
+        return self.user.membershipdefault_set.filter(
+            membership_type=self.membership_type).exclude(
+                status_detail='disapproved').exists()
 
     def can_renew(self):
         """
@@ -1186,7 +1197,7 @@ class MembershipDefault(TendenciBaseModel):
         if not renewal_period:
             return False
 
-        # can only renew from approved state
+        # can only renew from active or expired
         if not self.get_status() in ['active', 'expired']:
             return False
 
@@ -1248,10 +1259,10 @@ class MembershipDefault(TendenciBaseModel):
         disapprove_link = '%s?disapprove' % reverse('membership.details', args=[self.pk])
         expire_link = '%s?expire' % reverse('membership.details', args=[self.pk])
 
-        if self.user.profile.can_renew():
+        if self.can_renew():
             renew = {form_link: u'Renew Membership'}
         elif is_superuser:
-            renew = {form_link: u'Renew Membership'}
+            renew = {form_link: u'Admin: Renew Membership'}
         else:
             renew = {}
 
@@ -1409,33 +1420,37 @@ class MembershipDefault(TendenciBaseModel):
 
     def create_member_number(self):
         """
-        Returns a unique member number that is greater than 1000
-        and not already taken by a membership record.
+        Create a unique membership number using setting MemberNumberBaseNumber.
+                new member number = MemberNumberBaseNumber + 1
+
+        If the new member number has already been taken for some reason,
+                new member number = maximum member number in system + 1
         """
-        numbers = MembershipDefault.objects.values_list(
-            'member_number', flat=True).exclude(member_number=u'')
+        if self.id and not self.member_number:
+            base_number = get_setting('module',
+                                      'memberships',
+                                      'membernumberbasenumber')
+            new_member_number = str(base_number + self.id)
+            # check if this number's already been taken
+            if MembershipDefault.objects.filter(
+                                member_number=new_member_number
+                                ).exclude(user=self.user
+                                          ).exists():
+                # get the maximum member_number in the system
+                [m_max] = MembershipDefault.objects.extra(
+                                    select={'length': 'Length(member_number)'}
+                                    ).filter(
+                                    member_number__regex=r'^\d+$'
+                                    ).order_by('-length', '-member_number'
+                                               )[:1] or [None]
+                if m_max:
+                    new_member_number = str(int(m_max.member_number) + 1)
+                else:
+                    new_member_number = str(base_number + 1)
 
-        numbers = set(numbers)  # remove duplicates
-        numbers = [n for n in numbers if n.isdigit()]  # only keep digits
-        numbers = map(int, numbers)  # convert strings to ints
-        numbers = sorted(numbers)  # sort integers
+            return new_member_number
 
-        count = 1000
-        gap_list = []
-        for number in numbers:
-            while True:
-                count += 1
-                if count >= number:
-                    break
-                gap_list.append(count)
-
-        if gap_list:
-            return '%s' % gap_list[0]
-
-        if numbers:
-            return '%s' % (max(numbers) + 1)
-
-        return '%s' % (count + 1)
+        return ''
 
     def set_join_dt(self):
         """
@@ -1503,7 +1518,7 @@ class MembershipDefault(TendenciBaseModel):
 
         # if not approved
         # set expire_dt and get out
-        if not approved:
+        if not all(approved):
             self.expire_dt = None
             return None
 
@@ -1516,6 +1531,7 @@ class MembershipDefault(TendenciBaseModel):
                                                       flat=True)[:1] or [None]
             self.expire_dt = corp_expiration_dt
         else:
+
             if self.renew_dt:
                 self.expire_dt = self.membership_type.get_expiration_dt(
                     renewal=self.renewal, renew_dt=self.renew_dt

@@ -14,14 +14,14 @@ from django.utils.importlib import import_module
 from django.contrib.auth.models import User, AnonymousUser
 from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
+from django.template.defaultfilters import filesizeformat
 
 from captcha.fields import CaptchaField
 from tendenci.addons.events.models import (
     Event, Place, RegistrationConfiguration, Payment,
     Sponsor, Organizer, Speaker, Type, TypeColorSet,
     RegConfPricing, Addon, AddonOption, CustomRegForm,
-    CustomRegField, CustomRegFormEntry, CustomRegFieldEntry,
-    Registrant
+    CustomRegField, CustomRegFormEntry, CustomRegFieldEntry
 )
 
 from form_utils.forms import BetterModelForm
@@ -30,16 +30,12 @@ from tendenci.core.payments.models import PaymentMethod
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
 from tendenci.core.emails.models import Email
-from tendenci.core.site_settings.utils import get_setting
-from tendenci.core.imports.utils import get_header_list_from_content
-from tendenci.core.imports.models import Import
-from form_utils.forms import BetterModelForm
+from tendenci.core.files.utils import get_max_file_upload_size
+from tendenci.core.site_settings.utils import get_setting, get_global_setting
 from tendenci.apps.user_groups.models import Group
 from tendenci.apps.discounts.models import Discount
 from tendenci.apps.profiles.models import Profile
 from tendenci.addons.events.settings import FIELD_MAX_LENGTH
-from tendenci.core.site_settings.utils import get_setting
-from tendenci.addons.memberships.models import Membership
 
 from fields import Reg8nDtField, UseCustomRegField
 from widgets import UseCustomRegWidget
@@ -503,9 +499,7 @@ class EventForm(TendenciBaseForm):
             self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.pk
         else:
             self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
-            group = Group.objects.first(**{'entity_id': 1})
-            if group:
-                self.fields['group'].initial = group.pk
+            self.fields['group'].initial = Group.objects.get_initial_group_id()
 
         if self.instance.image:
             self.fields['photo_upload'].help_text = '<input name="remove_photo" id="id_remove_photo" type="checkbox"/> Remove current image: <a target="_blank" href="/files/%s/">%s</a>' % (self.instance.image.pk, basename(self.instance.image.file.name))
@@ -528,6 +522,10 @@ class EventForm(TendenciBaseForm):
             image_type = '.%s' % imghdr.what('', photo_upload.read())
             if image_type not in ALLOWED_LOGO_EXT:
                 raise forms.ValidationError('The photo is an invalid image. Try uploading another photo.')
+
+            max_upload_size = get_max_file_upload_size()
+            if photo_upload.size > max_upload_size:
+                raise forms.ValidationError(_('Please keep filesize under %s. Current filesize %s') % (filesizeformat(max_upload_size), filesizeformat(photo_upload.size)))
 
         return photo_upload
 
@@ -719,6 +717,16 @@ class SpeakerForm(BetterModelForm):
             self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.id
         else:
             self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
+
+    def clean_file(self):
+        data = self.cleaned_data['file']
+        if data:
+            max_upload_size = get_max_file_upload_size()
+            if data.size > max_upload_size:
+                raise forms.ValidationError(_('Please keep filesize under %s. Current filesize %s') % (filesizeformat(max_upload_size), filesizeformat(data.size)))
+
+        return data
+
 
 class OrganizerForm(forms.ModelForm):
     description = forms.CharField(required=False,

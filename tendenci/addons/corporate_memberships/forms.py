@@ -15,6 +15,7 @@ from captcha.fields import CaptchaField
 from tinymce.widgets import TinyMCE
 
 from tendenci.core.perms.forms import TendenciBaseForm
+from tendenci.addons.industries.models import Industry
 from tendenci.addons.memberships.fields import PriceInput
 from tendenci.addons.memberships.fields import NoticeTimeTypeField
 from tendenci.addons.corporate_memberships.widgets import NoticeTimeTypeWidget
@@ -507,11 +508,54 @@ class RosterSearchAdvancedForm(forms.Form):
 
 
 class CorpMembershipSearchForm(forms.Form):
+    SEARCH_METHOD_CHOICES = (
+                             ('starts_with', _('Starts With')),
+                             ('contains', _('Contains')),
+                             ('exact', _('Exact')),
+                             )
     cp_id = forms.ChoiceField(label=_('Company Name'),
-                                  choices=(),
                                   required=False)
-    q = forms.CharField(max_length=100,
-                                 required=False)
+    search_criteria = forms.ChoiceField(required=False)
+    search_text = forms.CharField(max_length=100, required=False)
+    search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
+                                        required=False)
+
+    def __init__(self, *args, **kwargs):
+        search_field_names_list = kwargs.pop('names_list')
+        super(CorpMembershipSearchForm, self).__init__(*args, **kwargs)
+        # add industry field if industry exists
+        app = CorpMembershipApp.objects.current_app()
+        if app:
+            [industry_field] = app.fields.filter(
+                        field_name='industry',
+                        display=True
+                            )[:1] or [None]
+
+            if industry_field:
+                industries = Industry.objects.all().order_by('industry_name')
+                industries_choices = [(0, _('Select One'))]
+                for industry in industries:
+                    industries_choices.append((industry.id, industry.industry_name))
+                self.fields['industry'] = forms.ChoiceField(
+                            label=industry_field.label,
+                            choices=industries_choices,
+                            required=False
+                                )
+        # search criteria choices
+        search_choices = [('', _('SELECT ONE'))]
+        fields = CorpMembershipAppField.objects.filter(
+                        field_name__in=search_field_names_list,
+                        display=True)
+        if app:
+            fields = fields.filter(corp_app=app)
+        fields = fields.order_by('label')
+
+        for field in fields:
+            label = field.label
+            if len(label) > 30:
+                label = '%s...' % label[:30]
+            search_choices.append((field.field_name, label))
+        self.fields['search_criteria'].choices = search_choices
 
 
 class CorpMembershipUploadForm(forms.ModelForm):
