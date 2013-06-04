@@ -9,13 +9,18 @@ class Migration(DataMigration):
     def forwards(self, orm):
         # Migrate Group field data to Choice field
         for field in orm.Field.objects.all():
-            if field.function_params:
+            if field.field_function == 'GroupSubscription':
                 field.choices = field.function_params
                 field.save()
 
 
     def backwards(self, orm):
         "Write your backwards methods here."
+        # Migrate Choice field data to Group field
+        for field in orm.Field.objects.all():
+            if field.field_function == 'GroupSubscription':
+                field.function_params = field.choices
+                field.save()
 
 
     models = {
