@@ -295,12 +295,17 @@ class MembershipSet(models.Model):
     class Meta:
         verbose_name = _("Membership")
         verbose_name_plural = _("Memberships")
+        
+    @property
+    def group(self):
+        return self.memberships[0].group
 
     def memberships(self):
         return MembershipDefault.objects.filter(membership_set=self).order_by('create_dt')
 
     def save_invoice(self, memberships):
         invoice = Invoice()
+        invoice.title = "Membership Invoice"
         invoice.estimate = True
         invoice.status_detail = "estimate"
 
@@ -487,6 +492,10 @@ class MembershipDefault(TendenciBaseModel):
         """
         return ('membership.details', [self.pk])
         # return ('admin:memberships_membershipdefault_change', [self.pk])
+
+    @property
+    def group(self):
+        return self.membership_type.group
 
     def save(self, *args, **kwargs):
         """
@@ -1645,16 +1654,16 @@ class MembershipDefault(TendenciBaseModel):
         """
         from tendenci.apps.notifications.utils import send_welcome_email
 
-        can_approve = False
+        open_renewal = (
+            self.renewal,
+            not self.membership_type.renewal_require_approval)
 
-        if request.user.profile.is_superuser:
-            can_approve = True
-        else:
-            if (self.renewal and \
-                    not self.membership_type.renewal_require_approval) \
-                or (not self.renewal and \
-                    not self.membership_type.require_approval):
-                    can_approve = True
+        open_join = (
+            not self.renewal,
+            not self.membership_type.require_approval)
+
+        can_approve = all(open_renewal) or all(open_join)
+        can_approve = can_approve or request.user.profile.is_superuser
 
         if can_approve:
 
