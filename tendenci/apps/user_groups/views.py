@@ -10,7 +10,7 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.sites.models import Site
 from django.contrib import messages
@@ -42,17 +42,16 @@ def search(request, template_name="user_groups/search.html"):
     is available, this page also allows you to search through
     user groups.
     """
-    has_index = get_setting('site', 'global', 'searchindex')
     query = request.GET.get('q', None)
 
-    if has_index and query:
-        groups = Group.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'groups.view_group', perms_field=False)
-        groups = Group.objects.filter(filters).distinct()
-        if request.user.is_authenticated():
-            groups = groups.select_related()
-        groups = groups.order_by('slug')
+    filters = get_query_filters(request.user, 'groups.view_group', perms_field=False)
+    groups = Group.objects.filter(filters).distinct()
+    if request.user.is_authenticated():
+        groups = groups.select_related()
+    if query:
+        groups = groups.filter(Q(name__icontains=query)|
+                               Q(label__icontains=query))
+    groups = groups.order_by('slug')
 
     EventLog.objects.log()
 

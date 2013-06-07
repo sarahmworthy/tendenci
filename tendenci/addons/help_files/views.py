@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.base.http import Http403
@@ -54,13 +55,13 @@ def search(request, template_name="help_files/search.html"):
     """ Help Files Search """
     query = request.GET.get('q', None)
 
-    if get_setting('site', 'global', 'searchindex') and query:
-        help_files = HelpFile.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'help_files.view_helpfile')
-        help_files = HelpFile.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            help_files = help_files.select_related()
+    filters = get_query_filters(request.user, 'help_files.view_helpfile')
+    help_files = HelpFile.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        help_files = help_files.select_related()
+    if query:
+        help_files = help_files.filter(Q(question__icontains=query)|
+                                       Q(answer__icontains=query))
 
     EventLog.objects.log()
 

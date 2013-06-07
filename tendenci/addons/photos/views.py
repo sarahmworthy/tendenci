@@ -472,13 +472,16 @@ def photoset_delete(request, id, template_name="photos/photo-set/delete.html"):
 def photoset_view_latest(request, template_name="photos/photo-set/latest.html"):
     """ View latest photo set """
     query = request.GET.get('q', None)
-    if get_setting('site', 'global', 'searchindex') and query:
-        photo_sets = PhotoSet.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'photos.view_photoset')
-        photo_sets = PhotoSet.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            photo_sets = photo_sets.select_related()
+
+    filters = get_query_filters(request.user, 'photos.view_photoset')
+    photo_sets = PhotoSet.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        photo_sets = photo_sets.select_related()
+
+    if query:
+        photo_sets = photo_sets.filter(Q(name__icontains=query)|
+                                       Q(description__icontains=query)|
+                                       Q(tags__icontains=query))
     photo_sets = photo_sets.order_by('-create_dt')
 
     EventLog.objects.log()

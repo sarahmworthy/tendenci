@@ -262,7 +262,6 @@ def search(request, redirect=False, template_name="events/search.html"):
     if redirect:
         return HttpResponseRedirect(reverse('events'))
 
-    has_index = get_setting('site', 'global', 'searchindex')
     query = request.GET.get('q', None)
     event_type = request.GET.get('event_type', None)
     start_dt = request.GET.get('start_dt', None)
@@ -272,22 +271,19 @@ def search(request, redirect=False, template_name="events/search.html"):
     except:
         start_dt = datetime.now()
 
-    if has_index and query:
-        event_type_obj = Type.objects.filter(slug=event_type)
-        if event_type_obj:
-            query = "%s type:%s" % (query, event_type_obj[0].name)
-        events = Event.objects.search(query, user=request.user)
-        events = events.filter(start_dt__gte=start_dt)
-    else:
-        filters = get_query_filters(request.user, 'events.view_event')
-        events = Event.objects.filter(filters).distinct()
-        if event_type:
-            events = events.filter(type__slug=event_type,
-                end_dt__gte=start_dt)
-        else:
-            events = events.filter(start_dt__gte=start_dt)
-        if request.user.is_authenticated():
-            events = events.select_related()
+    filters = get_query_filters(request.user, 'events.view_event')
+    events = Event.objects.filter(filters).distinct()
+    if request.user.is_authenticated():
+        events = events.select_related()
+
+    if query:
+        events = events.filter(Q(title__icontains=query)|
+                               Q(description__icontains=query)|
+                               Q(tags__icontains=query))
+    if event_type:
+        events = events.filter(type__slug=event_type,
+                               end_dt__gte=start_dt)
+    events = events.filter(start_dt__gte=start_dt)
 
     if with_registration:
         events = events.filter(registration_configuration__enabled=True)

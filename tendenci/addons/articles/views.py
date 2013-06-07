@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
@@ -55,21 +55,17 @@ def detail(request, slug=None, hash=None, template_name="articles/view.html"):
 
 @is_enabled('articles')
 def search(request, template_name="articles/search.html"):
-    get = dict(request.GET)
-    query = get.pop('q', [])
-    get.pop('page', None)  # pop page query string out; page ruins pagination
-    query_extra = ['%s:%s' % (k, v[0]) for k, v in get.items() if v[0].strip()]
-    query = ' '.join(query)
-    if query_extra:
-        query = '%s %s' % (query, ' '.join(query_extra))
+    query = request.GET.get('q', None)
 
-    if get_setting('site', 'global', 'searchindex') and query:
-        articles = Article.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'articles.view_article')
-        articles = Article.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            articles = articles.select_related()
+    filters = get_query_filters(request.user, 'articles.view_article')
+    articles = Article.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        articles = articles.select_related()
+
+    if query:
+        articles = articles.filter(Q(headline__icontains=query)|
+                                   Q(body__icontains=query)|
+                                   Q(tags__icontains=query))
 
     if not has_perm(request.user, 'articles.view_article'):
         articles = articles.filter(release_dt__lte=datetime.now())

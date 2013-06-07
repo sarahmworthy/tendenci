@@ -95,17 +95,13 @@ def search(request, template_name="pages/search.html"):
     """
     query = request.GET.get('q', None)
 
-    if get_setting('site', 'global', 'searchindex') and query:
-        pages = Page.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'pages.view_page')
-        pages = Page.objects.filter(filters).distinct()
-        if query:
-            pages = pages.filter(Q(title__icontains=query) \
-                             | Q(content__icontains=query) \
-                              | Q(slug__icontains=query))
-            pages = pages.exclude(status_detail='archive')
-
+    filters = get_query_filters(request.user, 'pages.view_page')
+    pages = Page.objects.filter(filters).distinct()
+    if query:
+        pages = pages.filter(Q(title__icontains=query)|
+                             Q(content__icontains=query)|
+                             Q(slug__icontains=query))
+    pages = pages.exclude(status_detail='archive')
     pages = pages.order_by('-create_dt')
 
     EventLog.objects.log()

@@ -8,6 +8,7 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.db.models import Q
 
 from tendenci.core.base.http import Http403
 from tendenci.core.base.decorators import password_required
@@ -51,13 +52,15 @@ def detail(request, id=None, template_name="locations/view.html"):
 def search(request, template_name="locations/search.html"):
     query = request.GET.get('q', None)
 
-    if get_setting('site', 'global', 'searchindex') and query:
-        locations = Location.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'locations.view_location')
-        locations = Location.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            locations = locations.select_related()
+    filters = get_query_filters(request.user, 'locations.view_location')
+    locations = Location.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        locations = locations.select_related()
+    if query:
+        locations = locations.filter(Q(location_name__icontains=query)|
+                                     Q(address__icontains=query)|
+                                     Q(address2__icontains=query)|
+                                     Q(country__icontains=query))
 
     locations = locations.order_by('location_name')
 

@@ -6,6 +6,7 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.db.models import Q
 
 from tendenci.core.base.http import Http403
 from tendenci.core.event_logs.models import EventLog
@@ -48,11 +49,14 @@ def detail(request, slug=None, template_name="news/view.html"):
 @is_enabled('news')
 def search(request, template_name="news/search.html"):
     query = request.GET.get('q', None)
-    if get_setting('site', 'global', 'searchindex') and query:
-        news = News.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'news.view_news')
-        news = News.objects.filter(filters).distinct()
+
+    filters = get_query_filters(request.user, 'news.view_news')
+    news = News.objects.filter(filters).distinct()
+
+    if query:
+        news = news.filter(Q(headline__icontains=query)|
+                           Q(body__icontains=query)|
+                           Q(tags__icontains=query))
 
     if not has_perm(request.user, 'news.view_news'):
         news = news.filter(release_dt__lte=datetime.now())

@@ -9,6 +9,7 @@ from django.core.mail.message import EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser
+from django.db.models import Q
 
 from tendenci.core.base.http import Http403
 from tendenci.core.base.utils import create_salesforce_contact
@@ -43,14 +44,15 @@ def search(request, template_name="contacts/search.html"):
         raise Http403
 
     query = request.GET.get('q', None)
-    if get_setting('site', 'global', 'searchindex') and query:
-        contacts = Contact.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'contacts.view_contact')
-        contacts = Contact.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            contacts = contacts.select_related()
+    filters = get_query_filters(request.user, 'contacts.view_contact')
+    contacts = Contact.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        contacts = contacts.select_related()
 
+    if query:
+        contacts = contacts.filter(Q(first_name__icontains=query)|
+                                   Q(last_name__icontains=query)|
+                                   Q(emails__email__icontains=query))
     contacts = contacts.order_by('-create_dt')
 
     return render_to_response(template_name, {'contacts':contacts},

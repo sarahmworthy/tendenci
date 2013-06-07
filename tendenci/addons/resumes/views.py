@@ -2,6 +2,7 @@ import os
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
@@ -76,16 +77,17 @@ def search(request, template_name="resumes/search.html"):
     If a search index is available, this page will also
     have the option to search through resumes.
     """
-    has_index = get_setting('site', 'global', 'searchindex')
     query = request.GET.get('q', None)
 
-    if has_index and query:
-        resumes = Resume.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'resumes.view_resume')
-        resumes = Resume.objects.filter(filters).distinct()
-        if request.user.is_authenticated():
-            resumes = resumes.select_related()
+    filters = get_query_filters(request.user, 'resumes.view_resume')
+    resumes = Resume.objects.filter(filters).distinct()
+    if request.user.is_authenticated():
+        resumes = resumes.select_related()
+
+    if query:
+        resumes = resumes.filter(Q(title__icontains=query)|
+                                 Q(description__icontains=query)|
+                                 Q(tags__icontains=query))
     resumes = resumes.order_by('-create_dt')
 
     EventLog.objects.log(**{

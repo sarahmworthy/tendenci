@@ -7,6 +7,7 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.contrib import messages
+from django.db.models import Q
 
 from tendenci.core.base.http import Http403
 from tendenci.core.perms.utils import (has_perm, update_perms_and_save,
@@ -55,17 +56,17 @@ def search(request, template_name="stories/search.html"):
     If a search index is available, this page will also
     have the option to search through stories.
     """
-    has_index = get_setting('site', 'global', 'searchindex')
     query = request.GET.get('q', None)
 
-    if has_index and query:
-        stories = Story.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'stories.view_story')
-        stories = Story.objects.filter(filters).distinct()
-        if request.user.is_authenticated():
-            stories = stories.select_related()
-        stories = stories.order_by('-create_dt')
+    filters = get_query_filters(request.user, 'stories.view_story')
+    stories = Story.objects.filter(filters).distinct()
+    if request.user.is_authenticated():
+        stories = stories.select_related()
+    if query:
+        stories = stories.filter(Q(title__icontains=query)|
+                                 Q(content__icontains=query)|
+                                 Q(tags__icontains=query))
+    stories = stories.order_by('-create_dt')
 
     EventLog.objects.log()
 

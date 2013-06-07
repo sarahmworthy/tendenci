@@ -58,24 +58,27 @@ def detail(request, slug=None, template_name="jobs/view.html"):
 
 @is_enabled('jobs')
 def search(request, template_name="jobs/search.html"):
-    query = request.GET.get('q', None)
     my_pending_jobs = request.GET.get('my_pending_jobs', False)
+    query = None
     category = None
     subcategory = None
-
-    if get_setting('site', 'global', 'searchindex') and query:
-        jobs = Job.objects.search(query, user=request.user)
-    else:
-        filters = get_query_filters(request.user, 'jobs.view_job')
-        jobs = Job.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            jobs = jobs.select_related()
 
     form = JobSearchForm(request.GET)
     if form.is_valid():
         query = form.cleaned_data.get('q')
         category = form.cleaned_data.get('categories')
         subcategory = form.cleaned_data.get('subcategories')
+
+    filters = get_query_filters(request.user, 'jobs.view_job')
+    jobs = Job.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        jobs = jobs.select_related()
+
+    if query:
+        jobs = jobs.filter(Q(title__icontains=query)|
+                           Q(description__icontains=query)|
+                           Q(list_type__icontains=query)|
+                           Q(tags__icontains=query))
 
     if category:
         jobs = jobs.filter(categories__category=category)

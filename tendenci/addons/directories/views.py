@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from PIL import Image
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
@@ -53,32 +54,21 @@ def search(request, template_name="directories/search.html"):
     category = request.GET.get('category')
     subcategory = request.GET.get('sub_category')
 
-    if get_setting('site', 'global', 'searchindex') and query:
-        if category:
-            try:
-                query = '%s category:%s' % (query, Category.objects.get(id=int(category)).name)
-            except (Category.DoesNotExist, ValueError):
-                pass
+    filters = get_query_filters(request.user, 'directories.view_directory')
+    directories = Directory.objects.filter(filters).distinct()
+    if not request.user.is_anonymous():
+        directories = directories.select_related()
 
-        if subcategory:
-            try:
-                query = '%s subcategory:%s' % (query, Category.objects.get(id=int(subcategory)).name)
-            except (Category.DoesNotExist, ValueError):
-                pass
+    if query:
+        directories = directories.filter(Q(headline__icontains=query)|
+                                         Q(body__icontains=query)|
+                                         Q(tags__icontains=query))
+    if category:
+        directories = directories.filter(categories__category=category)
+    if subcategory:
+        directories = directories.filter(categories__parent=subcategory)
 
-        directories = Directory.objects.search(query, user=request.user).order_by('headline_exact')
-    else:
-        filters = get_query_filters(request.user, 'directories.view_directory')
-        directories = Directory.objects.filter(filters).distinct()
-        if not request.user.is_anonymous():
-            directories = directories.select_related()
-
-        if category:
-            directories = directories.filter(categories__category=category)
-        if subcategory:
-            directories = directories.filter(categories__parent=subcategory)
-
-        directories = directories.order_by('headline')
+    directories = directories.order_by('headline')
 
     EventLog.objects.log()
 
