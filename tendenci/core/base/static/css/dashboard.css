@@ -152,5 +152,69 @@
 	overflow: hidden;
 }
 
-
-
+/** Dashboard V2 styles **/
+.left-stat {
+    width: 300px;
+    float: left;
+}
+.right-stat {
+    width: 300px;
+    float: right;
+}
+.stat {
+    border:3px double #999;
+    padding:20px;
+    margin:20px auto;
+    font-size:1em;
+}
+.stat span{
+    position:relative;
+    padding:4px 8px;;
+    border:1px solid #999;
+    top:-30px;
+    left:20px;
+    background-color:#fff;
+    font-size:0.9em;
+    color:#300;
+}
+.stat table {
+    margin:-10px 0 10px;
+    width: 100%
+}
+.stat table td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid #dddddd;
+}
+.stat table th {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  background-color: #EEE;
+}
+#members-info {
+    width: 100px;
+    float: left;
+    margin-top: 50px
+}
+.left-stat .ui-widget {
+    float: right;
+}
+.left-stat .members-header {
+    font-size: 16px;
+    font-weight: bold;
+}
+#members-graph .ui-widget-bg {
+    border-top: 1px dotted #aed0ea;
+    font-size:9px;
+}
+#members-graph .ui-widget-bar {
+    position:absolute;
+    bottom:0;
+    font-size:10px;
+    text-align:center;
+}
+.members-item {
+    margin: 10px 0;
+}
