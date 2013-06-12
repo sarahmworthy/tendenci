@@ -86,7 +86,8 @@ class Command(BaseCommand):
                 registrations = event.registration_set.all()
                 total = registrations.aggregate(Sum('invoice__total'))
                 total = total['invoice__total__sum']
-                invoice_totals = get_setting('site', 'global', 'currencysymbol') + str(total)
+                if total:
+                    invoice_totals = get_setting('site', 'global', 'currencysymbol') + str(total)
                 reg_count = Decimal(registrations.count())
                 reg_paid_count = Decimal(registrations.filter(invoice__balance=0).count())
                 if reg_count != 0:
