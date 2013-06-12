@@ -502,6 +502,10 @@ class MembershipDefault(TendenciBaseModel):
         Set GUID if not already set.
         """
         self.guid = self.guid or uuid.uuid1().get_hex()
+        # set the status_detail to pending if not specified
+        # the default 'active' is causing problems
+        if not self.status_detail:
+            self.status_detail = 'pending'
         super(MembershipDefault, self).save(*args, **kwargs)
 
     @property
@@ -745,6 +749,8 @@ class MembershipDefault(TendenciBaseModel):
         self.set_join_dt()
         self.set_renew_dt()
         self.set_expire_dt()
+        if not self.member_number:
+            self.set_member_number()
         self.save()
 
         # user in [membership] group
@@ -1442,6 +1448,10 @@ class MembershipDefault(TendenciBaseModel):
             base_number = get_setting('module',
                                       'memberships',
                                       'membernumberbasenumber')
+            if not isinstance(base_number, int):
+                # default to 5000 if not specified
+                base_number = 5000
+                
             new_member_number = str(base_number + self.id)
             # check if this number's already been taken
             if MembershipDefault.objects.filter(

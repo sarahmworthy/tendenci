@@ -9,6 +9,7 @@ from tendenci.core.base.template_tags import ListNode, parse_tag_kwargs
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.base.utils import tcurrency
 
+
 register = Library()
 
 
@@ -234,7 +235,7 @@ class ListCorpMembershipNode(ListNode):
         query = u''
         user = AnonymousUser()
         limit = 3
-        order = u''
+        order = '-join_dt'
         corp_membership_type = u''
 
         randomize = False
@@ -319,8 +320,6 @@ class ListCorpMembershipNode(ListNode):
         # if order is not specified it sorts by relevance
         if order:
             items = items.order_by(order)
-        else:
-            items = items.order_by('corporate_membership_type__position', 'corp_profile__name')
 
         if randomize:
             objects = [item for item in random.sample(items, items.count())][:limit]
@@ -377,5 +376,8 @@ def list_corporate_memberships(parser, token):
         raise TemplateSyntaxError(message)
 
     kwargs = parse_tag_kwargs(bits)
+
+    if 'order' not in kwargs:
+        kwargs['order'] = '-join_dt'
 
     return ListCorpMembershipNode(context_var, *args, **kwargs)
