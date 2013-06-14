@@ -10,8 +10,6 @@ from dateutil.relativedelta import relativedelta
 
 from django.db import models
 from django.db.models.query_utils import Q
-from django.db import transaction
-from django.db import DatabaseError, IntegrityError
 from django.template import Context, Template
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
@@ -958,7 +956,6 @@ class MembershipDefault(TendenciBaseModel):
         Returns None type object
         or datetime object
         """
-        from dateutil.relativedelta import relativedelta
         grace_period = self.membership_type.expiration_grace_period
 
         if not self.expire_dt:
@@ -1239,7 +1236,7 @@ class MembershipDefault(TendenciBaseModel):
             return False
 
         # assert that we're within the renewal period
-        start_dt, end_dt = renewal_period
+        end_dt = renewal_period[1]
 
         return datetime.now() > end_dt
 
@@ -1801,7 +1798,6 @@ class Membership(TendenciBaseModel):
         status = True, status_detail = 'active', and has not expired
         considers grace period when evaluating expiration date-time
         """
-        from dateutil.relativedelta import relativedelta
         grace_period = self.membership_type.expiration_grace_period
         graceful_now = datetime.now() - relativedelta(days=grace_period)
 
@@ -1818,7 +1814,6 @@ class Membership(TendenciBaseModel):
         return False
 
     def get_expire_dt(self):
-        from dateutil.relativedelta import relativedelta
         grace_period = self.membership_type.expiration_grace_period
         return self.expire_dt + relativedelta(days=grace_period)
 
@@ -2041,8 +2036,7 @@ class MembershipImport(models.Model):
         if self.upload_file:
             return self.upload_file
 
-        file = File.objects.get_for_model(self)[0]
-        return file
+        return File.objects.get_for_model(self)[0]
 
     def __unicode__(self):
         return self.get_file().file.name
@@ -2113,9 +2107,9 @@ class Notice(models.Model):
 
     subject = models.CharField(max_length=255)
     content_type = models.CharField(_("Content Type"),
-                                    choices=(('html', 'HTML'),
-                                            ('text', 'Plain Text')),
-                                    max_length=10)
+                                    choices=(('html', 'HTML'),),
+                                    max_length=10,
+                                    default='html')
     sender = models.EmailField(max_length=255, blank=True, null=True)
     sender_display = models.CharField(max_length=255, blank=True, null=True)
     email_content = tinymce_models.HTMLField(_("Email Content"))
@@ -2146,7 +2140,7 @@ class Notice(models.Model):
         Returns a dictionary with default context items.
         """
         global_setting = partial(get_setting, 'site', 'global')
-        corporate_msg, expire_dt = u'', u''
+        corporate_msg = u''
 
         context = {}
 
@@ -2160,6 +2154,9 @@ class Notice(models.Model):
         # return basic context
         if not membership:
             return context
+
+        # get membership field context
+        context.update(membership.get_field_items())
 
         if membership.corporate_membership_id:
             corporate_msg = """
@@ -2176,14 +2173,18 @@ class Notice(models.Model):
                 "%d-%b-%y %I:%M %p",
                 membership.expire_dt.timetuple()),
             })
-
+        if membership.payment_method:
+            payment_method_name = membership.payment_method.human_name
+        else:
+            payment_method_name = ''
         context.update({
             'first_name': membership.user.first_name,
             'last_name': membership.user.last_name,
             'email': membership.user.email,
+            'username': membership.user.email,
             'member_number': membership.member_number,
             'membership_type': membership.membership_type.name,
-            'payment_method': membership.payment_method.human_name,
+            'payment_method': payment_method_name,
             'membership_link': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
             'renew_link': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
             'corporate_membership_notice': corporate_msg,
@@ -2196,7 +2197,13 @@ class Notice(models.Model):
         Return self.subject replace shortcode (context) variables
         The membership object takes priority over entry object
         """
-        return self.build_notice(self.subject, context={})
+        context = self.get_default_context(membership)
+        # autoescape off for subject to avoid HTML escaping
+        self.subject = '%s%s%s' % (
+                        "{% autoescape off %}",
+                        self.subject,
+                        "{% endautoescape %}")
+        return self.build_notice(self.subject, context=context)
 
     def get_content(self, membership=None):
         """
@@ -2270,10 +2277,9 @@ class Notice(models.Model):
 
         # send to applicant
         for notice in Notice.objects.filter(**field_dict):
-
             notice_requirments = (
                 notice.membership_type == membership_type,
-                notice.membership_type == None
+                not notice.membership_type
             )
 
             if any(notice_requirments):
@@ -2563,8 +2569,6 @@ class App(TendenciBaseModel):
         Else get initial user information from user/profile and populate.
         Return an initial-dictionary.
         """
-        from django.contrib.contenttypes.models import ContentType
-
         initial = {}
         if user.is_anonymous():
             return initial

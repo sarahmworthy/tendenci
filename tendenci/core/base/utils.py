@@ -40,7 +40,6 @@ THEME_ROOT = get_theme_root()
 
 # this function is not necessary - datetime.now() *is* localized in django
 def now_localized():
-    from datetime import datetime
     from timezones.utils import adjust_datetime_to_timezone
     from time import strftime, gmtime
     
@@ -387,7 +386,6 @@ def url_exists(url):
         return False
 
 def parse_image_sources(string):
-    import re
     p = re.compile('<img[^>]* src=\"([^\"]*)\"[^>]*>')
     image_sources = re.findall(p, string)
     return image_sources
@@ -461,7 +459,8 @@ def in_group(user, group):
         in_group(user,'administrator')
         returns boolean
     """
-    return group in [dict['name'].lower() for dict in user.groups.values('name')]
+    return user.groups.filter(id=group.id).exists()
+
 
 def detect_template_tags(string):
     """
@@ -469,7 +468,6 @@ def detect_template_tags(string):
         template tags in the system
         returns boolean
     """
-    import re
     p = re.compile('{[#{%][^#}%]+[%}#]}', re.IGNORECASE)
     return p.search(string)
 
@@ -522,7 +520,7 @@ def template_exists(template):
         return False
     return True
 
-def fieldify(str):
+def fieldify(s):
     """Convert the fields in the square brackets to the django field type. 
     
         Example: "[First Name]: Lisa" 
@@ -531,7 +529,7 @@ def fieldify(str):
     """
     #p = re.compile('(\[([\w\d\s_-]+)\])')
     p = re.compile('(\[(.*?)\])')
-    return p.sub(slugify_fields, str)
+    return p.sub(slugify_fields, s)
 
 def slugify_fields(match):
     return '{{ %s }}' % (slugify(match.group(2))).replace('-', '_')
@@ -705,3 +703,22 @@ def create_salesforce_contact(profile):
                 profile.save()
                 return contact['id']
     return None
+
+
+def directory_cleanup(dir_path, ndays):
+    """
+    Delete the files that are older than 'ndays' in the directory 'dir_path'
+    The 'dir_path' should be a relative path. We cannot use os.walk.
+    """
+    foldernames, filenames = default_storage.listdir(dir_path)
+    for filename in filenames:
+        if not filename:
+            continue
+        file_path = os.path.join(dir_path, filename)
+        modified_dt = default_storage.modified_time(file_path)
+        if modified_dt + timedelta(days=ndays) < datetime.now():
+            # the file is older than ndays, delete it
+            default_storage.delete(file_path)
+    for foldername in foldernames:
+        folder_path = os.path.join(dir_path, foldername)
+        directory_cleanup(folder_path, ndays)
