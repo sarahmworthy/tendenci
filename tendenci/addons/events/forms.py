@@ -1691,18 +1691,14 @@ class EventRegistrantSearchForm(forms.Form):
                              ('contains', _('Contains')),
                              ('exact', _('Exact')),
                              )
-    search_criteria = forms.ChoiceField(choices=[],
+    SEARCH_CRITERIA_CHOICES = (('', 'SELECT ONE'),
+                               ('first_name', _('First Name')),
+                               ('last_name', _('Last Name')),
+                               ('company_name', _('Company Name')),
+                               ('phone', _('Phone')),
+                               ('email', _('Email')),)
+    search_criteria = forms.ChoiceField(choices=SEARCH_CRITERIA_CHOICES,
                                         required=False)
     search_text = forms.CharField(max_length=100, required=False)
     search_method = forms.ChoiceField(choices=SEARCH_METHOD_CHOICES,
                                         required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(EventRegistrantSearchForm, self).__init__(*args, **kwargs)
-
-        # Set search criteria choices
-        criteria_choices = [('', 'SELECT ONE')]
-        for field in Registrant._meta.fields:
-            if isinstance(field, CharField):
-                criteria_choices.append((field.name, field.verbose_name))
-        self.fields['search_criteria'].choices = criteria_choices
