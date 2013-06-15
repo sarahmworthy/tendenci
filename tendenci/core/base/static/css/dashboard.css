@@ -12,6 +12,9 @@
 .modules {
 	margin-bottom: 20px;
 }
+.modules.hide {
+    display: none;
+}
 .modules li {
 	width: 100px;
 	height: 100px;
@@ -137,15 +140,9 @@
 .theme-management li {
 	padding: 3px 0 ;
 }
-
-.rss-feeds {
-	border-top: 1px solid #DDD;
-}
 .rss-feed {
-	float: left;
-	width: 40%;
-	margin: 10px;
-	padding: 5px;
+	width: 226px;
+    padding: 0 20px 20px 0;
 }
 .rss-feed li {
 	margin: 7px 0;
@@ -153,21 +150,13 @@
 }
 
 /** Dashboard V2 styles **/
-.left-stat {
-    width: 300px;
-    float: left;
-}
-.right-stat {
-    width: 300px;
-    float: right;
-}
-.stat {
+.dashboard-stats .stat {
     border:3px double #999;
     padding:20px;
     margin:20px auto;
     font-size:1em;
 }
-.stat span{
+.dashboard-stats .stat span{
     position:relative;
     padding:4px 8px;;
     border:1px solid #999;
@@ -177,44 +166,57 @@
     font-size:0.9em;
     color:#300;
 }
-.stat table {
+.dashboard-stats .stat table {
     margin:-10px 0 10px;
     width: 100%
 }
-.stat table td {
+.dashboard-stats .stat table td {
   padding: 8px;
   text-align: left;
   vertical-align: top;
   border-top: 1px solid #dddddd;
 }
-.stat table th {
+.dashboard-stats .stat table th {
   padding: 8px;
   text-align: left;
   vertical-align: top;
   background-color: #EEE;
 }
-#members-info {
+.dashboard-stats #members-info {
     width: 100px;
     float: left;
     margin-top: 50px
 }
-.left-stat .ui-widget {
+.dashboard-stats .ui-widget {
     float: right;
 }
-.left-stat .members-header {
+.dashboard-stats .members-header {
     font-size: 16px;
     font-weight: bold;
 }
-#members-graph .ui-widget-bg {
+.dashboard-stats #members-graph .ui-widget-bg {
     border-top: 1px dotted #aed0ea;
     font-size:9px;
 }
-#members-graph .ui-widget-bar {
+.dashboard-stats #members-graph .ui-widget-bar {
     position:absolute;
     bottom:0;
     font-size:10px;
     text-align:center;
 }
-.members-item {
-    margin: 10px 0;
+.dashboard-customize-form table {
+    width: 100%;
+}
+.dashboard-customize-form table th{
+    text-align: left;
+}
+.dashboard-customize-form textarea {
+    width: 100%;
+    height: 50px;
+}
+.dashboard-customize-form .row1 {
+    background: #EDF3FE;
+}
+.dashboard-customize-form .row2 {
+    background: white;
 }

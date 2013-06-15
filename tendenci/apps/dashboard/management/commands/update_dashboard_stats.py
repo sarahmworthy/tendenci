@@ -11,55 +11,95 @@ from django.db.models import Sum, Count, Q
 class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
-        from tendenci.apps.dashboard.models import DashboardStat
+        from tendenci.apps.dashboard.models import DashboardStat, DashboardStatType
 
         print "Creating dashboard statistics for upcoming events"
-        events = DashboardStat(key="events_upcoming")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="events_upcoming")
+        if created:
+            stat_type.description = "Events"
+            stat_type.save()
+        events = DashboardStat(key=stat_type)
         events.value = json.dumps(self.get_events(4), use_decimal=True)
         events.save()
 
         print "Creating dashboard statistics for form submissions"
-        forms = DashboardStat(key="forms_30_submissions")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="forms_30_submissions")
+        if created:
+            stat_type.description = "Forms"
+            stat_type.save()
+        forms = DashboardStat(key=stat_type)
         forms.value = json.dumps(self.get_forms(3, 30))
         forms.save()
 
         print "Creating dashboard statistics for pages traffic"
-        pages_traffic = DashboardStat(key="pages_30_traffic")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="pages_30_traffic")
+        if created:
+            stat_type.description = "Pages Traffic"
+            stat_type.save()
+        pages_traffic = DashboardStat(key=stat_type)
         pages_traffic.value = json.dumps(self.get_pages_traffic(3, 30))
         pages_traffic.save()
 
         print "Creating dashboard statistics for events traffic"
-        events_traffic = DashboardStat(key="events_30_traffic")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="events_30_traffic")
+        if created:
+            stat_type.description = "Events Traffic"
+            stat_type.save()
+        events_traffic = DashboardStat(key=stat_type)
         events_traffic.value = json.dumps(self.get_events_traffic(3, 30))
         events_traffic.save()
 
         print "Creating dashboard statistics for memberships"
-        members = DashboardStat(key="memberships_30_count")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="memberships_30_count")
+        if created:
+            stat_type.description = "Members"
+            stat_type.save()
+        members = DashboardStat(key=stat_type)
         members.value = json.dumps(self.get_membership_count(30))
         members.save()
         
         print "Creating dashboard statistics for new corporate memberships"
-        corp_new = DashboardStat(key="corp_memberships_30_new")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="corp_memberships_30_new")
+        if created:
+            stat_type.description = "Corporate Memberships in the Past 30 Days"
+            stat_type.save()
+        corp_new = DashboardStat(key=stat_type)
         corp_new.value = json.dumps(self.get_new_corp_memberships(5, 30))
         corp_new.save()
 
         print "Creating dashboard statistics for renewed corporate memberships"
-        corp_renew = DashboardStat(key="corp_memberships_30_renew")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="corp_memberships_30_renew")
+        if created:
+            stat_type.description = "Renewed Corporate Memberships in the Past 30 Days"
+            stat_type.save()
+        corp_renew = DashboardStat(key=stat_type)
         corp_renew.value = json.dumps(self.get_renew_corp_memberships(5, 30))
         corp_renew.save()
 
         print "Creating dashboard statistics for expired corporate memberships"
-        corp_expired = DashboardStat(key="corp_memberships_30_expired")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="corp_memberships_30_expired")
+        if created:
+            stat_type.description = "Expired Corporate Memberships in the Past 30 Days"
+            stat_type.save()
+        corp_expired = DashboardStat(key=stat_type)
         corp_expired.value = json.dumps(self.get_expired_corp_memberships(5, 30))
         corp_expired.save()
 
         print "Creating dashboard statistics for expiring corporate memberships"
-        corp_expiring = DashboardStat(key="corp_memberships_30_expiring")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="corp_memberships_30_expiring")
+        if created:
+            stat_type.description = "Upcoming Expiring Corporate Memberships"
+            stat_type.save()
+        corp_expiring = DashboardStat(key=stat_type)
         corp_expiring.value = json.dumps(self.get_expiring_corp_memberships(5, 30))
         corp_expiring.save()
 
         print "Creating dashboard statistics for top corporate members"
-        corp_members = DashboardStat(key="corp_members_top")
+        stat_type,created = DashboardStatType.objects.get_or_create(name="corp_members_top")
+        if created:
+            stat_type.description = "Top Corporate Memberships"
+            stat_type.save()
+        corp_members = DashboardStat(key=stat_type)
         corp_members.value = json.dumps(self.get_top_corp_members(5))
         corp_members.save()
 

@@ -20,7 +20,7 @@
         i=options.height;
 	    var bg = jQuery("<div />",{ css:{height:scale - 1 }  }).addClass("ui-helper-reset ui-widget-bg");
         var bar = jQuery("<div />",{ css:{width:width}  }).addClass("ui-helper-reset ui-state-active ui-widget-bar");
-	    var width = Math.floor((options.width-70)/options.data.length - (options.categories.length/1.5));
+	    var width = Math.floor((options.width-150)/options.data.length - (options.categories.length/1.5));
 
         var counter = 0;
         while(i >= 0) {
@@ -30,11 +30,11 @@
             counter = counter + max_val/options.data.length;
         }
 
-        w= 40;
+        w= 70;
         for(i=0; i<options.categories.length; i++) {
             temp =  Math.floor(options.data[i]/max_val * options.height );
 		    root.append(bar.clone().css({height:temp,left:w,width:width}).html(options.categories[i]));
-		    w = w + width + 10;
+		    w = w + width + 40;
         }
     };
 })(jQuery);
