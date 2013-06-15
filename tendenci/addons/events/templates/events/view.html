@@ -96,7 +96,7 @@
                     {% else %}
                         <div class="organizer-desc-short">
                             {{ organizer.description|safe|urlize|linebreaks }}
-                        </div>                    
+                        </div>
                     {% endif %}
                     {% if organizer.description|striptags|wordcount > 50 %}
                     <a class="organizer-desc-toggle" href="#">{% trans "Full Description" %}</a>

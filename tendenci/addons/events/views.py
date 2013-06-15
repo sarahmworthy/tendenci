@@ -22,6 +22,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django.utils import simplejson as json
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, Http404, HttpResponse
@@ -178,7 +179,12 @@ def details(request, id=None, template_name="events/view.html"):
 
     event_files = File.objects.filter(content_type=event_ct, object_id=event.id)
     speaker_files = File.objects.filter(content_type=speaker_ct, object_id__in=speakers)
-    organizer_files = File.objects.filter(content_type=org_ct, object_id=organizer.id)
+
+    if organizer:
+        organizer_files = File.objects.filter(content_type=org_ct, object_id=organizer.id)
+    else:
+        organizer_files = File.objects.none()
+
     place_files = File.objects.filter(content_type=place_ct, object_id=event.place_id)
 
     return render_to_response(template_name, {
@@ -551,7 +557,8 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
                             speaker_bind[speaker_name] = speaker_file
 
                 for speaker in speakers:
-                    speaker.event.add(event)
+                    speaker.event = [event]
+                    speaker.save()
                     assign_files_perms(speaker)
 
                     # match speaker w/ speaker image
@@ -847,7 +854,8 @@ def add(request, year=None, month=None, day=None, \
                             speaker_bind[speaker_name] = speaker_file
 
                 for speaker in speakers:
-                    speaker.event.add(event)
+                    speaker.event = [event]
+                    speaker.save()
                     assign_files_perms(speaker)
 
                     # match speaker w/ speaker image
