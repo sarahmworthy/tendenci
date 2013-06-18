@@ -31,7 +31,7 @@ class Migration(SchemaMigration):
         db.delete_table('dashboard_dashboardstattype')
 
         # Deleting column 'DashboardStat.key'.
-        db.delete_column('dashboard_dashboardstat', 'key')
+        db.delete_column('dashboard_dashboardstat', 'key_id')
 
         # Adding field 'DashboardStat.key'.
         db.add_column('dashboard_dashboardstat', 'key', self.gf('django.db.models.fields.CharField')(max_length=255))

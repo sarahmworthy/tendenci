@@ -1,11 +1,18 @@
 position_field = 'position'; // Name of inline model field (integer) used for ordering. Defaults to "position".
+description_field = 'description'; // Name of inline model field (integer) used for ordering. Defaults to "position".
 
-jQuery(function($) {    
-    // Hide "position"-field (both td:s and th:s)
+jQuery(function($) {
     var table = $("table#formset")
-    table.find('td.field-' + position_field).hide();
-    td_pos_field_index = table.find('tbody tr td').index(table.find('td.field-' + position_field));
-    table.find('th:eq(' + (td_pos_field_index) + ')').hide();
+    var pos_field = table.find('td.field-' + position_field);
+    pos_field.children('input[type="text"]').hide();
+    var label = $('<span><img src="/static/images/icons/drag_icon_16x16.png" /></span>');
+    pos_field.append(label);
+
+    table.find('td.field-' + description_field).each(function() {
+        var des_field = $(this).children('textarea');
+        des_field.hide()
+        $(this).append(des_field.val())
+    });
 
     table.sortable({
         items: 'tr:has(td)',
