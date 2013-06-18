@@ -1255,7 +1255,13 @@ def register(request, event_id=0,
                         prefix='addon',
                         event=event,
                         extra_params=addon_extra_params)
-
+    
+    for i, form in enumerate(registrant.forms):
+        if i == 0:
+            form.is_first = True
+        else:
+            form.is_first = False
+        
     # REGISTRATION form
     reg_form = RegistrationForm(
             event,

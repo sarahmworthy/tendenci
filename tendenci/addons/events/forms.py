@@ -233,15 +233,25 @@ class FormForCustomRegForm(forms.ModelForm):
         return user or AnonymousUser()
 
     def clean_pricing(self):
+        
         pricing = self.cleaned_data['pricing']
 
         # if pricing allows anonymous, let go.
         if pricing.allow_anonymous:
             return pricing
-
+        
+        validate_primary_only_setting = get_setting('module', 'events', 'validateprimaryregistrantonly')
+        
+        # the setting validateprimaryregistrantonly can be set to 'true' or 'false'
+        # if true, only primary registrant (or is_first=True) needs validation
+        try:
+            enter_validation = self.is_first or validate_primary_only_setting == "false"
+        except AttributeError:
+            enter_validation = True #should not enter here
+            
         # The setting anonymousregistration can be set to 'open', 'validated' and 'strict'
         # Both 'validated' and 'strict' require validation.
-        if self.event.anony_setting != 'open':
+        if enter_validation and self.event.anony_setting != 'open':
 
             # check if user is eligiable for this pricing
             email = self.cleaned_data.get('email', u'')
@@ -1325,10 +1335,19 @@ class RegistrantForm(forms.Form):
         # if pricing allows anonymous, let go.
         if pricing.allow_anonymous:
             return pricing
-
+        
+        validate_primary_only_setting = get_setting('module', 'events', 'validateprimaryregistrantonly')
+        
+        # the setting validateprimaryregistrantonly can be set to 'true' or 'false'
+        # if true, only primary registrant (or is_first=True) needs validation
+        try:
+            enter_validation = self.is_first or validate_primary_only_setting == "false"
+        except AttributeError:
+            enter_validation = True #should not enter here 
+            
         # The setting anonymousregistration can be set to 'open', 'validated' and 'strict'
         # Both 'validated' and 'strict' require validation.
-        if self.event.anony_setting <> 'open':
+        if enter_validation and self.event.anony_setting <> 'open':
             # check if user is eligiable for this pricing
             email = self.cleaned_data.get('email', '')
             registrant_user = self.get_user(email)

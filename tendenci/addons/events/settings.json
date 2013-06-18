@@ -134,6 +134,23 @@
         "scope_category": "events", 
         "store": true, 
         "updated_by": ""
+    }, 
+    {
+        "default_value": "false", 
+        "description": "If true, the primary registrant will need to follow the event reg setting (strict, validated, open). Any additional registrants on the same registration can use the pricing level of the primary registrant or any public pricings. If false, registration for events should work exactly like it does now.", 
+        "data_type": "string", 
+        "update_dt": "2012-06-01 15:10:11", 
+        "input_type": "select", 
+        "client_editable": true, 
+        "name": "validateprimaryregistrantonly", 
+        "value": "false", 
+        "label": "Validate Primary Registrant Only", 
+        "input_value": "true,false", 
+        "parent_id": 0, 
+        "scope": "module", 
+        "scope_category": "events", 
+        "store": true, 
+        "updated_by": ""
     },
     {
         "default_value": "true", 
