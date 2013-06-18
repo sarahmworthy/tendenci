@@ -311,8 +311,16 @@ class FormForCustomRegForm(forms.ModelForm):
             if not (pricing.allow_anonymous and pricing.allow_user):
                 price_requires_member = True
 
+        validate_primary_only_setting = get_setting('module', 'events', 'validateprimaryregistrantonly')
+        # the setting validateprimaryregistrantonly can be set to 'true' or 'false'
+        # if true, only primary registrant (or is_first=True) needs validation
+        try:
+            enter_validation = self.is_first or validate_primary_only_setting == "false"
+        except AttributeError:
+            enter_validation = True #should not enter here
+
         if not self.user.is_superuser:
-            if price_requires_member:
+            if price_requires_member and enter_validation:
                 if not memberid:
                     raise forms.ValidationError(
                         "We don't detect you as a member. "
@@ -1403,9 +1411,16 @@ class RegistrantForm(forms.Form):
             if not (pricing.allow_anonymous and pricing.allow_user):
                 price_requires_member = True
 
-        if not self.user.is_superuser:
+        validate_primary_only_setting = get_setting('module', 'events', 'validateprimaryregistrantonly')
+        # the setting validateprimaryregistrantonly can be set to 'true' or 'false'
+        # if true, only primary registrant (or is_first=True) needs validation
+        try:
+            enter_validation = self.is_first or validate_primary_only_setting == "false"
+        except AttributeError:
+            enter_validation = True #should not enter here
 
-            if price_requires_member:
+        if not self.user.is_superuser:
+            if price_requires_member and enter_validation:
                 if not memberid:
                     raise forms.ValidationError(
                         "We don't detect you as a member. "
