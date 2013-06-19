@@ -70,10 +70,6 @@ def customize(request, template_name="dashboard/customize.html"):
             formset.save()
 
             return redirect('dashboard')
-        else:
-            print 'invalid'
-            print request.POST
-            print formset.errors
     else:
         formset = DashboardStatFormSet(queryset=DashboardStatType.objects.all())
 
