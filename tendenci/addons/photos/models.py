@@ -573,7 +573,7 @@ class PhotoSet(TendenciBaseModel):
     def __unicode__(self):
         return self.name
 
-    def save(self):
+    def save(self, *args, **kwargs):
         self.guid = self.guid or unicode(uuid.uuid1())
 
         super(PhotoSet, self).save()
@@ -727,6 +727,9 @@ class Image(OrderingBaseModel, ImageModel, TendenciBaseModel):
         """
         Delete image-file and all resized versions
         """
+        
+        super(Image, self).delete(*args, **kwargs)
+        
         if self.image:
             cache_path = self.cache_path()
 
@@ -744,7 +747,7 @@ class Image(OrderingBaseModel, ImageModel, TendenciBaseModel):
             # delete actual image; do not save() self.instance
             self.image.delete(save=False)
 
-        super(Image, self).delete(*args, **kwargs)
+        
 
     @models.permalink
     def get_absolute_url(self):
