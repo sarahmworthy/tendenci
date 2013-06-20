@@ -99,7 +99,7 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
         name="membership_default.add_via_corp_domain"),
     url(r"^%s/applications/add/(?P<cm_id>\d+)/(?P<secret_hash>[\d\w]+)$" % urlpath,
         "membership_default_add", {'join_under_corporate': True},
-        name="membership.add_via_corp_secret_code"),
+        name="membership_default.add_via_corp_secret_code"),
 
     # membership default application preview
     url(r"^%s/applications/(?P<slug>[\w\-]+)/preview/$" % urlpath,

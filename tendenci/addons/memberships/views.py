@@ -2240,7 +2240,7 @@ def membership_default_corp_pre_add(request, cm_id=None,
                     request.session['corp_hash_random_string'] = random_string
                     secret_code = form.cleaned_data['secret_code']
                     secret_hash = md5('%s%s' % (secret_code, random_string)).hexdigest()
-                    return redirect(reverse('membership.add_via_corp_secret_code',
+                    return redirect(reverse('membership_default.add_via_corp_secret_code',
                                             args=[
                                                 corporate_membership_id,
                                                 secret_hash]))
