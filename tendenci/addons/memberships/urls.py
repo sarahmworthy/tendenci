@@ -88,6 +88,7 @@ urlpatterns = patterns("tendenci.addons.memberships.views",
         name="membership_default.add_via_corp_domain"),
     url(r"^corporate/applications/add/(?P<cm_id>\d+)/(?P<secret_hash>[\d\w]+)$",
         "corporate_membership_add",
+        name="membership.add_via_corp_secret_code"),
 
     
     url(r"^%s/applications/add/(?P<cm_id>\d+)/$" % urlpath,
