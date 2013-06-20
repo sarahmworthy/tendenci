@@ -576,7 +576,7 @@ class PhotoSet(TendenciBaseModel):
     def save(self, *args, **kwargs):
         self.guid = self.guid or unicode(uuid.uuid1())
 
-        super(PhotoSet, self).save()
+        super(PhotoSet, self).save(*args, **kwargs)
 
         if not self.is_public():
             for photo in Image.objects.filter(photoset=self.pk):
