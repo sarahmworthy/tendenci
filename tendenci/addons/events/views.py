@@ -21,6 +21,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django.utils import simplejson as json
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, Http404, HttpResponse
@@ -41,7 +42,7 @@ from tendenci.core.base.http import Http403
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.decorators import is_enabled
 from tendenci.core.perms.utils import (has_perm, get_notice_recipients,
-    get_query_filters, update_perms_and_save, has_view_perm)
+    get_query_filters, update_perms_and_save, has_view_perm, assign_files_perms)
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.meta.models import Meta as MetaTags
 from tendenci.core.meta.forms import MetaForm
@@ -82,7 +83,6 @@ from tendenci.addons.events.utils import (email_registrants,
 from tendenci.addons.events.addons.forms import RegAddonForm
 from tendenci.addons.events.addons.formsets import RegAddonBaseFormSet
 from tendenci.addons.events.addons.utils import get_available_addons
-from tendenci.apps.discounts.models import Discount
 from tendenci.core.base.utils import convert_absolute_urls
 from tendenci.apps.redirects.models import Redirect
 
@@ -163,12 +163,25 @@ def details(request, id=None, template_name="events/view.html"):
 
     EventLog.objects.log(instance=event)
 
-    speakers = event.speaker_set.all().order_by('pk')
+    speakers = event.speaker_set.exclude(name="").order_by('pk')
     organizers = event.organizer_set.all().order_by('pk') or None
 
     organizer = None
     if organizers:
         organizer = organizers[0]
+
+    event_ct = event.content_type()
+    speaker_ct = ContentType.objects.get_for_model(Speaker)
+    org_ct = ContentType.objects.get_for_model(Organizer)
+    place_ct = ContentType.objects.get_for_model(Place)
+
+    event_files = File.objects.filter(content_type=event_ct, object_id=event.id)
+    speaker_files = File.objects.filter(content_type=speaker_ct, object_id__in=speakers)
+    if organizer:
+        organizer_files = File.objects.filter(content_type=org_ct, object_id=organizer.id)
+    else:
+        organizer_files = File.objects.none()
+    place_files = File.objects.filter(content_type=place_ct, object_id=event.place_id)
 
     return render_to_response(template_name, {
         'days': days,
@@ -177,6 +190,22 @@ def details(request, id=None, template_name="events/view.html"):
         'organizer': organizer,
         'now': datetime.now(),
         'addons': event.addon_set.filter(status=True),
+        'event_files': event_files,
+        'speaker_files': speaker_files,
+        'organizer_files': organizer_files,
+        'place_files': place_files,
+    }, context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+def speaker_list(request, event_id, template_name='events/speakers.html'):
+    event = get_object_or_404(Event, pk=event_id)
+
+    speakers = event.speaker_set.exclude(name="").order_by('pk')
+
+    return render_to_response(template_name, {
+        'event': event,
+        'speakers': speakers,
     }, context_instance=RequestContext(request))
 
 
@@ -497,11 +526,15 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
                 # update all permissions and save the model
                 event = update_perms_and_save(request, form_event, event)
 
+                assign_files_perms(place)
+                assign_files_perms(organizer)
+
                 # handle image
                 f = form_event.cleaned_data['photo_upload']
                 if f:
                     image = EventPhoto()
                     image.object_id = event.id
+                    image.content_type = ContentType.objects.get_for_model(event.__class__)
                     image.creator = request.user
                     image.creator_username = request.user.username
                     image.owner = request.user
@@ -526,6 +559,7 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
                 for speaker in speakers:
                     speaker.event = [event]
                     speaker.save()
+                    assign_files_perms(speaker)
 
                     # match speaker w/ speaker image
                     binary_files = []
@@ -790,11 +824,15 @@ def add(request, year=None, month=None, day=None, \
                 # update all permissions and save the model
                 event = update_perms_and_save(request, form_event, event)
 
+                assign_files_perms(place)
+                assign_files_perms(organizer)
+
                 # handle image
                 f = form_event.cleaned_data['photo_upload']
                 if f:
                     image = EventPhoto()
                     image.object_id = event.id
+                    image.content_type = ContentType.objects.get_for_model(event.__class__)
                     image.creator = request.user
                     image.creator_username = request.user.username
                     image.owner = request.user
@@ -804,11 +842,29 @@ def add(request, year=None, month=None, day=None, \
                     image.file.save(filename, f)
                     event.image = image
 
+                # make dict (i.e. speaker_bind); bind speaker with speaker image
+                pattern = re.compile('speaker-\d+-name')
+                speaker_keys = list(set(re.findall(pattern, ' '.join(request.POST))))
+                speaker_bind = {}
+                for speaker_key in speaker_keys:  # loop through speaker form items
+                    speaker_name = request.POST.get(speaker_key)
+                    if speaker_name:  # if speaker name found in request
+                        speaker_file = request.FILES.get(speaker_key.replace('name','file'))
+                        if speaker_file:  # if speaker file found in request
+                            # e.g. speaker_bind['eloy zuniga'] = <file>
+                            speaker_bind[speaker_name] = speaker_file
+
                 for speaker in speakers:
                     speaker.event = [event]
                     speaker.save()
-                    files = File.objects.save_files_for_instance(request, speaker)
-                    # set file permissions
+                    assign_files_perms(speaker)
+
+                    # match speaker w/ speaker image
+                    binary_files = []
+                    if speaker.name in speaker_bind:
+                        binary_files = [speaker_bind[speaker.name]]
+                    files = File.objects.save_files_for_instance(request, speaker, files=binary_files)
+
                     for f in files:
                         f.allow_anonymous_view = event.allow_anonymous_view
                         f.allow_user_view = event.allow_user_view
@@ -1095,6 +1151,9 @@ def register(request, event_id=0,
                                                 ).exists()
 
         pricings = pricings.order_by('position', '-price')
+        # registration might be closed, redirect to detail page
+        if not pricings.exists():
+            return HttpResponseRedirect(reverse('event', args=(event.pk,),))
 
         try:
             pricing_id = int(pricing_id)
@@ -1190,7 +1249,7 @@ def register(request, event_id=0,
     # check if we have any valid discount code for the event.
     # if not, we don't have to display the discount code box.
     if reg_conf.discount_eligible:
-        reg_conf.discount_eligible = Discount.has_valid_discount()
+        reg_conf.discount_eligible = Discount.has_valid_discount(model=reg_conf._meta.module_name)
 
     # Setting up the formset
     registrant = RegistrantFormSet(post_data or None, **params)
@@ -1709,7 +1768,9 @@ def registration_edit(request, reg8n_id=0, hash='', template_name="events/reg8n/
         entry_ids = reg8n.registrant_set.filter(cancel_dt__isnull=True
                                                 ).values_list('custom_reg_form_entry',
                                                               flat=True).order_by('id')
-        entries = [CustomRegFormEntry.objects.get(id=id) for id in entry_ids]
+
+        entries = CustomRegFormEntry.objects.filter(pk__in=entry_ids)
+
         params = {'prefix': 'registrant',
                   'custom_reg_form': custom_reg_form,
                   'entries': entries,
@@ -2002,7 +2063,7 @@ def month_view(request, year=None, month=None, type=None, template_name='events/
     else:
         month, year = datetime.now().month, datetime.now().year
 
-    if type:
+    if type and "latest" in request.GET:
         current_type = Type.objects.filter(slug=type)
         current_date = datetime(month=month, day=1, year=year)
         latest_event = Event.objects.filter(start_dt__gte=current_date, type=current_type[0]).order_by('start_dt')
@@ -2246,10 +2307,9 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
     # roster_view in ['total', 'paid', 'non-paid']
     from django.db.models import Sum
     event = get_object_or_404(Event, pk=event_id)
-    query = ''
     has_addons = event.has_addons
 
-    if not (has_perm(request.user,'events.view_registrant') or has_perm(request.user,'events.change_event', event)):
+    if not (has_perm(request.user, 'events.view_registrant') or has_perm(request.user, 'events.change_event', event)):
         raise Http403
 
     sort_order = request.GET.get('sort_order', 'last_name')
@@ -2263,16 +2323,16 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
     if sort_type == 'desc':
         sort_field = '-%s' % sort_field
 
-    if not roster_view: # default to total page
+    if not roster_view:  # default to total page
         roster_view = 'total'
 
     # paid or non-paid or total
     registrations = Registration.objects.filter(event=event, canceled=False)
+
     if roster_view == 'paid':
         registrations = registrations.filter(invoice__balance__lte=0)
     elif roster_view == 'non-paid':
         registrations = registrations.filter(invoice__balance__gt=0)
-
 
     # Collect the info for custom reg form fields
     # and store the values in roster_fields_dict.
@@ -2283,53 +2343,49 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
     roster_fields_dict = {}
     # [(110, 11), (111, 10),...]
     reg_form_entries = Registrant.objects.filter(
-                                registration__event=event,
-                                cancel_dt=None,
-                                ).values_list('id', 'custom_reg_form_entry')
+        registration__event=event,
+        cancel_dt=None).values_list('id', 'custom_reg_form_entry')
+
     # a dictionary of registrant.id as key and entry as value
     reg_form_entries_dict = dict(reg_form_entries)
 
     if reg_form_entries:
         reg_form_field_entries = CustomRegFieldEntry.objects.filter(
-                              entry__in=[entry[1] for entry in reg_form_entries if entry[1] <> None],
-                              field__display_on_roster=1
-                                ).exclude(field__map_to_field__in=[
-                                    'first_name',
-                                    'last_name',
-                                    'email',
-                                    'phone',
-                                    'position_title',
-                                    'company_name',
-                                    'comments'
-                                ]).select_related().values_list(
-                                'entry__id',
-                                'field__label',
-                                'value'
-                                ).order_by('field__position')
+            entry__in=[entry[1] for entry in reg_form_entries if entry[1] is not None],
+            field__display_on_roster=1
+        ).exclude(field__map_to_field__in=[
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'position_title',
+            'company_name',
+            'comments'
+        ]).select_related().values_list(
+            'entry__id',
+            'field__label',
+            'value'
+        ).order_by('field__position')
+
         if reg_form_field_entries:
             for field_entry in reg_form_field_entries:
                 key = str(field_entry[0])
-                if not roster_fields_dict.has_key(key):
+                if not key in roster_fields_dict:
                     roster_fields_dict[key] = []
-                roster_fields_dict[key].append(
-                                    {'label': field_entry[1],
-                                    'value': field_entry[2]
-                                    })
+                roster_fields_dict[key].append({'label': field_entry[1], 'value': field_entry[2]})
 
+    registrants = Registrant.objects.filter(
+        registration__event=event, cancel_dt=None)
 
-    registrants = Registrant.objects.filter(registration__event=event,
-                                            cancel_dt=None)
     if roster_view in ('paid', 'non-paid'):
         registrants = registrants.filter(registration__in=registrations)
 
     # get the total checked in
     total_checked_in = registrants.filter(checked_in=True).count()
 
-
     # Pricing title - store with the registrant to improve the performance.
     pricing_titles = RegConfPricing.objects.filter(
-                        reg_conf=event.registration_configuration
-                ).values_list('id', 'title')
+        reg_conf=event.registration_configuration).values_list('id', 'title')
     pricing_titles_dict = dict(pricing_titles)
 
     # Store the price and invoice info with registrants to reduce the # of queries.
@@ -2342,49 +2398,45 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
     reg7n_to_pricing_dict = dict([(item[0], item[1]) for item in reg7n_pricing_reg8n])
     reg8n_to_pricing_dict = dict(registrations.values_list('id', 'reg_conf_price__id'))
     reg7n_to_reg8n_dict = dict([(item[0], item[2]) for item in reg7n_pricing_reg8n])
-    reg8n_to_invoice_objs = registrations.values_list('id', 'invoice__id', 'invoice__total',
-                                         'invoice__balance', 'invoice__admin_notes',
-                                         'invoice__tender_date')
+    reg8n_to_invoice_objs = registrations.values_list(
+        'id',
+        'invoice__id',
+        'invoice__total',
+        'invoice__balance',
+        'invoice__admin_notes',
+        'invoice__tender_date')
 
     reg8n_to_invoice_dict = {}
     invoice_fields = ('id', 'total', 'balance', 'admin_notes', 'tender_date')
     for item in reg8n_to_invoice_objs:
         if item[1] == None:
-            reg8n_to_invoice_dict[item[0]] = dict(zip(invoice_fields,
-                                                  (0, 0, 0, '', '')))
+            reg8n_to_invoice_dict[item[0]] = dict(zip(invoice_fields, (0, 0, 0, '', '')))
         else:
-            reg8n_to_invoice_dict[item[0]] = dict(zip(invoice_fields,
-                                                      item[1:]))
+            reg8n_to_invoice_dict[item[0]] = dict(zip(invoice_fields, item[1:]))
 
     # registration to list of registrants mapping
     reg8n_to_reg7n_dict = {}
     for k, v in reg7n_to_reg8n_dict.iteritems():
         reg8n_to_reg7n_dict.setdefault(v, []).append(k)
 
-
-
     if sort_field in ('first_name', 'last_name'):
         # let registrants without names sink dowm to the bottom
         regisrants_noname = registrants.filter(
-                                     last_name='',
-                                     first_name=''
-                                     ).select_related('user').order_by('id')
+            last_name='', first_name='').select_related('user').order_by('id')
+
         registrants_withname = registrants.exclude(
-                                            last_name='',
-                                            first_name=''
-                                            ).select_related('user').order_by(sort_field)
+            last_name='', first_name='').select_related('user').order_by(sort_field)
+
         c = itertools.chain(registrants_withname, regisrants_noname)
         registrants = [r for r in c]
     else:
         registrants = registrants.order_by(sort_field).select_related('user')
 
-
-
     if roster_fields_dict:
         for registrant in registrants:
             # assign custom form roster_field_list (if any) to registrants
             key = str(reg_form_entries_dict[registrant.id])
-            if roster_fields_dict.has_key(key):
+            if key in roster_fields_dict:
                 registrant.roster_field_list = roster_fields_dict[key]
 
     num_registrants_who_paid = 0
@@ -2393,23 +2445,22 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
     for registrant in registrants:
         # assign pricing title to the registrants
         key = reg7n_to_pricing_dict[registrant.id]
-        if not pricing_titles_dict.has_key(key):
-            if reg8n_to_pricing_dict.has_key(reg7n_to_reg8n_dict[registrant.id]):
+        if not key in pricing_titles_dict:
+            if reg7n_to_reg8n_dict[registrant.id] in reg8n_to_pricing_dict:
                 key = reg8n_to_pricing_dict[reg7n_to_reg8n_dict[registrant.id]]
-        if pricing_titles_dict.has_key(key):
+        if key in pricing_titles_dict:
             registrant.price_title = pricing_titles_dict[key]
         else:
             registrant.price_title = 'Untitled'
 
         # assign invoice dict
         key = reg7n_to_reg8n_dict[registrant.id]
-        if reg8n_to_invoice_dict.has_key(key):
+        if key in reg8n_to_invoice_dict:
             registrant.invoice_dict = reg8n_to_invoice_dict[key]
             if registrant.invoice_dict['balance'] <= 0:
-                num_registrants_who_paid +=1
+                num_registrants_who_paid += 1
             else:
                 num_registrants_who_owe += 1
-
 
     for registrant in registrants:
         # assign additional registrants
@@ -2427,12 +2478,12 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
     addon_total_sum = Decimal('0')
     if has_addons:
         reg8n_to_addons_list = RegAddonOption.objects.filter(
-                                            regaddon__registration__in=registrations
-                                            ).values_list(
-                                            'regaddon__registration__id',
-                                            'regaddon__addon__title',
-                                            'option__title',
-                                            'regaddon__amount')
+            regaddon__registration__in=registrations).values_list(
+                'regaddon__registration__id',
+                'regaddon__addon__title',
+                'option__title',
+                'regaddon__amount')
+
         if reg8n_to_addons_list:
             addon_total_sum = sum([item[3] for item in reg8n_to_addons_list])
             for registrant in registrants:
@@ -2444,38 +2495,30 @@ def registrant_roster(request, event_id=0, roster_view='', template_name='events
                             registrant.addons += '%s(%s) ' % (addon_item[1], addon_item[2])
                             registrant.addons_amount += addon_item[3]
 
-
     total_sum = float(0)
     balance_sum = float(0)
 
     # Get the total_sum and balance_sum.
-    totals_d = registrations.aggregate(total_sum=Sum('invoice__total'),
-                                      balance_sum=Sum('invoice__balance')
-                                      )
+    totals_d = registrations.aggregate(
+        total_sum=Sum('invoice__total'), balance_sum=Sum('invoice__balance'))
     total_sum = totals_d['total_sum']
     balance_sum = totals_d['balance_sum']
-
-#    num_registrants_who_paid = event.registrants(with_balance=False).count()
-#    num_registrants_who_owe = event.registrants(with_balance=True).count()
-
 
     EventLog.objects.log(instance=event)
 
     return render_to_response(template_name, {
-        'event':event,
-        'registrants':registrants,
-        'balance_sum':balance_sum,
-        'total_sum':total_sum,
-        'num_registrants_who_paid':num_registrants_who_paid,
-        'num_registrants_who_owe':num_registrants_who_owe,
-        'roster_view':roster_view,
+        'event': event,
+        'registrants': registrants,
+        'balance_sum': balance_sum,
+        'total_sum': total_sum,
+        'num_registrants_who_paid': num_registrants_who_paid,
+        'num_registrants_who_owe': num_registrants_who_owe,
+        'roster_view': roster_view,
         'sort_order': sort_order,
         'sort_type': sort_type,
         'has_addons': has_addons,
         'addon_total_sum': addon_total_sum,
-        'total_checked_in': total_checked_in
-        },
-        context_instance=RequestContext(request))
+        'total_checked_in': total_checked_in}, context_instance=RequestContext(request))
 
 
 @csrf_exempt
@@ -2834,22 +2877,20 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
     """
     Export all registration for a specific event with or without custom registration forms
     """
-    from django.db import connection
     event = get_object_or_404(Event, pk=event_id)
 
     # if they can edit it, they can export it
-    if not has_perm(request.user,'events.change_event',event):
+    if not has_perm(request.user, 'events.change_event', event):
         raise Http403
 
     import xlwt
     from ordereddict import OrderedDict
-    from decimal import Decimal
 
     # create the excel book and sheet
     book = xlwt.Workbook(encoding='utf8')
     sheet = book.add_sheet('Registrants')
 
-        # excel date styles
+    # excel date styles
     styles = {
         'balance_owed_style': xlwt.easyxf('font: color-index red, bold on'),
         'default_style': xlwt.Style.default_style,
@@ -2859,16 +2900,18 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
 
     if roster_view == 'non-paid':
         registrants = event.registrants(with_balance=True)
-        file_name = event.title.strip().replace(' ','-')
+        file_name = event.title.strip().replace(' ', '-')
         file_name = 'Event-%s-Non-Paid.xls' % re.sub(r'[^a-zA-Z0-9._]+', '', file_name)
     elif roster_view == 'paid':
         registrants = event.registrants(with_balance=False)
-        file_name = event.title.strip().replace(' ','-')
+        file_name = event.title.strip().replace(' ', '-')
         file_name = 'Event-%s-Paid.xls' % re.sub(r'[^a-zA-Z0-9._]+', '', file_name)
     else:
         registrants = event.registrants()
-        file_name = event.title.strip().replace(' ','-')
+        file_name = event.title.strip().replace(' ', '-')
         file_name = 'Event-%s-Total.xls' % re.sub(r'[^a-zA-Z0-9._]+', '', file_name)
+
+    from collections import namedtuple
 
     # the key is what the column will be in the
     # excel sheet. the value is the database lookup
@@ -2887,13 +2930,17 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
         ('country', 'country'),
         ('date', 'create_dt'),
         ('registration_id', 'registration__pk'),
+        ('is_primary', 'is_primary'),
         ('amount', 'amount'),
         ('price type', 'registration__reg_conf_price__title'),
         ('invoice_id', 'registration__invoice__pk'),
-        ('registration price', 'registration__amount_paid'),
+        ('registration price', 'registration__invoice__total'),
         ('payment method', 'registration__payment_method__machine_name'),
         ('balance', 'registration__invoice__balance'),
     ])
+
+    RegistrantTuple = namedtuple('Registrant', registrant_mappings.values())
+
     registrant_lookups = registrant_mappings.values()
 
     # Append the heading to the list of values that will
@@ -2902,24 +2949,49 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
 
     # registrants with regular reg form
     non_custom_registrants = registrants.filter(custom_reg_form_entry=None)
-    non_custom_registrants = non_custom_registrants.values_list(*registrant_lookups)
+    non_custom_registrants = non_custom_registrants.values('pk', *registrant_lookups)
+
     if non_custom_registrants:
-        values_list.insert(0, registrant_mappings.keys())
-        for registrant in non_custom_registrants:
-            values_list.append(registrant)
+        values_list.insert(0, registrant_mappings.keys() + ['is_paid', 'primary_registrant'])
+
+        for registrant_dict in non_custom_registrants:
+
+            is_paid = False
+            primary_registrant = u'-- N/A ---'
+
+            # update registrant values
+            if not registrant_dict['is_primary']:
+
+                is_paid = (registrant_dict['registration__invoice__balance'] == 0)
+                primary_registrant = Registrant.objects.get(pk=registrant_dict['pk'])
+
+                registrant = Registrant.objects.get(pk=registrant_dict['pk'])
+                primary_registrant = registrant.registration.registrant
+
+                if primary_registrant:
+                    primary_registrant = '%s %s' % (primary_registrant.first_name, primary_registrant.last_name)
+
+                registrant_dict['registration__invoice__total'] = 0
+                registrant_dict['registration__invoice__balance'] = 0
+
+            del registrant_dict['pk']
+
+            # keeps order of values
+            registrant_tuple = RegistrantTuple(**registrant_dict)
+
+            values_list.append(tuple(registrant_tuple) + (is_paid, primary_registrant))
+
         values_list.append(['\n'])
 
     # Write the data enumerated to the excel sheet
-    balance_index = 16
+    balance_index = 17
     start_row = 0
     render_registrant_excel(sheet, values_list, balance_index, styles, start=start_row)
     start_row += len(values_list)
 
     # ***now check for the custom registration forms***
     custom_reg_exists = Registrant.objects.filter(
-                                    registration__event=event
-                                    ).exclude(custom_reg_form_entry=None
-                                              ).exists()
+        registration__event=event).exclude(custom_reg_form_entry=None).exists()
 
     if custom_reg_exists:
         # get a list of custom registration forms
@@ -2949,7 +3021,6 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
         for field in fields_to_remove:
             del registrant_mappings[field]
 
-
         registrant_lookups = registrant_mappings.values()
         registrant_lookups.append('custom_reg_form_entry')
 
@@ -2960,10 +3031,9 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
 
             # get a list of fields in the type (id, label) and store in
             # an ordered dict
-            fields = CustomRegField.objects.filter(form=custom_reg_form
-                                                   ).order_by(
-                                                    'position'
-                                                    ).values_list('id', 'label')
+            fields = CustomRegField.objects.filter(
+                form=custom_reg_form).order_by('position').values_list('id', 'label')
+
             fields_dict = OrderedDict(fields)
             field_ids = fields_dict.keys()
             # field header row - all the field labels in the form + registrant_mappings.keys
@@ -2996,12 +3066,11 @@ def registrant_export_with_custom(request, event_id, roster_view=''):
                 rows_list.append(custom_values_list)
             rows_list.append(['\n'])
 
-            balance_index =  len(field_ids) + len(registrant_lookups) - 1
+            balance_index = len(field_ids) + len(registrant_lookups) - 1
 
             # write to spread sheet
             render_registrant_excel(sheet, rows_list, balance_index, styles, start=start_row)
             start_row += len(rows_list)
-
 
     EventLog.objects.log(instance=event)
 

@@ -729,7 +729,7 @@ def add_registration(*args, **kwargs):
                 override = form.cleaned_data.get('override', False)
                 override_price = form.cleaned_data.get('override_price', Decimal(0))
 
-            price = form.cleaned_data['pricing']
+            price = form.cleaned_data.get('pricing', 0)
 
             if override:
                 amount = override_price
@@ -745,9 +745,11 @@ def add_registration(*args, **kwargs):
     discount_amount = Decimal(0)
     discount_list = [Decimal(0) for i in range(len(amount_list))]
     if discount_code:
-        [discount] = Discount.objects.filter(discount_code=discount_code)[:1] or [None]
+        [discount] = Discount.objects.filter(discount_code=discount_code,
+                        apps__model=RegistrationConfiguration._meta.module_name)[:1] or [None]
         if discount and discount.available_for(1):
             amount_list, discount_amount, discount_list, msg = assign_discount(amount_list, discount)
+    invoice_discount_amount = discount_amount
 
     reg8n_attrs = {
         "event": event,
@@ -758,10 +760,6 @@ def add_registration(*args, **kwargs):
         'override_table': override_table,
         'override_price_table': override_price_table
     }
-    if discount_code and discount_amount:
-        reg8n_attrs.update({'discount_code': discount_code,
-                            'discount_amount': discount_amount})
-
     if event.is_table:
         reg8n_attrs['quantity'] = price.quantity
     if request.user.is_authenticated():
@@ -833,6 +831,11 @@ def add_registration(*args, **kwargs):
 
     # create invoice
     invoice = reg8n.save_invoice(admin_notes=admin_notes)
+    if discount_code and invoice_discount_amount:
+        invoice.discount_code = discount_code
+        invoice.discount_amount = invoice_discount_amount
+        invoice.save()
+
     if discount_code and discount:
         for dmount in discount_list:
             if dmount > 0:
@@ -905,6 +908,7 @@ def create_registrant_from_form(*args, **kwargs):
                     registrant.position_title = user_profile.position_title
 
     registrant.save()
+    add_sf_attendance(registrant, event)
     return registrant
 
 
@@ -1490,3 +1494,48 @@ def do_event_import(event_object_dict):
     event.save()
 
     return event
+
+
+def add_sf_attendance(registrant, event):
+
+    from django.conf import settings
+    from tendenci.core.base.utils import get_salesforce_access, create_salesforce_contact
+    from tendenci.apps.profiles.models import Profile
+
+    if hasattr(settings, 'SALESFORCE_AUTO_UPDATE') and settings.SALESFORCE_AUTO_UPDATE:
+        sf = get_salesforce_access()
+        if sf:
+            # Make sure we have a complete user detail from registrants
+            # which do not have an associated user. This is because the
+            # contact ID will not be stored.
+            contact_requirements = (registrant.first_name,
+                                    registrant.last_name,
+                                    registrant.email)
+            contact_id = None
+            # Get Salesforce Contact ID
+            if registrant.user:
+                try:
+                    profile = registrant.user.get_profile()
+                except Profile.DoesNotExist:
+                    profile = Profile.objects.create_profile(user=registrant.user)
+                contact_id = create_salesforce_contact(profile)
+                    
+            elif all(contact_requirements):
+                # Query for a duplicate entry in salesforce
+                result = sf.query("SELECT Id FROM Contact WHERE FirstName='%s' AND LastName='%s' AND Email='%s'"
+                                  %(registrant.first_name, registrant.last_name, registrant.email) )
+                if result['records']:
+                    contact_id = result['records'][0]['Id']
+                else:
+                    contact = sf.Contact.create({
+                        'FirstName':registrant.first_name,
+                        'LastName':registrant.last_name,
+                        'Email':registrant.email})
+                    contact_id = contact['id']
+
+            if contact_id:
+                result = sf.Event.create({
+                    'WhoId':contact_id,
+                    'Subject':event.title,
+                    'StartDateTime':event.start_dt.isoformat(),
+                    'EndDateTime':event.end_dt.isoformat()})

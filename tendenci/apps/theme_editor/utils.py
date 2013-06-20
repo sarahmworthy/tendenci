@@ -3,6 +3,8 @@ import shutil
 import sys
 import boto
 import urllib
+from datetime import datetime
+from dateutil.parser import parse
 
 from django.conf import settings
 from django.core.cache import cache
@@ -26,6 +28,46 @@ ALLOWED_EXTENSIONS = (
     '.po',
     '.less',
 )
+
+DEFAULT_THEME_INFO = 'theme.info'
+
+# Class to hold theme info details
+class ThemeInfo(object):
+
+    def __init__(self, theme):
+
+        self.orig_name = theme
+        self.name = theme
+        self.description = u''
+        self.tags = u''
+        self.screenshot = u''
+        self.screenshot_thumbnail = u''
+        self.author = u''
+        self.author_uri = u''
+        self.version = u''
+        self.create_dt = datetime.now()
+
+        theme_root = get_theme_root(theme)
+        # check if theme info file exists
+        is_file = qstr_is_file(DEFAULT_THEME_INFO, ROOT_DIR=theme_root)
+        if is_file:
+            theme_file = file(os.path.join(theme_root, DEFAULT_THEME_INFO))
+            data = theme_file.readlines()
+            theme_file.close()
+            # set attributes according to data in info file
+            for datum in data:
+                datum = datum.replace('\n', '')
+                label, value = datum.split('=')
+                label = label.strip().replace(' ', '_').lower()
+                value = value.strip()
+
+                if label == 'create_dt':
+                    value = parse(value)
+
+                if label in ('screenshot', 'screenshot_thumbnail'):
+                    value = os.path.join('/themes', theme, value)
+
+                setattr(self, label, value)
 
 # At compile time, cache the directories to search.
 fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()

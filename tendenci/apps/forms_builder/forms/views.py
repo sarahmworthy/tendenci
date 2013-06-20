@@ -1,3 +1,7 @@
+# Special encoding for sending the email messsages with
+# non-ascii characters.
+# from __future__ import must occur at the beginning of the file
+from __future__ import unicode_literals
 import datetime, random, string
 
 from django.conf import settings
@@ -220,7 +224,6 @@ def copy(request, id):
             label = field.label,
             field_type = field.field_type,
             field_function = field.field_function,
-            function_params = field.function_params,
             required = field.required,
             visible = field.visible,
             choices = field.choices,
@@ -434,7 +437,11 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                 # Send message to the person who submitted the form.
                 msg = EmailMessage(subject, submitter_body, sender, [email_to], headers=email_headers)
                 msg.content_subtype = 'html'
-                msg.send()
+
+                try:
+                    msg.send(fail_silently=True)
+                except:
+                    pass
 
             # Email copies to admin
             admin_body = generate_admin_email_body(entry, form_for_form)
@@ -448,10 +455,28 @@ def form_detail(request, slug, template="forms/form_detail.html"):
                 msg = EmailMessage(subject, admin_body, sender, email_copies, headers=email_headers)
                 msg.content_subtype = 'html'
                 for f in form_for_form.files.values():
-                    f.open()
+                    try:
+                        f.open()
+                        f.seek(0)
+                        msg.attach(f.name, f.read())
+                        f.close()
+                    except Exception:
+                        pass
+
+                try:
+                    msg.send(fail_silently=True)
+                except:
+                    pass
+
+            # Email copies to recipient list indicated in the form
+            email_recipients = entry.get_function_email_recipients()
+            if email_recipients:
+                # Send message to the email addresses selected in the form.
+                msg = EmailMessage(subject, admin_body, sender, email_recipients, headers=email_headers)
+                msg.content_subtype = 'html'
+                for f in form_for_form.files.values():
                     f.seek(0)
                     msg.attach(f.name, f.read())
-                    f.close()
                 msg.send()
 
             # payment redirect
