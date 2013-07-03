@@ -5,6 +5,8 @@ import re
 import Image as Pil
 import os
 import mimetypes
+import subprocess
+import xmlrpclib
 
 # django
 from django.http import HttpResponse, HttpResponseNotFound, Http404
@@ -16,10 +18,13 @@ from django.template.loader import get_template
 from django.shortcuts import redirect
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.contrib import messages
 
 # local
+from tendenci import __version__ as version
 from tendenci.core.base.cache import IMAGE_PREVIEW_CACHE
 from tendenci.core.base.forms import PasswordForm
+from tendenci.core.perms.decorators import superuser_required
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.site_settings.utils import get_setting
 
@@ -310,4 +315,25 @@ def password_again(request, template_name="base/password.html"):
     return render_to_response(template_name, {
         'next': next,
         'form': form,
+    }, context_instance=RequestContext(request))
+
+
+@superuser_required
+def update_tendenci(request, template_name="base/update.html"):
+
+    if request.method == "POST":
+        subprocess.Popen(["python", "manage.py", "update_tendenci"])
+        messages.add_message(request, messages.INFO, 'Update process has started. Please wait.')
+        return redirect('dashboard')
+
+    pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+    latest_version = pypi.package_releases('tendenci')[0]
+
+    update_vailable = False
+    if latest_version != version:
+        update_available = True
+
+    return render_to_response(template_name, {
+        'latest_version': latest_version,
+        'update_available': update_vailable,
     }, context_instance=RequestContext(request))
