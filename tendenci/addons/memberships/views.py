@@ -1563,7 +1563,6 @@ def membership_default_add(request, slug='', template='memberships/applications/
         if not corp_app:
             raise Http404
 
-        #app = corp_app.memb_app
         app = corp_app.memb_app
 
         cm_id = kwargs.get('cm_id')
@@ -1572,22 +1571,27 @@ def membership_default_add(request, slug='', template='memberships/applications/
             return redirect(reverse('membership_default.corp_pre_add'))
         # check if they have verified their email or entered the secret code
         corp_membership = get_object_or_404(CorpMembership, id=cm_id)
+
+        # imv = individual membership verification
         imv_id = kwargs.get('imv_id', 0)
         imv_guid = kwargs.get('imv_guid')
+
         secret_hash = kwargs.get('secret_hash', '')
 
         is_verified = False
         authentication_method = corp_app.authentication_method
+
         if request.user.profile.is_superuser or authentication_method == 'admin':
             is_verified = True
         elif authentication_method == 'email':
             try:
-                indiv_veri = IndivEmailVerification.objects.get(pk=imv_id,
-                                                              guid=imv_guid)
-                if indiv_veri.verified:
-                    is_verified = True
+                indiv_veri = IndivEmailVerification.objects.get(
+                    pk=imv_id, guid=imv_guid)
+                is_verified = indiv_veri.verified
+
             except IndivEmailVerification.DoesNotExist:
                 pass
+
         elif authentication_method == 'secret_code':
             tmp_secret_hash = md5('%s%s' % (corp_membership.corp_profile.secret_code,
                         request.session.get('corp_hash_random_string', ''))
@@ -1599,7 +1603,8 @@ def membership_default_add(request, slug='', template='memberships/applications/
             return redirect(reverse('membership_default.corp_pre_add',
                                     args=[cm_id]))
 
-    else:
+    else:  # regular membership
+
         app = get_object_or_404(MembershipApp, slug=slug)
 
         if app.use_for_corp:
@@ -1610,7 +1615,7 @@ def membership_default_add(request, slug='', template='memberships/applications/
 
     if join_under_corporate:
         app_fields = app.fields.filter(Q(display=True) | Q(
-                            field_name='corporate_membership_id'))
+            field_name='corporate_membership_id'))
     else:
         app_fields = app.fields.filter(display=True)
 
@@ -1739,7 +1744,7 @@ def membership_default_add(request, slug='', template='memberships/applications/
                 app_fields, post_values, initial=membership_initial, **params)
 
             # tuple with boolean items
-            good = (
+            forms_validate = (
                 user_form.is_valid(),
                 profile_form.is_valid(),
                 demographics_form.is_valid(),
@@ -1748,7 +1753,7 @@ def membership_default_add(request, slug='', template='memberships/applications/
             )
 
             # form is valid
-            if all(good):
+            if all(forms_validate):
 
                 customer = user_form.save()
 
@@ -1808,12 +1813,16 @@ def membership_default_add(request, slug='', template='memberships/applications/
             for membership in memberships:
                 membership.membership_set = membership_set
 
-                requires_approval = (
+                approval_required = (
                     membership.approval_required(),
                     join_under_corporate and authentication_method == 'admin')
 
-                if any(requires_approval):
+                if any(approval_required):
                     membership.pend()
+                    if membership.is_renewal():
+                        membership.send_email(request, 'renewal')
+                    else:
+                        membership.send_email(request, 'join')
                 else:
                     membership.approve(request_user=customer)
                     membership.send_email(request, 'approve')
@@ -1824,12 +1833,7 @@ def membership_default_add(request, slug='', template='memberships/applications/
 
                 # save application fields
                 membership.save()
-
-                if membership.application_approved:
-                    membership.save_invoice(status_detail='tendered')
-                else:
-                    membership.save_invoice(status_detail='estimate')
-
+                membership.save_invoice(status_detail='tendered')
                 membership.user.profile.refresh_member_number()
 
                 # log an event
@@ -1844,10 +1848,14 @@ def membership_default_add(request, slug='', template='memberships/applications/
 
             # redirect: membership edit page
             if request.user.profile.is_superuser:
-                return HttpResponseRedirect(reverse(
-                    'admin:memberships_membershipdefault_change',
-                    args=[memberships[0].pk],
-                ))
+                if not membership.corporate_membership_id:
+                    # Redirect to admin backend only if it's not for corp members
+                    # For corp members, most likely they want to add more. So,
+                    # they are redirected to the confirmation page with "add more" link.
+                    return HttpResponseRedirect(reverse(
+                        'admin:memberships_membershipdefault_change',
+                        args=[memberships[0].pk],
+                    ))
 
             # send email notification to admin
             recipients = get_notice_recipients(
