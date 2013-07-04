@@ -1537,6 +1537,8 @@ def membership_default_add(request, slug='', template='memberships/applications/
     """
     Default membership application form.
     """
+    from tendenci.addons.memberships.models import Notice
+
     user = None
     membership = None
     username = request.GET.get('username', u'')
@@ -1820,9 +1822,20 @@ def membership_default_add(request, slug='', template='memberships/applications/
                 if any(approval_required):
                     membership.pend()
                     if membership.is_renewal():
-                        membership.send_email(request, 'renewal')
+                        Notice.send_notice(
+                            request=request,
+                            notice_type='renewal',
+                            membership=membership,
+                            membership_type=membership.membership_type,
+                        )
+
                     else:
-                        membership.send_email(request, 'join')
+                        Notice.send_notice(
+                            request=request,
+                            notice_type='join',
+                            membership=membership,
+                            membership_type=membership.membership_type,
+                        )
                 else:
                     membership.approve(request_user=customer)
                     membership.send_email(request, 'approve')

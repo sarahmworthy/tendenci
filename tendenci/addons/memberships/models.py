@@ -97,6 +97,7 @@ FIELD_MAX_LENGTH = 2000
 
 VALID_MEMBERSHIP_STATUS_DETAIL = ['active', 'pending', 'expired', 'archive', 'disapproved']
 
+
 class MembershipType(OrderingBaseModel, TendenciBaseModel):
     guid = models.CharField(max_length=50)
     name = models.CharField(_('Name'), max_length=255, unique=True)

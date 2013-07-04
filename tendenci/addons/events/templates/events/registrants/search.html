@@ -65,9 +65,8 @@
 
 			<div class="filter-wrap">
 				<div><strong>Filters</strong></div>
-				<div><a href="{% url event.registrant.search event.pk %}?status=active">
-					{{ active_registrants }} Active</a></div>
-				<div><a href="{% url event.registrant.search event.pk %}?status=canceled">{{ canceled_registrants }} Canceled</a></div>
+                <div><a href="{% url event.registrant.search event.pk %}?status=active">{{ active_registrants }} Active</a></div>
+                <div><a href="{% url event.registrant.search event.pk %}?status=canceled">{{ canceled_registrants }} Canceled</a></div>
 			</div>
 
 			
