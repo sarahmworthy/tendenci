@@ -115,19 +115,14 @@ class PageAdmin(admin.ModelAdmin):
         instance = update_perms_and_save(request, form, instance)
 
         if instance.meta:
-            # Update instance meta
             meta = instance.meta
-            meta.title = form.cleaned_data['meta_title']
-            meta.description = form.cleaned_data['meta_description']
-            meta.keywords = form.cleaned_data['meta_keywords']
-            meta.canonical_url = form.cleaned_data['meta_canonical_url']
         else:
             meta = MetaTags()
-            # Assign default value if field is blank
-            meta.title = form.cleaned_data['meta_title'] or instance.get_title()
-            meta.description = form.cleaned_data['meta_description'] or instance.get_description()
-            meta.keywords = form.cleaned_data['meta_keywords'] or instance.get_keywords()
-            meta.canonical_url = form.cleaned_data['meta_canonical_url'] or instance.get_canonical_url()
+
+        meta.title = form.cleaned_data['meta_title']
+        meta.description = form.cleaned_data['meta_description']
+        meta.keywords = form.cleaned_data['meta_keywords']
+        meta.canonical_url = form.cleaned_data['meta_canonical_url']
         meta.save()
         instance.meta = meta
         instance.save()
