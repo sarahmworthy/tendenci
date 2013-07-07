@@ -8,5 +8,8 @@ urlpatterns = patterns('tendenci.core.base.views',
     url(r'^password_again/$', 'password_again', name="password_again"),
     url(r'^exception-test/$', 'exception_test', name="exception_test"),
     url(r'^timeout-test/$', 'timeout_test', name="timeout_test"),
+
     url(r'^update-tendenci/$', 'update_tendenci', name="update_tendenci"),
+    url(r'^update-tendenci/status/$', 'update_tendenci_process', name="update_tendenci.process"),
+    url(r'^update-tendenci/check/$', 'update_tendenci_check', name="update_tendenci.check"),
 )
