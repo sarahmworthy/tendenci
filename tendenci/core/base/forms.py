@@ -61,16 +61,13 @@ class AddonUploadForm(forms.Form):
 
     def clean_addon(self):
         addon = self.cleaned_data['addon']
-        if addon.content_type != 'application/zip':
-            raise forms.ValidationError('File upload must be a valid ZIP archive.')
-        else:
-            try:
-                zip_file = zipfile.ZipFile(addon)
-            except:
-                raise forms.ValidationError("Could not unzip file.")
-            bad_file = zip_file.testzip()
-            zip_file.close()
-            del zip_file
-            if bad_file:
-                raise forms.ValidationError('Bad file/s found in ZIP archive.')
+        try:
+            zip_file = zipfile.ZipFile(addon)
+        except:
+            raise forms.ValidationError("Could not unzip file.")
+        bad_file = zip_file.testzip()
+        zip_file.close()
+        del zip_file
+        if bad_file:
+            raise forms.ValidationError('Bad file/s found in ZIP archive.')
         return addon
