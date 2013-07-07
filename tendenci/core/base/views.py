@@ -5,7 +5,10 @@ import re
 import Image as Pil
 import os
 import mimetypes
+import shutil
+import subprocess
 import xmlrpclib
+import zipfile
 
 # django
 from django.http import HttpResponse, HttpResponseNotFound, Http404
@@ -22,7 +25,7 @@ from django.contrib import messages
 # local
 from tendenci import __version__ as version
 from tendenci.core.base.cache import IMAGE_PREVIEW_CACHE
-from tendenci.core.base.forms import PasswordForm
+from tendenci.core.base.forms import PasswordForm, AddonUploadForm
 from tendenci.core.base.managers import SubProcessManager
 from tendenci.core.perms.decorators import superuser_required
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
@@ -341,12 +344,12 @@ def update_tendenci(request, template_name="base/update.html"):
 @superuser_required
 def update_tendenci_process(request, template_name="base/update_process.html"):
 
-    if not SubProcessManager.process:
+    if not SubProcessManager.get_process():
         raise Http404
 
     if not SubProcessManager.poll_process() is None:
         messages.add_message(request, messages.SUCCESS, 'Update complete.')
-        SubProcessManager.process = None
+        SubProcessManager.remove_process()
         return redirect('dashboard')
 
     return render_to_response(template_name,
@@ -355,7 +358,79 @@ def update_tendenci_process(request, template_name="base/update_process.html"):
 
 def update_tendenci_check(request):
 
-    if not (request.is_ajax() and SubProcessManager.process):
+    if not SubProcessManager.get_process():
         raise Http404
 
     return HttpResponse(SubProcessManager.poll_process())
+
+
+@superuser_required
+def addon_upload(request, template_name="base/addon_upload.html"):
+
+    form = AddonUploadForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            identifier = str(int(time.time()))
+            temp_file_path = 'uploads/addons/%s_%s' % (identifier, form.cleaned_data['addon'])
+            default_storage.save(temp_file_path, form.cleaned_data['addon'])
+            request.session[identifier] = temp_file_path
+            return redirect('addon.upload.preview', identifier)
+
+    return render_to_response(template_name, {'form': form},
+                              context_instance=RequestContext(request))
+
+
+@superuser_required
+def addon_upload_preview(request, sid, template_name="base/addon_upload_preview.html"):
+
+    if not sid in request.session:
+        raise Http404
+    path = request.session[sid]
+
+    addon_zip = zipfile.ZipFile(default_storage.open(path))
+    addon_name = addon_zip.namelist()[0]
+    addon_name = addon_name.strip('/')
+    if not os.path.isdir(os.path.join(settings.SITE_ADDONS_PATH, addon_name)):
+        subprocess.Popen(["python", "manage.py",
+                          "upload_addon",
+                          '--zip_path=%s' % path])
+        return redirect('addon.upload.process', sid)
+
+    if request.method == "POST":
+        shutil.rmtree(os.path.join(settings.SITE_ADDONS_PATH, addon_name))
+        subprocess.Popen(["python", "manage.py",
+                          "upload_addon",
+                          '--zip_path=%s' % path])
+        return redirect('addon.upload.process', sid)
+    
+    return render_to_response(template_name, {'addon_name': addon_name, 'sid':sid },
+                              context_instance=RequestContext(request))
+
+
+@superuser_required
+def addon_upload_process(request, sid, template_name="base/addon_upload_process.html"):
+
+    if not sid in request.session:
+        raise Http404
+    path = request.session[sid]
+
+    if not default_storage.exists(path):
+        messages.add_message(request, messages.SUCCESS, 'Addon upload complete.')
+        del request.session[sid]
+        return redirect('dashboard')
+
+    return render_to_response(template_name, {'sid': sid },
+                              context_instance=RequestContext(request))
+
+
+def addon_upload_check(request, sid):
+
+    if not sid in request.session:
+        raise Http404
+    path = request.session[sid]
+
+    finished = False
+    if not default_storage.exists(path):
+        finished = True
+
+    return HttpResponse(finished)
