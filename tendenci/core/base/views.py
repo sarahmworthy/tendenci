@@ -26,7 +26,6 @@ from django.contrib import messages
 from tendenci import __version__ as version
 from tendenci.core.base.cache import IMAGE_PREVIEW_CACHE
 from tendenci.core.base.forms import PasswordForm, AddonUploadForm
-from tendenci.core.base.managers import SubProcessManager
 from tendenci.core.perms.decorators import superuser_required
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.site_settings.utils import get_setting
@@ -325,8 +324,10 @@ def password_again(request, template_name="base/password.html"):
 def update_tendenci(request, template_name="base/update.html"):
 
     if request.method == "POST":
-        process = SubProcessManager.set_process(["python", "manage.py", "update_tendenci"])
-        return redirect('update_tendenci.process')
+        process = subprocess.Popen(["python", "manage.py", "update_tendenci"])
+        sid = str(int(time.time()))
+        request.session[sid] = process
+        return redirect('update_tendenci.process', sid)
 
     pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
     latest_version = pypi.package_releases('tendenci')[0]
@@ -342,26 +343,34 @@ def update_tendenci(request, template_name="base/update.html"):
 
 
 @superuser_required
-def update_tendenci_process(request, template_name="base/update_process.html"):
+def update_tendenci_process(request, sid, template_name="base/update_process.html"):
 
-    if not SubProcessManager.get_process():
+    if not sid in request.session:
         raise Http404
+    process = request.session[sid]
 
-    if not SubProcessManager.poll_process() is None:
+    if process.poll() == 0:
         messages.add_message(request, messages.SUCCESS, 'Update complete.')
-        SubProcessManager.remove_process()
+        del request.session[sid]
         return redirect('dashboard')
 
-    return render_to_response(template_name,
+    return render_to_response(template_name, {'sid': sid},
                               context_instance=RequestContext(request))
 
 
-def update_tendenci_check(request):
+def update_tendenci_check(request, sid):
 
-    if not SubProcessManager.get_process():
+    if not sid in request.session:
         raise Http404
+    process = request.session[sid]
+    process.wait()
+    request.session[sid] = process
 
-    return HttpResponse(SubProcessManager.poll_process())
+    finished = False
+    if process.poll() == 0:
+        finished = True
+
+    return HttpResponse(finished)
 
 
 @superuser_required
