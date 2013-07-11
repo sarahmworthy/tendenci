@@ -2306,7 +2306,8 @@ class Notice(models.Model):
         recipients = list(set(membership_recipients + admin_recipients))
 
         if recipients:
-            notification.send_emails(recipients,
+            notification.send_emails(
+                recipients,
                 'membership_%s_to_admin' % template_type, {
                 'request': request,
                 'membership': membership,
