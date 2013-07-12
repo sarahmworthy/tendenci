@@ -90,7 +90,8 @@ def nav_item(context, item):
     return context
 
 @register.inclusion_tag("navs/cached_nav.html", takes_context=True)
-def nav(context, nav_id):
+def nav(context, nav_id, show_title=False):
+    
     """
     Renders the nav from cache
     if not will use the navigation tag for rendering the nav
@@ -124,6 +125,7 @@ def nav(context, nav_id):
     context.update({
         "cached": nav,
         "nav_id": nav_id,
+        "show_title": show_title,
     })
     return context
 
