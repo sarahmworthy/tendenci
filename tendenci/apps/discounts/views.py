@@ -14,6 +14,7 @@ from tendenci.core.perms.utils import has_perm, update_perms_and_save, get_query
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.exports.utils import run_export_task
+
 from tendenci.addons.events.models import Registration
 from tendenci.addons.memberships.models import MembershipSet
 from tendenci.apps.discounts.models import Discount, DiscountUse

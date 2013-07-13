@@ -81,7 +81,7 @@
 	<th width="8%" title="Addon Amount">{% trans "Addon$" %}</th>
 	{% endif %}
     {% if discount_available %}
-	<th width="8%" title="Discount Amount">{% trans "Discount$" %}</th>
+    <th width="8%" title="Discount Amount">{% trans "Discount$" %}</th>
     {% endif %}
 	<th width="8%" title="Balance">{% trans "Balance" %}</th>
 	<th width="6%" class='attended' title="Attendance Checkbox">Attend</th>
@@ -127,10 +127,10 @@
 	<td><a href="{% url event.registration_confirmation event.pk registrant.registration_id %}">R-{{ registrant.registration_id }}</a></td> <!-- registration number -->
 
     {% if discount_available %}
-	<td>${{ registrant.amount|add_decimal:registrant.discount_amount|floatformat:"2" }}</td> <!-- registration amount -->
+        <td>${{ registrant.amount|add_decimal:registrant.discount_amount|floatformat:"2" }}</td> <!-- registration amount -->
     {% else %}
-	<td>${{ registrant.amount|floatformat:"2" }}</td> <!-- registration amount -->
-    {% endif %}
+	    <td>${{ registrant.amount|floatformat:"2" }}</td> <!-- registration amount -->
+	{% endif %}
 
 	{% if has_addons %}
 	{% if registrant.is_primary and registrant.addons %}
@@ -141,7 +141,7 @@
 	{% endif %}
 
     {% if discount_available %}
-	<td>-${{ registrant.discount_amount|floatformat:"2" }}</div></td> <!-- discount amount -->
+        <td>-${{ registrant.discount_amount|floatformat:"2" }}</div></td> <!-- discount amount -->
     {% endif %}
 
 	<td>${{ registrant.invoice_dict.balance|floatformat:"2" }}</td> <!-- balance -->
@@ -191,9 +191,9 @@
     </td>
     {% if discount_available %}
     <td colspan="2">
-    {% if registrant.discount_amount > 0 %}
-    {% trans "discount code" %}(<a href="{{ registrant.registration.invoice.get_discount_url }}">{{ registrant.registration.invoice.discount_code }}</a>)
-    {% endif %}
+        {% if registrant.discount_amount > 0 %}
+            {% trans "discount code" %}(<a href="{{ registrant.registration.invoice.get_discount_url }}">{{ registrant.registration.invoice.discount_code }}</a>)
+        {% endif %}
     </td>
     {% else %}
     <td></td>
