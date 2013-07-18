@@ -14,20 +14,23 @@ from tendenci.apps.user_groups.models import Group
 
 SEARCH_CATEGORIES_ADMIN = (
     ('', '-- SELECT ONE --' ),
-    ('last_name__icontains', 'Author Last Name'),
     ('first_name__icontains', 'Author First Name'),
-    
+    ('last_name__icontains', 'Author Last Name'),
     ('id', 'Article ID'),
-    ('body__icontains', 'Body'),
-    ('headline__icontains', 'Headline'),
-    ('rating', 'Rating'),
+    ('owner__id', 'Article Parent ID(#)'),
     
-    ('owner__id', '*Article Parent ID(#)'),
-    ('featured', '*Featured Article'),
-    ('owner__id', '*Owner Userid(#)'),
-    ('owner__username', '*Owner Username'),
+    ('body__icontains', 'Body'),
+    
     ('creator__id', '*Creator Userid(#)'),
     ('creator__username', '*Creator Username'),
+    
+    ('featured', '*Featured Article'),
+    ('headline__icontains', 'Headline'),
+    
+    ('owner__id', '*Owner Userid(#)'),
+    ('owner__username', '*Owner Username'),
+    
+    ('rating', 'Rating'),
     ('status__icontains', '*Status'),
     ('syndicate', '*Syndicate'),
     #('release_dt', 'Release Date'),
@@ -38,8 +41,8 @@ SEARCH_CATEGORIES = (
     ('', '-- SELECT ONE --' ),
     ('last_name__icontains', 'Author Last Name'),
     ('first_name__icontains', 'Author First Name'),
-    
     ('id', 'Article ID'),
+    
     ('body__icontains', 'Body'),
     ('headline__icontains', 'Headline'),
     ('rating', 'Rating'),
