@@ -48,6 +48,7 @@ class GroupSearchForm(forms.Form):
                 self._errors['q'] = ErrorList(['Must be an integer'])
                 
         return cleaned_data
+    
         
 class GroupAdminForm(TendenciBaseForm):
     email_recipient = forms.CharField(label="Recipient Email",
