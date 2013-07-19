@@ -110,6 +110,60 @@
         </fieldset>
 
         <fieldset>
+            <label>Contact Information</label>
+
+            {% if membership.user.email %}
+            <div class="field">
+                <div class="label">Email</div>
+                <div class="value">{{ membership.user.email }}</div>
+            </div>
+            {% endif %}
+
+            {% if membership.user.profile.phone %}
+            <div class="field">
+                <div class="label">Phone</div>
+                <div class="value">{{ membership.user.profile.phone }}</div>
+            </div>
+            {% endif %}
+
+            {% if membership.user.profile.work_phone %}
+            <div class="field">
+                <div class="label">Work Phone</div>
+                <div class="value">{{ membership.user.profile.work_phone }}</div>
+            </div>
+            {% endif %}
+
+            {% if membership.user.profile.home_phone %}
+            <div class="field">
+                <div class="label">Home Phone</div>
+                <div class="value">{{ membership.user.profile.home_phone }}</div>
+            </div>
+            {% endif %}
+
+            {% if membership.user.profile.mobile_phone %}
+            <div class="field">
+                <div class="label">Mobile Phone</div>
+                <div class="value">{{ membership.user.profile.mobile_phone }}</div>
+            </div>
+            {% endif %}
+
+            {% if membership.user.profile.url %}
+            <div class="field">
+                <div class="label">Website</div>
+                <div class="value">{{ membership.user.profile.url }}</div>
+            </div>
+            {% endif %}
+
+            {% if membership.user.profile.get_address %}
+            <div class="field">
+                <div class="label">Address</div>
+                <div class="value">{{ membership.user.profile.get_address }}</div>
+            </div>
+            {% endif %}
+
+        </fieldset>
+
+        <fieldset>
             <label>More Details</label>
 
             {% if membership.certifications %}
