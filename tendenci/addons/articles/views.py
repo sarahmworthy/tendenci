@@ -59,27 +59,26 @@ def search(request, template_name="articles/search.html"):
     filters = get_query_filters(request.user, 'articles.view_article')
     articles = Article.objects.filter(filters).distinct()
     cat = None
-    
+
     if not request.user.is_anonymous():
         articles = articles.select_related()
-    
+
     query = request.GET.get('q', None)
     form = ArticleSearchForm(request.GET, is_superuser=request.user.is_superuser)
-    
+
     if form.is_valid():
         cat = form.cleaned_data['search_category']
         filter_date = form.cleaned_data['filter_date']
         date = form.cleaned_data['date']
-        
+
         if cat in ('featured', 'syndicate'):
             articles = articles.filter(**{cat : True } )
         elif query and cat:
             articles = articles.filter( **{cat : query} )
-            
-                
+
         if filter_date and date:
             articles = articles.filter( release_dt__month=date.month, release_dt__day=date.day, release_dt__year=date.year )
-        
+
     if not has_perm(request.user, 'articles.view_article'):
         articles = articles.filter(release_dt__lte=datetime.now())
 

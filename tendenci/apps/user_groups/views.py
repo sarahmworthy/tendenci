@@ -49,26 +49,26 @@ def search(request, template_name="user_groups/search.html"):
     query = request.GET.get('q', None)
     form = GroupSearchForm(request.GET)
     cat = None
-    
-    
+
     filters = get_query_filters(request.user, 'groups.view_group', perms_field=False)
     groups = Group.objects.filter(filters).distinct()
-    
+
     if request.user.is_authenticated():
         groups = groups.select_related()
-    
+
     if form.is_valid():
         cat = form.cleaned_data['search_category']
-    
+
         if query and cat:
             groups = groups.filter(**{cat: query} )
-    
+
     groups = groups.order_by('slug')
 
     EventLog.objects.log()
 
     return render_to_response(template_name, {'groups':groups, 'form': form},
         context_instance=RequestContext(request))
+
 
 def search_redirect(request):
     """
