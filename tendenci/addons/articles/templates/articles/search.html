@@ -21,11 +21,7 @@
 {% block extra_body %}
 	{{block.super}}
 	<script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.2.custom.min.js"></script>
-	<script>
-		$(document).ready(function(){
-			$('#id_date').datepicker({ dateFormat: "yy-mm-dd" });
-		});
-	</script>
+	<script type="text/javascript" src="{{ STATIC_URL }}js/articles.js"></script>
 {% endblock %}
 {% block body %}
 <div class="t">

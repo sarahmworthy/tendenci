@@ -21,18 +21,17 @@ SEARCH_CATEGORIES_ADMIN = (
     
     ('body__icontains', 'Body'),
     
-    ('creator__id', '*Creator Userid(#)'),
-    ('creator__username', '*Creator Username'),
+    ('creator__id', 'Creator Userid(#)'),
+    ('creator__username', 'Creator Username'),
     
-    ('featured', '*Featured Article'),
+    ('featured', 'Featured Article'),
     ('headline__icontains', 'Headline'),
     
-    ('owner__id', '*Owner Userid(#)'),
-    ('owner__username', '*Owner Username'),
+    ('owner__id', 'Owner Userid(#)'),
+    ('owner__username', 'Owner Username'),
     
-    ('rating', 'Rating'),
-    ('status__icontains', '*Status'),
-    ('syndicate', '*Syndicate'),
+    ('status__icontains', 'Status'),
+    ('syndicate', 'Syndicate'),
     #('release_dt', 'Release Date'),
     
 )
@@ -45,7 +44,6 @@ SEARCH_CATEGORIES = (
     
     ('body__icontains', 'Body'),
     ('headline__icontains', 'Headline'),
-    ('rating', 'Rating'),
     
     #('release_dt', 'Release Date'),
     

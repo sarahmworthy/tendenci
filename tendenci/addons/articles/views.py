@@ -71,12 +71,12 @@ def search(request, template_name="articles/search.html"):
         filter_date = form.cleaned_data['filter_date']
         date = form.cleaned_data['date']
         
-        if query and cat:
-            if cat in ('featured', 'syndicate'):
-                articles = articles.filter(**{cat : True } )
-            else:
-                articles = articles.filter( **{cat : query} )
-        
+        if cat in ('featured', 'syndicate'):
+            articles = articles.filter(**{cat : True } )
+        elif query and cat:
+            articles = articles.filter( **{cat : query} )
+            
+                
         if filter_date and date:
             articles = articles.filter( release_dt__month=date.month, release_dt__day=date.day, release_dt__year=date.year )
         
