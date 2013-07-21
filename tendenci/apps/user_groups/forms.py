@@ -14,12 +14,12 @@ SEARCH_CATEGORIES = (
     ('', '-- SELECT ONE --' ),
     ('creator__id', 'Creator Userid #'),
     ('creator__username', 'Creator Username'),
-    
+
     ('guid', 'User Group GUID'),
     ('id', 'User Group ID #'),
     ('label__icontains', 'User Group Label'),
     ('name__icontains', 'User Group Name'),
-    
+
     ('owner__id', 'Owner Userid #'),
     ('owner__username', 'Owner Username'),
     
@@ -29,27 +29,27 @@ SEARCH_CATEGORIES = (
 class GroupSearchForm(forms.Form):
     search_category = forms.ChoiceField(choices=SEARCH_CATEGORIES, required=False)
     q = forms.CharField(required=False)
-    
+
     def clean(self):
         cleaned_data = self.cleaned_data
         q = self.cleaned_data.get('q', None)
         cat = self.cleaned_data.get('search_category', None)
-        
+
         if q is None or q == "":
             return cleaned_data
-        
+
         if cat is None or cat == "" :
             self._errors['search_category'] =  ErrorList(['Select a category'])
-        
+
         if cat in ('id', 'owner__id', 'creator__id') :
             try:
                 x = int(q)
             except ValueError:
                 self._errors['q'] = ErrorList(['Must be an integer'])
-                
+
         return cleaned_data
-    
-        
+
+
 class GroupAdminForm(TendenciBaseForm):
     email_recipient = forms.CharField(label="Recipient Email",
                                       required=False, max_length=100,
