@@ -1,5 +1,5 @@
 # encoding: utf-8
-import datetime, random, string
+import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
@@ -17,18 +17,13 @@ class Migration(DataMigration):
             sub_email = sub.email
 
             if sub_email:
-                if sub.subscriber:
+                if sub.subscriber and sub.subscriber.creator:
                     user = sub.subscriber.creator
                 else:
                     if User.objects.filter(email=sub_email).exists():
                         user = User.objects.filter(email=sub_email).order_by('last_login')[0]
                     else:
-                        password = ''
-                        for i in range(0, 10):
-                            password += random.choice(string.ascii_lowercase + string.ascii_uppercase)
-
                         user = User(username=sub_email[:30], email=sub_email, is_active=False)
-                        user.set_password(password)
                         if SubscriberData.objects.filter(field_label="First Name", subscription=sub):
                             user.first_name = SubscriberData.objects.filter(field_label="First Name", subscription=sub)[0].value
                         if SubscriberData.objects.filter(field_label="Last Name", subscription=sub):
@@ -70,7 +65,7 @@ class Migration(DataMigration):
         },
         'auth.user': {
             'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 13, 22, 12, 34, 842281)'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 18, 19, 30, 57, 398308)'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
@@ -78,7 +73,7 @@ class Migration(DataMigration):
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 13, 22, 12, 34, 842151)'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 18, 19, 30, 57, 397995)'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
