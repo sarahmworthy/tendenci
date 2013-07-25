@@ -140,7 +140,7 @@ def event_custom_reg_form_list(request, event_id,
 
 
 @is_enabled('events')
-def details(request, id=None, template_name="events/view.html"):
+def details(request, id=None, hash=None, template_name="events/view.html"):
     if not id:
         return HttpResponseRedirect(reverse('event.month'))
 
@@ -151,7 +151,13 @@ def details(request, id=None, template_name="events/view.html"):
         days = get_active_days(event)
 
     if not has_view_perm(request.user, 'events.view_event', event):
-        raise Http403
+        if (not hash) or hash != event.hash:
+            raise Http403
+
+    use_hash = hash == event.hash
+    hash_url = ""
+    if (not event.allow_anonymous_view) and has_perm(request.user,'events.change_event', event):
+        hash_url = get_setting('site', 'global', 'siteurl') + reverse('event', args=([event.pk, event.hash]))
 
     if event.registration_configuration:
         event.limit = event.get_limit()
@@ -198,6 +204,8 @@ def details(request, id=None, template_name="events/view.html"):
         'speaker_files': speaker_files,
         'organizer_files': organizer_files,
         'place_files': place_files,
+        'use_hash': use_hash,
+        'hash_url': hash_url,
     }, context_instance=RequestContext(request))
 
 
@@ -1015,9 +1023,10 @@ def delete(request, id, template_name="events/delete.html"):
 
 
 @is_enabled('events')
-def register_pre(request, event_id, template_name="events/reg8n/register_pre2.html"):
+def register_pre(request, event_id, hash=None, template_name="events/reg8n/register_pre2.html"):
     event = get_object_or_404(Event, pk=event_id)
 
+    use_hash = hash == event.hash
     reg_conf=event.registration_configuration
     anony_reg8n = get_setting('module', 'events', 'anonymousregistration')
 
@@ -1045,6 +1054,7 @@ def register_pre(request, event_id, template_name="events/reg8n/register_pre2.ht
 
     return render_to_response(template_name, {
         'event':event,
+        'use_hash':use_hash,
         'individual_pricings': individual_pricings,
         'table_pricings': table_pricings,
         'quantity_options': range(31)
@@ -1096,7 +1106,7 @@ def member_register(request, event_id,
 
 
 @is_enabled('events')
-def register(request, event_id=0,
+def register(request, event_id=0, hash=None,
              individual=False,
              is_table=False,
              pricing_id=None,
@@ -1112,7 +1122,7 @@ def register(request, event_id=0,
     event.anony_setting = anony_setting
     is_strict = anony_setting == 'strict'
 
-    if is_strict:
+    if is_strict and not hash:
         # strict requires logged in
         if not request.user.is_authenticated():
             messages.add_message(request, messages.INFO,
@@ -1150,8 +1160,10 @@ def register(request, event_id=0,
             raise Http404
 
         if len(pricings) > 1:
-            return HttpResponseRedirect(reverse('event.register_pre', args=(event.pk,),))
-
+            if hash:
+                return HttpResponseRedirect(reverse('event.register_pre', args=(event.pk, event.hash),))
+            else:
+                return HttpResponseRedirect(reverse('event.register_pre', args=(event.pk,),))
 
         pricing = pricings[0]
         if pricing.quantity == 1:

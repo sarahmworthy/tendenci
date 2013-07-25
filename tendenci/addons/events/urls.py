@@ -34,6 +34,7 @@ urlpatterns = patterns(
     url(r'^%s/ics/(?P<id>\d+)/$' % urlpath, 'views.icalendar_single', name="event.ics_single"),
     url(r'^%s/feed/$' % urlpath, LatestEntriesFeed(), name='event.feed'),
     url(r'^%s/(?P<id>\d+)/$' % urlpath, 'views.details', name="event"),
+    url(r'^%s/(?P<id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.details', name="event"),
 
     url(r'^%s/(?P<event_id>\d+)/speakers/$' % urlpath, 'views.speaker_list', name="event.speakers"),
     url(r'^%s/(?P<event_id>\d+)/attendees$' % urlpath, 'views.view_attendees', name="event.attendees"),
@@ -60,6 +61,11 @@ urlpatterns = patterns(
     url(r'^%s/register/(?P<event_id>\d+)/pre/$' % urlpath, 'views.register_pre', name='event.register_pre'),
     url(r'^%s/register/(?P<event_id>\d+)/individual/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'individual': True}, name='event.register_individual'),
     url(r'^%s/register/(?P<event_id>\d+)/table/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'is_table': True}, name='event.register_table'),
+    # register for event using hash url
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.register', name='event.register'),
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/pre/$' % urlpath, 'views.register_pre', name='event.register_pre'),
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/individual/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'individual': True}, name='event.register_individual'),
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/table/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'is_table': True}, name='event.register_table'),
 
     url(r'^%s/registration/(?P<reg8n_id>\d+)/edit/$' % urlpath, 'views.registration_edit',
         name="event.registration_edit"),

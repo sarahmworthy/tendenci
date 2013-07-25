@@ -126,6 +126,11 @@
                         {% endfor %}
                     </div>
                 {% endif %}
+
+                {% if hash_url %}
+                    <p><strong>{% trans "Private Event URL" %}</strong>:
+                    <a href="{{ hash_url }}">{{ hash_url }}</a></p>
+                {% endif %}
             </div>
             <div class="files-wrap">
                 {% if event_files %}
@@ -180,7 +185,7 @@
             {% if event.registration_configuration.enabled %}
             <div class="pricing">
                 <h4 class="vital-header">How Much?</h4>
-                {% registration_pricing_and_button event request.user %}
+                {% registration_pricing_and_button event request.user use_hash %}
             </div>
             {% endif %}
 

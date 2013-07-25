@@ -975,7 +975,11 @@ class Event(TendenciBaseModel):
 
     def __unicode__(self):
         return self.title
-    
+
+    @property
+    def hash(self):
+        return md5(".".join([str(self.pk), str(self.create_dt)])).hexdigest()
+
     @property
     def has_addons(self):
         return Addon.objects.filter(
