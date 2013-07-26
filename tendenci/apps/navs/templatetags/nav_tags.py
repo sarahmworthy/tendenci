@@ -62,7 +62,7 @@ def navigation(context, nav_id):
     return context
 
 @register.inclusion_tag("navs/load_nav.html", takes_context=True)
-def load_nav(context, nav_id):
+def load_nav(context, nav_id, show_title=False):
     """
     Renders the nav and its nav items.
     This will call nav_item that will call itself recursively nesting 
@@ -76,6 +76,7 @@ def load_nav(context, nav_id):
     context.update({
         "nav": nav,
         "items": nav.top_items,
+        "show_title": show_title,
     })
     return context
 
@@ -118,7 +119,7 @@ def nav(context, nav_id, show_title=False):
         nav_object = navs[0]
         nav = get_nav(nav_object.pk)
         if not nav:
-            cache_nav(nav_object)
+            cache_nav(nav_object, show_title)
     except:
         return None
 
