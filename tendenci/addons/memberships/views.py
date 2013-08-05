@@ -16,7 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from django.shortcuts import render_to_response, redirect, get_object_or_404
+from django.shortcuts import render, render_to_response, redirect, get_object_or_404
 from django.template import RequestContext
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.db.models.fields import AutoField
@@ -220,6 +220,21 @@ def download_template(request, slug=''):
     """
     from tendenci.addons.memberships.utils import make_csv
     return make_csv(slug=slug)
+
+
+def membership_applications(request, template_name="memberships/applications/list.html"):
+
+    apps = MembershipApp.objects.all()
+
+    if not request.user.profile.is_superuser:
+        apps = apps.filter(status_detail='published')
+
+    if request.user.is_anonymous():
+        apps = apps.filter(allow_anonymous_view=True)
+
+    EventLog.objects.log()
+
+    return render(request, template_name, {'apps': apps})
 
 
 def application_detail_default(request, **kwargs):
@@ -1808,6 +1823,8 @@ def membership_default_add(request, slug='', template='memberships/applications/
 
                 if any(approval_required):
                     membership.pend()
+                    membership.save()  # save pending status
+
                     if membership.is_renewal():
                         Notice.send_notice(
                             request=request,
@@ -1861,15 +1878,18 @@ def membership_default_add(request, slug='', template='memberships/applications/
 
             # send email notification to admin
             recipients = get_notice_recipients(
-                                       'module', 'memberships',
-                                       'membershiprecipients')
+                'module', 'memberships',
+                'membershiprecipients')
+
             extra_context = {
                 'membership': membership,
                 'app': app,
                 'request': request
             }
-            send_email_notification('membership_joined_to_admin', recipients,
-                                    extra_context)
+            send_email_notification(
+                'membership_joined_to_admin',
+                recipients,
+                extra_context)
 
             # redirect: confirmation page
             return HttpResponseRedirect(reverse(
