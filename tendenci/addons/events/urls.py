@@ -34,7 +34,6 @@ urlpatterns = patterns(
     url(r'^%s/ics/(?P<id>\d+)/$' % urlpath, 'views.icalendar_single', name="event.ics_single"),
     url(r'^%s/feed/$' % urlpath, LatestEntriesFeed(), name='event.feed'),
     url(r'^%s/(?P<id>\d+)/$' % urlpath, 'views.details', name="event"),
-    url(r'^%s/(?P<id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.details', name="event"),
 
     url(r'^%s/(?P<event_id>\d+)/speakers/$' % urlpath, 'views.speaker_list', name="event.speakers"),
     url(r'^%s/(?P<event_id>\d+)/attendees$' % urlpath, 'views.view_attendees', name="event.attendees"),
@@ -145,6 +144,8 @@ urlpatterns = patterns(
     url(r'^%s/custom_reg_form/preview/(?P<id>\d+)/$' % urlpath, 'views.custom_reg_form_preview', name='event.custom_reg_form_preview'),
     # custom registration form preview
     url(r'^%s/custom_reg_form/list/(?P<event_id>\d+)/$' % urlpath, 'views.event_custom_reg_form_list', name='event.event_custom_reg_form_list'),
+
+    url(r'^%s/(?P<id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.details', name="event"),
 
     # event types, need to be the last in the urls
     url(r'^%s/(?P<type>[\w\-\/]+)/$' % urlpath, 'views.month_view', name='event.month'),

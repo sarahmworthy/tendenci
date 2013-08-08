@@ -721,12 +721,14 @@ class SpeakerForm(BetterModelForm):
         fields = (
             'name',
             'file',
+            'featured',
             'description',
         )
 
         fieldsets = [('Speaker', {
           'fields': ['name',
                     'file',
+                    'featured',
                     'description'
                     ],
           'legend': '',

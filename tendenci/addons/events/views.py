@@ -207,7 +207,7 @@ def details(request, id=None, hash=None, template_name="events/view.html"):
 
     EventLog.objects.log(instance=event)
 
-    speakers = event.speaker_set.exclude(name="").order_by('pk')
+    speakers = event.speaker_set.order_by('pk')
     organizers = event.organizer_set.all().order_by('pk') or None
 
     organizer = None
@@ -229,10 +229,18 @@ def details(request, id=None, hash=None, template_name="events/view.html"):
 
     place_files = File.objects.filter(content_type=place_ct, object_id=event.place_id)
 
+    f_speakers = speakers.filter(featured=True)
+    speakers_length = speakers.count()
+    if f_speakers:
+        speakers = f_speakers
+    else:
+        speakers = speakers[:1]
+
     return render_to_response(template_name, {
         'days': days,
         'event': event,
         'speakers': speakers,
+        'speakers_length': speakers_length,
         'organizer': organizer,
         'now': datetime.now(),
         'addons': event.addon_set.filter(status=True),
@@ -249,7 +257,7 @@ def details(request, id=None, hash=None, template_name="events/view.html"):
 def speaker_list(request, event_id, template_name='events/speakers.html'):
     event = get_object_or_404(Event, pk=event_id)
 
-    speakers = event.speaker_set.exclude(name="").order_by('pk')
+    speakers = event.speaker_set.order_by('pk')
 
     return render_to_response(template_name, {
         'event': event,

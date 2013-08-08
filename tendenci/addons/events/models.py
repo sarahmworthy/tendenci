@@ -881,6 +881,9 @@ class Speaker(models.Model):
     user = models.OneToOneField(User, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True) # static info.
     description = models.TextField(blank=True) # static info.
+    featured = models.BooleanField(
+        default=False,
+        help_text=_("All speakers marked as featured will be displayed when viewing the event."))
 
     def __unicode__(self):
         return self.name
