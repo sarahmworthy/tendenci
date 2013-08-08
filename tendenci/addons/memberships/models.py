@@ -396,6 +396,7 @@ class MembershipDefault(TendenciBaseModel):
     renewal = models.BooleanField(blank=True, default=False)
     certifications = models.CharField(max_length=500, blank=True)
     work_experience = models.TextField(blank=True)
+    referer_url = models.CharField(max_length=500, blank=True, editable=False)
     referral_source = models.CharField(max_length=150, blank=True)
     referral_source_other = models.CharField(max_length=150, blank=True)
     referral_source_member_name = models.CharField(max_length=50, blank=True, default=u'')
@@ -2191,6 +2192,7 @@ class Notice(models.Model):
             'member_number': membership.member_number,
             'membership_type': membership.membership_type.name,
             'payment_method': payment_method_name,
+            'referer_url': '%s%s?next=%s' % (global_setting('siteurl'), reverse('auth_login'), membership.referer_url),
             'membership_link': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
             'renew_link': '%s%s'.format(global_setting('siteurl'), membership.get_absolute_url()),
             'corporate_membership_notice': corporate_msg,

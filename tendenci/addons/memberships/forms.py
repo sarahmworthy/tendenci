@@ -711,13 +711,23 @@ class UserForm(forms.ModelForm):
         kwargs['commit'] = False
         super(UserForm, self).save(**kwargs)
 
-        user, created = Profile.get_or_create_user(**{
+        user_attrs = {
             'username': self.cleaned_data.get('username'),
             'password': self.cleaned_data.get('password'),
             'email': self.cleaned_data.get('email'),
             'first_name': self.cleaned_data.get('first_name'),
             'last_name': self.cleaned_data.get('last_name'),
-        })
+        }
+
+        # all fields are required in order to pull
+        # an existing user record
+        if not all(user_attrs.values()):
+            created = True
+            user_attrs['username'] = user_attrs['username'] or \
+                Profile.spawn_username(user_attrs['first_name'][:1], user_attrs['last_name'])
+            user = User.objects.create_user(*user_attrs.values()[:2])
+        else:
+            user, created = Profile.objects.get_or_create_user(**user_attrs)
 
         if created:
             send_welcome_email(user)
@@ -914,6 +924,9 @@ class MembershipDefault2Form(forms.ModelForm):
             membership.creator_username = request_user.username
             membership.owner = request_user
             membership.owner_username = request_user.username
+
+        if 'membership-referer-url' in request.session:
+            membership.referer_url = request.session['membership-referer-url']
 
         membership.entity = Entity.objects.first()
         membership.user = user

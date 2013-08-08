@@ -130,6 +130,7 @@ def membership_details(request, id=0, template_name="memberships/details.html"):
 
         if 'approve' in GET_KEYS:
             membership.approve(request_user=request.user)
+            membership.send_email(request, 'approve')
             messages.add_message(request, messages.SUCCESS, 'Successfully Approved')
 
         if 'disapprove' in GET_KEYS:
@@ -235,6 +236,24 @@ def membership_applications(request, template_name="memberships/applications/lis
     EventLog.objects.log()
 
     return render(request, template_name, {'apps': apps})
+
+
+def referer_url(request):
+    """
+    Save the membership-referer-url
+    in sessions.  Then redirect to the 'next' URL
+    """
+    next = request.GET.get('next')
+    site_url = get_setting('site', 'global', 'siteurl')
+
+    if not next:
+        raise Http404
+
+    #  make referer-url relative if possible; remove domain
+    referer_url = request.META['HTTP_REFERER'].split(site_url)[-1]
+    request.session['membership-referer-url'] = referer_url
+
+    return redirect(next)
 
 
 def application_detail_default(request, **kwargs):
@@ -580,6 +599,8 @@ def application_confirmation_default(request, hash):
     """
     Responds with default confirmation
     """
+    from django.contrib.auth import login
+
     template_name = 'memberships/applications/confirmation_default2.html'
     membership = get_object_or_404(MembershipDefault, guid=hash)
     if membership.corporate_membership_id:
@@ -589,6 +610,8 @@ def application_confirmation_default(request, hash):
         app = corp_app.memb_app
     else:
         app = membership.app
+
+    EventLog.objects.log(instance=membership)
 
     return render_to_response(
         template_name, {
@@ -1535,12 +1558,12 @@ def membership_default_add(request, slug='', template='memberships/applications/
     else:
         membership_type_id = 0
 
-    good = (
+    allowed_users = (
         request.user.profile.is_superuser,
         username == request.user.username,
     )
 
-    if any(good) and username:
+    if any(allowed_users) and username:
         [user] = User.objects.filter(username=username)[:1] or [None]
 
     join_under_corporate = kwargs.get('join_under_corporate', False)
