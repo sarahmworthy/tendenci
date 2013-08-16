@@ -725,9 +725,18 @@ class UserForm(forms.ModelForm):
             created = True
             user_attrs['username'] = user_attrs['username'] or \
                 Profile.spawn_username(user_attrs['first_name'][:1], user_attrs['last_name'])
-            user = User.objects.create_user(*user_attrs.values()[:2])
+
+            user = User.objects.create_user(
+                username=user_attrs['username'],
+                email=user_attrs['email'],
+                password=user_attrs['password'])
+
+            user.first_name = user_attrs['first_name']
+            user.last_name = user_attrs['last_name']
+            user.save()
+
         else:
-            user, created = Profile.objects.get_or_create_user(**user_attrs)
+            user, created = User.objects.get_or_create(**user_attrs)
 
         if created:
             send_welcome_email(user)
