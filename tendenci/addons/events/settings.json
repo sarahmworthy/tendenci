@@ -170,6 +170,23 @@
         "updated_by": ""
     },
     {
+        "default_value": "false", 
+        "description": "If true, only the primary registrant will need to follow the event reg setting (strict, validated, open).",
+        "data_type": "boolean",
+        "update_dt": "2012-02-08 11:07:11",
+        "input_type": "select",
+        "client_editable": true,
+        "name": "validateprimaryregonly",
+        "value": "false",
+        "label": "Validate Primary Registrant Only",
+        "input_value": "true,false",
+        "parent_id": 0,
+        "scope": "module", 
+        "scope_category": "events",
+        "store": true,
+        "updated_by": ""
+    },
+    {
         "default_value": "events", 
         "description": "The root url for the events module. Use letters and dashes only.", 
         "data_type": "string",
@@ -186,5 +203,4 @@
         "store": true, 
         "updated_by": ""
     }
-
 ]

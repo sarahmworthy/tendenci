@@ -22,9 +22,17 @@ class Migration(DataMigration):
         if not os.path.exists(dst):
             os.makedirs(dst)
 
+        # if src_base_path is not a directory, stop here
+        if not os.path.isdir(src_base_path):
+            return
+
         # move files
         for item in os.listdir(src_base_path):
             src = '%s%s' % (src_base_path, item)
+            
+            if os.path.isdir(dst):
+                continue  # on to the next one
+
             shutil.copy2(src, dst)
 
             # create file record

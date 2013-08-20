@@ -804,6 +804,7 @@ class MembershipDefault(TendenciBaseModel):
         if request_user:  # else: don't set
             dupe.action_taken_user = request_user
 
+        dupe.save()
         dupe.set_join_dt()
         dupe.set_renew_dt()
         dupe.set_expire_dt()
@@ -1487,6 +1488,7 @@ class MembershipDefault(TendenciBaseModel):
         if not self.application_approved_dt:
             return None
 
+        # memberships with join date
         memberships = self.qs_memberships().filter(
             join_dt__isnull=False
             ).exclude(status_detail='disapproved'
@@ -1517,7 +1519,7 @@ class MembershipDefault(TendenciBaseModel):
 
         # if not approved
         # set renew_dt and get out
-        if not approved:
+        if not all(approved):
             self.renew_dt = None
             return None
 
@@ -1559,11 +1561,11 @@ class MembershipDefault(TendenciBaseModel):
 
             if self.renew_dt:
                 self.expire_dt = self.membership_type.get_expiration_dt(
-                    renewal=self.renewal, renew_dt=self.renew_dt
+                    renewal=self.is_renewal(), renew_dt=self.renew_dt
                 )
             elif self.join_dt:
                 self.expire_dt = self.membership_type.get_expiration_dt(
-                    renewal=self.renewal, join_dt=self.join_dt
+                    renewal=self.is_renewal(), join_dt=self.join_dt
                 )
 
     def set_member_number(self):
