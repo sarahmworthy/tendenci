@@ -1,0 +1,8 @@
+{% load cache %}
+{% if urls %}
+    {% cache 86400 meta_og_image obj_id app field %}
+        {% for url in urls %}
+            <meta property="og:image" content="{{ url }}"/>
+        {% endfor %}
+    {% endcache %}
+{% endif %}
