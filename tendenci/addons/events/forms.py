@@ -882,6 +882,7 @@ class Reg8nEditForm(BetterModelForm):
             'payment_required',
             'require_guests_info',
             'discount_eligible',
+            'allow_free_pass',
             'display_registration_stats',
             'use_custom_reg',
             'send_reminder',
@@ -896,6 +897,7 @@ class Reg8nEditForm(BetterModelForm):
                     'payment_required',
                     'require_guests_info',
                     'discount_eligible',
+                    'allow_free_pass',
                     'display_registration_stats',
                     'use_custom_reg',
                     'send_reminder',
@@ -957,6 +959,9 @@ class Reg8nEditForm(BetterModelForm):
         #.short_text_input
         self.fields['reminder_days'].initial = '7,1'
         self.fields['reminder_days'].widget.attrs.update({'class': 'short_text_input'})
+        
+        if not get_setting('module', 'corporate_memberships', 'usefreepass'):
+            del self.fields['allow_free_pass']
 
     def clean_use_custom_reg(self):
         value = self.cleaned_data['use_custom_reg']
