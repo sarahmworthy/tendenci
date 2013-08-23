@@ -64,7 +64,11 @@ def search(request, template_name="articles/search.html"):
         articles = articles.select_related()
 
     query = request.GET.get('q', None)
+    tag = request.GET.get('tag', None)
     form = ArticleSearchForm(request.GET, is_superuser=request.user.is_superuser)
+
+    if tag:
+        articles = articles.filter(tags__icontains=tag)
 
     if form.is_valid():
         cat = form.cleaned_data['search_category']
