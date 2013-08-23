@@ -1686,40 +1686,35 @@ class MembershipDefault(TendenciBaseModel):
             if created:
                 send_welcome_email(self.user)
 
-            # auto approve -------------------------
-            self.application_approved = True
-            self.application_approved_user = self.user
-            self.application_approved_dt = datetime.now()
-            self.application_approved_denied_user = self.user
-            self.status = True
-            self.status_detail = 'active'
-
-            self.set_join_dt()
-            if self.renewal:
-                self.set_renew_dt()
-            self.set_expire_dt()
-            self.save()
-
-            self.archive_old_memberships()
+            if self.is_renewal():
+                self.renew(request.user)
+                Notice.send_notice(
+                    request=request,
+                    emails=self.user.email,
+                    notice_type='renewal',
+                    membership=self,
+                    membership_type=self.membership_type,
+                )
+                EventLog.objects.log(
+                    instance=self,
+                    action='membership_renewed'
+                )
+            else:
+                self.approve()
+                Notice.send_notice(
+                    request=request,
+                    emails=self.user.email,
+                    notice_type='approve',
+                    membership=self,
+                    membership_type=self.membership_type,
+                )
+                EventLog.objects.log(
+                    instance=self,
+                    action='membership_approved'
+                )
 
             # user in [membership] group
             self.group_refresh()
-
-            # show member number on profile
-            self.user.profile.refresh_member_number()
-
-            Notice.send_notice(
-                request=request,
-                emails=self.user.email,
-                notice_type='approve',
-                membership=self,
-                membership_type=self.membership_type,
-            )
-
-            EventLog.objects.log(
-                instance=self,
-                action='membership_approved'
-            )
 
             if self.corporate_membership_id:
                 # notify corp reps
@@ -2058,14 +2053,17 @@ class MembershipImport(models.Model):
             f = default_storage.open(file_path, 'wb')
             recap_writer = UnicodeWriter(f, encoding='utf-8')
             header_row = self.header_line.split(',')
+            if 'status' in header_row:
+                header_row.remove('status')
+            if 'status_detail' in header_row:
+                header_row.remove('status_detail')
             header_row.extend(['action', 'error'])
             recap_writer.writerow(header_row)
             data_list = MembershipImportData.objects.filter(
                 mimport=self).order_by('row_num')
             for idata in data_list:
                 data_dict = idata.row_data
-                row = [data_dict[k] for k in header_row if k not in [
-                                            'action', 'error']]
+                row = [data_dict[k] for k in header_row if k in data_dict]
                 row.extend([idata.action_taken, idata.error])
                 row = [smart_str(s).decode('utf-8') for s in row]
                 recap_writer.writerow(row)
