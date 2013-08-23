@@ -879,7 +879,7 @@ class Speaker(models.Model):
     """
     event = models.ManyToManyField('Event', blank=True)
     user = models.OneToOneField(User, blank=True, null=True)
-    name = models.CharField(max_length=100) # static info.
+    name = models.CharField(_('Speaker Name'), max_length=100) # static info.
     description = models.TextField(blank=True) # static info.
     featured = models.BooleanField(
         default=False,

@@ -78,6 +78,7 @@ from tendenci.addons.events.forms import (
     EventForm,
     Reg8nEditForm,
     PlaceForm,
+    SpeakerBaseFormSet,
     SpeakerForm,
     OrganizerForm,
     TypeForm,
@@ -470,6 +471,7 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
 
     SpeakerFormSet = modelformset_factory(
         Speaker,
+        formset=SpeakerBaseFormSet,
         form=SpeakerForm,
         extra=1,
         can_delete=True
@@ -795,6 +797,7 @@ def add(request, year=None, month=None, day=None, \
 
     SpeakerFormSet = modelformset_factory(
         Speaker,
+        formset=SpeakerBaseFormSet,
         form=SpeakerForm,
         extra=1
     )
