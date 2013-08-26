@@ -53,7 +53,7 @@ class ArticleSearchForm(forms.Form):
     def __init__(self, *args, **kwargs):
 		is_superuser = kwargs.pop('is_superuser', None)
 		super(ArticleSearchForm, self).__init__(*args, **kwargs)
-		
+
 		if not is_superuser:
 			self.fields['search_category'].choices = SEARCH_CATEGORIES
 

@@ -6,7 +6,7 @@
 {% load category_tags %}
 {% load humanize %}
 {% load i18n %}
-
+{% load meta_tags %}
 
 {% block title %}{{ block.super }}{{ event.get_title }}{% endblock %}
 {% block meta_description %}{{ event.get_description }}{% endblock %}
@@ -14,6 +14,8 @@
 {% block meta_canonical_url %}<link rel="canonical" href="{{ event.get_canonical_url }}" />{% endblock %}
 
 {% block extra_head %}
+{% meta_og_image event "image" %}
+{% meta_og_image event "description" %}
 {{ block.super }}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/events.css">
 <link rel="stylesheet" href="{{ STATIC_URL }}css/tipsy.css">
@@ -40,32 +42,32 @@
 
             <div class="details-wrap">
                 {% for speaker in speakers %}
-                    <div class="speaker-wrap">
-                        {% if speaker.get_photo %}
-                        <div class="speaker-photo">
-                          <img alt="Speaker: {{ speaker.name }}" src="{% url file speaker.get_photo.pk %}"  width="100" />
-                        </div>
-                        {% endif %}
-                        <div class="speaker">
-                            <strong>{% trans "Speaker" %}</strong> {{ speaker.name }}
-                        </div>
-                        {% if speaker.description|striptags|wordcount > 50 %}
-                        <div class="speaker-desc-short">
-                            {{ speaker.description|striptags|safe|truncatewords:"50" }}
-                        </div>
-                        <div class="speaker-desc-long">
-                            {{ speaker.description|safe|urlize|linebreaks }}
-                        </div>
-                        {% else %}
-                            <div class="speaker-desc-short">
-                                {{ speaker.description|safe|urlize|linebreaks }}
-                            </div>                    
-                        {% endif %}
-                        {% if speaker.description|striptags|wordcount > 50 %}
-                        <a class="speaker-desc-toggle" href="#">{% trans "Full Description" %}</a>
-                        {% endif %}
-                        <div style="clear:both;"></div>
-                    </div>              
+                <div class="speaker-wrap">
+                    {% if speaker.get_photo %}
+                    <div class="speaker-photo">
+                        <img alt="Speaker: {{ speaker.name }}" src="{% url file speaker.get_photo.pk %}"  width="100" />
+                    </div>
+                    {% endif %}
+                    <div class="speaker">
+                        <strong>{% trans "Speaker" %}</strong> {{ speaker.name }}
+                    </div>
+                    {% if speaker.description|striptags|wordcount > 50 %}
+                    <div class="speaker-desc-short">
+                        {{ speaker.description|striptags|safe|truncatewords:"50" }}
+                    </div>
+                    <div class="speaker-desc-long">
+                        {{ speaker.description|safe|urlize|linebreaks }}
+                    </div>
+                    {% else %}
+                    <div class="speaker-desc-short">
+                        {{ speaker.description|safe|urlize|linebreaks }}
+                    </div>                    
+                    {% endif %}
+                    {% if speaker.description|striptags|wordcount > 50 %}
+                    <a class="speaker-desc-toggle" href="#">{% trans "Full Description" %}</a>
+                    {% endif %}
+                    <div style="clear:both;"></div>
+                </div>
                 {% endfor %}
                 {% if speakers_length > 1 %}
                 <a href="{% url event.speakers event.pk %}">{% trans "View all speakers" %}</a>
