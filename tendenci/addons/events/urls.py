@@ -127,6 +127,7 @@ urlpatterns = patterns(
         {'roster_view': 'total'},
         name="event.registrant.export.total"),
 
+    url(r'^%s/(?P<id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.details', name="event"),
     url(r'^%s/(?P<id>\d+)/(?P<private_slug>\w+)/$' % urlpath, 'views.details', name='event.private_details'),
 
     # addons
