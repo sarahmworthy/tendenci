@@ -1,19 +1,15 @@
-from datetime import datetime, timedelta
-
+from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.conf import settings
 from django.template.defaultfilters import slugify
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
 from django.utils import simplejson
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.html import escape
-
 from tendenci.core.base.http import Http403
 from tendenci.core.base.utils import now_localized
 from tendenci.core.event_logs.models import EventLog
@@ -21,18 +17,19 @@ from tendenci.core.meta.models import Meta as MetaTags
 from tendenci.core.meta.forms import MetaForm
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.decorators import is_enabled
-from tendenci.core.perms.utils import (get_notice_recipients, update_perms_and_save,
-    has_perm, get_query_filters, has_view_perm)
+from tendenci.core.perms.utils import (
+    get_notice_recipients,
+    update_perms_and_save,
+    has_perm,
+    get_query_filters,
+    has_view_perm)
 from tendenci.core.categories.forms import CategoryForm, CategoryForm2
 from tendenci.core.categories.models import Category
 from tendenci.core.theme.shortcuts import themed_response as render_to_response
 from tendenci.core.exports.utils import run_export_task
-
 from tendenci.addons.jobs.models import Job, JobPricing
 from tendenci.addons.jobs.forms import JobForm, JobPricingForm, JobSearchForm
-from tendenci.addons.jobs.utils import (is_free_listing,
-                                        job_set_inv_payment,
-                                        get_job_unique_slug)
+from tendenci.addons.jobs.utils import is_free_listing, job_set_inv_payment
 
 try:
     from tendenci.apps.notifications import models as notification
@@ -148,7 +145,7 @@ def print_view(request, slug, template_name="jobs/print-view.html"):
 @is_enabled('jobs')
 @login_required
 def add(request, form_class=JobForm, template_name="jobs/add.html",
-        object_type=Job, success_redirect='job'):
+        object_type=Job, success_redirect='job', thankyou_redirect='job.thank_you'):
 
     require_payment = get_setting('module', 'jobs',
                                     'jobsrequirespayment')
@@ -218,7 +215,7 @@ def add(request, form_class=JobForm, template_name="jobs/add.html",
             if not job.slug:
                 #job.slug = get_job_unique_slug(slugify(job.title))
                 job.slug = '%s-%s' % (slugify(job.title),
-                                        Job.objects.count())
+                                        object_type.objects.count())
 
             job = update_perms_and_save(request, form, job)
 
@@ -281,7 +278,7 @@ def add(request, form_class=JobForm, template_name="jobs/add.html",
                 return HttpResponseRedirect(
                         reverse(success_redirect, args=[job.slug]))
             else:
-                return HttpResponseRedirect(reverse('job.thank_you'))
+                return HttpResponseRedirect(reverse(thankyou_redirect))
     else:
         # Redirect user w/perms to create pricing if none exist
         pricings = JobPricing.objects.all()
@@ -652,8 +649,6 @@ def export(request, template_name="jobs/export.html"):
         raise Http403
 
     if request.method == 'POST':
-        # initilize initial values
-        file_name = "jobs.csv"
         fields = [
             'guid',
             'title',

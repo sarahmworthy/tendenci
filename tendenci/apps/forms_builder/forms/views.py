@@ -432,7 +432,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             # fields aren't included in submitter body to prevent spam
             submitter_body = generate_submitter_email_body(entry, form_for_form)
             email_from = form.email_from or settings.DEFAULT_FROM_EMAIL
-            sender = get_setting('site', 'global', 'siteemailnoreplyaddress')
+            sender = get_setting('site', 'global', 'siteemailnoreplyaddress') or settings.DEFAULT_FROM_EMAIL
             email_to = form_for_form.email_to()
             if email_to and form.send_email and form.email_text:
                 # Send message to the person who submitted the form.
@@ -449,8 +449,11 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             email_from = email_to or email_from # Send from the email entered.
             email_headers = {}  # Reset the email_headers
             email_headers.update({'Reply-To':email_from})
-            email_copies = [e.strip() for e in form.email_copies.split(",")
-                if e.strip()]
+            email_copies = [e.strip() for e in form.email_copies.split(',') if e.strip()]
+
+            subject = subject.encode(errors='ignore')
+            admin_body = admin_body.encode(errors='ignore')
+
             if email_copies:
                 # Send message to the email addresses listed in the copies.
                 msg = EmailMessage(subject, admin_body, sender, email_copies, headers=email_headers)

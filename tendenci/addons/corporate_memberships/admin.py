@@ -29,6 +29,8 @@ from tendenci.addons.corporate_memberships.utils import (
     update_authenticate_fields,
     edit_corpapp_update_memb_app)
 
+from tendenci.core.base.utils import tcurrency
+
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.site_settings.utils import get_setting
 
@@ -38,14 +40,16 @@ class CorporateMembershipTypeAdmin(admin.ModelAdmin):
                      'admin_only', 'status_detail', 'position']
     list_filter = ['name', 'price', 'status_detail']
     list_editable = ['position']
+    option_fields = ['position', ('admin_only', 'status'), 'status_detail']
+    if get_setting('module', 'corporate_memberships', 'usefreepass'):
+        option_fields.insert(0, 'number_passes')
     fieldsets = (
         (None, {'fields': ('name', 'price', 'renewal_price',
                            'membership_type', 'description')}),
         ('Individual Pricing Options', {'fields':
                                     ('apply_threshold', 'individual_threshold',
                                     'individual_threshold_price',)}),
-        ('Other Options', {'fields': (
-            'position', ('admin_only', 'status'), 'status_detail')}),
+        ('Other Options', {'fields': option_fields}),
     )
 
     form = CorporateMembershipTypeForm
@@ -295,10 +299,10 @@ class StatusDetailFilter(SimpleListFilter):
 
 
 class CorpMembershipAdmin(admin.ModelAdmin):
-    list_display = ['corp_profile', 'join_dt',
-                    'renewal', 'renew_dt',
+    list_display = ['corp_profile',
                     'expiration_dt',
-                    'approved', 'status_detail']
+                    'approved', 'status_detail',
+                    'invoice_url']
     list_filter = [StatusDetailFilter, 'join_dt', 'expiration_dt']
     search_fields = ['corp_profile__name']
 
@@ -311,6 +315,23 @@ class CorpMembershipAdmin(admin.ModelAdmin):
                     ).exclude(status_detail='archive'
                               ).order_by('status_detail',
                                          'corp_profile__name')
+    def invoice_url(self, instance):
+        invoice = instance.invoice
+        if invoice:
+            if invoice.balance > 0:
+                return '<a href="%s">Invoice %s (%s)</a>' % (
+                    invoice.get_absolute_url(),
+                    invoice.pk,
+                    tcurrency(invoice.balance)
+                )
+            else:
+                return '<a href="%s">Invoice %s</a>' % (
+                    invoice.get_absolute_url(),
+                    invoice.pk
+                )
+        return ""
+    invoice_url.short_description = u'Invoice'
+    invoice_url.allow_tags = True
 
     def add_view(self, request, form_url='', extra_context=None):
         return HttpResponseRedirect(reverse('corpmembership.add'))

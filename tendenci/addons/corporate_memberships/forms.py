@@ -49,6 +49,7 @@ from tendenci.addons.corporate_memberships.utils import (
 from tendenci.addons.corporate_memberships.settings import UPLOAD_ROOT
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.core.payments.models import PaymentMethod
+from tendenci.core.site_settings.utils import get_setting
 
 fs = FileSystemStorage(location=UPLOAD_ROOT)
 
@@ -82,10 +83,18 @@ class CorporateMembershipTypeForm(forms.ModelForm):
                   'individual_threshold',
                   'individual_threshold_price',
                   'admin_only',
+                  'number_passes',
                   'position',
                   'status',
                   'status_detail',
                   )
+
+
+class FreePassesForm(forms.ModelForm):
+
+    class Meta:
+        model = CorpMembership
+        fields = ('total_passes_allowed',)
 
 
 class CorpMembershipAppForm(TendenciBaseForm):
@@ -301,6 +310,8 @@ class CorpProfileForm(forms.ModelForm):
         self.corpmembership_app = kwargs.pop('corpmembership_app')
         super(CorpProfileForm, self).__init__(*args, **kwargs)
 
+        assign_fields(self, app_field_objs)
+
         if self.corpmembership_app.authentication_method == 'email':
             self.fields['authorized_domain'] = forms.CharField(help_text="""
             <span style="color: #990000;">comma separated (ex: mydomain.com,
@@ -315,13 +326,14 @@ class CorpProfileForm(forms.ModelForm):
         if not self.corpmembership_app.authentication_method == 'secret_code':
             del self.fields['secret_code']
         else:
-            self.fields['secret_code'].help_text = 'This is the code that ' + \
-                'your members will need to enter to join under your corporate'
+            self.fields['secret_code'].help_text = 'This is the code ' + \
+                'your members will need when joining under your corporation'
 
-        del self.fields['status']
-        del self.fields['status_detail']
-
-        assign_fields(self, app_field_objs)
+        if 'status' in self.fields:
+            del self.fields['status']
+        if 'status_detail' in self.fields:
+            del self.fields['status_detail']
+        
         self.field_names = [name for name in self.fields.keys()]
 
     def clean_secret_code(self):

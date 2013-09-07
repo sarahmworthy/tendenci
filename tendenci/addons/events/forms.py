@@ -206,8 +206,10 @@ class FormForCustomRegForm(forms.ModelForm):
                                                                 required=False)
                     self.fields['override_price'].widget.attrs.update({'size': '8'})
 
-
-
+        if self.event:
+            if hasattr(self.event, 'is_table') and hasattr(self.event, 'free_event'):
+                if not self.event.is_table and reg_conf.allow_free_pass:
+                    self.fields['use_free_pass'] = forms.BooleanField(label="Use Free Pass", required=False)
 
         # initialize internal variables
         self.price = Decimal('0.00')
@@ -344,6 +346,21 @@ class FormForCustomRegForm(forms.ModelForm):
         if override and override_price <0:
             raise forms.ValidationError('Override price must be a positive number.')
         return override_price
+    
+    def clean_use_free_pass(self):
+        from tendenci.addons.corporate_memberships.utils import get_user_corp_membership
+        use_free_pass = self.cleaned_data['use_free_pass']
+        email = self.cleaned_data.get('email', '')
+        memberid = self.cleaned_data.get('memberid', '')
+        corp_membership = get_user_corp_membership(
+                                        member_number=memberid,
+                                        email=email)
+        if use_free_pass:
+            if not corp_membership:
+                raise forms.ValidationError('Not a corporate member for free pass')
+            elif not corp_membership.free_pass_avail:
+                raise forms.ValidationError('Free pass not available for "%s".' % corp_membership.corp_profile.name)
+        return use_free_pass
 
 
     def save(self, event, **kwargs):
@@ -478,9 +495,14 @@ class EventForm(TendenciBaseForm):
             'allow_anonymous_view',
             'user_perms',
             'group_perms',
+            'enable_private_slug',
+            'private_slug',
             'status',
             'status_detail',
             )
+        widgets = {
+            'private_slug': forms.HiddenInput()
+        }
 
         fieldsets = [('Event Information', {
                       'fields': ['title',
@@ -503,6 +525,8 @@ class EventForm(TendenciBaseForm):
                                  'user_perms',
                                  'member_perms',
                                  'group_perms',
+                                 'enable_private_slug',
+                                 'private_slug',
                                  ],
                       'classes': ['permissions'],
                       }),
@@ -518,7 +542,11 @@ class EventForm(TendenciBaseForm):
 
         if self.instance.pk:
             self.fields['description'].widget.mce_attrs['app_instance_id'] = self.instance.pk
+            self.fields['enable_private_slug'].help_text = self.instance.get_private_slug(absolute_url=True)
         else:
+            # kwargs['instance'] always trumps initial
+            self.fields['private_slug'].initial = self.instance.get_private_slug()
+            self.fields['enable_private_slug'].widget = forms.HiddenInput()
             self.fields['description'].widget.mce_attrs['app_instance_id'] = 0
             self.fields['group'].initial = Group.objects.get_initial_group_id()
 
@@ -566,6 +594,7 @@ class EventForm(TendenciBaseForm):
 
     def save(self, *args, **kwargs):
         event = super(EventForm, self).save(*args, **kwargs)
+
         if self.cleaned_data.get('remove_photo'):
             event.image = None
         return event
@@ -923,6 +952,7 @@ class Reg8nEditForm(BetterModelForm):
             'payment_required',
             'require_guests_info',
             'discount_eligible',
+            'allow_free_pass',
             'display_registration_stats',
             'use_custom_reg',
             'send_reminder',
@@ -937,6 +967,7 @@ class Reg8nEditForm(BetterModelForm):
                     'payment_required',
                     'require_guests_info',
                     'discount_eligible',
+                    'allow_free_pass',
                     'display_registration_stats',
                     'use_custom_reg',
                     'send_reminder',
@@ -998,6 +1029,9 @@ class Reg8nEditForm(BetterModelForm):
         #.short_text_input
         self.fields['reminder_days'].initial = '7,1'
         self.fields['reminder_days'].widget.attrs.update({'class': 'short_text_input'})
+        
+        if not get_setting('module', 'corporate_memberships', 'usefreepass'):
+            del self.fields['allow_free_pass']
 
     def clean_use_custom_reg(self):
         value = self.cleaned_data['use_custom_reg']
@@ -1242,6 +1276,10 @@ class RegistrationForm(forms.Form):
         return override_price_table
 
 
+class FreePassCheckForm(forms.Form):
+    email = forms.EmailField(label=_("Email"))
+    member_number = forms.CharField(max_length=50, required=False)
+    
 
 class RegistrantForm(forms.Form):
     """
@@ -1313,6 +1351,9 @@ class RegistrantForm(forms.Form):
                                                             decimal_places=2,
                                                             required=False)
                 self.fields['override_price'].widget.attrs.update({'size': '8'})
+        if not self.event.is_table and reg_conf.allow_free_pass:
+            self.fields['use_free_pass'] = forms.BooleanField(label="Use Free Pass",
+                                                             required=False)
 
 
     def clean_first_name(self):
@@ -1438,6 +1479,20 @@ class RegistrantForm(forms.Form):
             raise forms.ValidationError('Override price must be a positive number.')
         return override_price
 
+    def clean_use_free_pass(self):
+        from tendenci.addons.corporate_memberships.utils import get_user_corp_membership
+        use_free_pass = self.cleaned_data['use_free_pass']
+        email = self.cleaned_data.get('email', '')
+        memberid = self.cleaned_data.get('memberid', '')
+        corp_membership = get_user_corp_membership(
+                                        member_number=memberid,
+                                        email=email)
+        if use_free_pass:
+            if not corp_membership:
+                raise forms.ValidationError('Not a corporate member for free pass')
+            elif not corp_membership.free_pass_avail:
+                raise forms.ValidationError('Free pass not available for "%s".' % corp_membership.corp_profile.name)
+        return use_free_pass
 
 
 # extending the BaseFormSet because i want to pass the event obj

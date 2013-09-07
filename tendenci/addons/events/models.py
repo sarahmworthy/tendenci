@@ -134,6 +134,7 @@ class RegistrationConfiguration(models.Model):
 
     is_guest_price = models.BooleanField(_('Guests Pay Registrant Price'), default=False)
     discount_eligible = models.BooleanField(default=True)
+    allow_free_pass = models.BooleanField(default=False)
     display_registration_stats = models.BooleanField(_('Publicly Show Registration Stats'), default=False, help_text='Display the number of spots registered and the number of spots left to the public.')
 
     # custom reg form
@@ -340,26 +341,6 @@ class RegConfPricing(OrderingBaseModel):
     
     def target_display(self):        
         target_str = ''
-        
-#        if self.allow_anonymous:
-#            pass
-#            #target_str = 'for public'
-#        elif self.allow_user:
-#            target_str = 'for users'
-#        elif self.allow_member:
-#            target_str = 'for members'
-#            
-#        if self.group:
-#            if target_str:
-#                target_str += ' and '
-#            target_str += 'for members of "%s"' % self.group.name
-#            
-#        if not any([self.allow_anonymous,
-#                    self.allow_user,
-#                    self.allow_member,
-#                    self.group
-#                    ]):
-#            target_str = 'admin only' 
             
         if self.quantity > 1:
             if not target_str:
@@ -679,6 +660,7 @@ class Registrant(models.Model):
 
     cancel_dt = models.DateTimeField(editable=False, null=True)
     memberid = models.CharField(_('Member ID'), max_length=50, blank=True, null=True)
+    use_free_pass = models.BooleanField(default=False)
 
     checked_in = models.BooleanField(_('Is Checked In?'), default=False)
     checked_in_dt = models.DateTimeField(null=True)
@@ -921,7 +903,8 @@ class Event(TendenciBaseModel):
     place = models.ForeignKey('Place', null=True)
     registration_configuration = models.OneToOneField('RegistrationConfiguration', null=True, editable=False)
     mark_registration_ended = models.BooleanField(_('Registration Ended'), default=False)
-    private = models.BooleanField() # hide from lists
+    enable_private_slug = models.BooleanField(_('Enable Private URL'), blank=True) # hide from lists
+    private_slug = models.CharField(max_length=500, blank=True, default=u'')
     password = models.CharField(max_length=50, blank=True)
     on_weekend = models.BooleanField(default=True, help_text=_("This event occurs on weekends"))
     external_url = models.URLField(_('External URL'), default=u'', blank=True)
@@ -951,6 +934,10 @@ class Event(TendenciBaseModel):
     class Meta:
         permissions = (("view_event","Can view event"),)
 
+    def __init__(self, *args, **kwargs):
+        super(Event, self).__init__(*args, **kwargs)
+        self.private_slug = self.private_slug or Event.make_slug()
+
     def get_meta(self, name):
         """
         This method is standard across all models that are
@@ -975,16 +962,11 @@ class Event(TendenciBaseModel):
         return ("registration_event_register", [self.pk])
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            self.guid = str(uuid.uuid1())
-        photo_upload = kwargs.pop('photo', None)
+        self.guid = self.guid or str(uuid.uuid1())
         super(Event, self).save(*args, **kwargs)
 
         if self.image:
-            if self.is_public():
-                set_s3_file_permission(self.image.file, public=True)
-            else:
-                set_s3_file_permission(self.image.file, public=False)
+            set_s3_file_permission(self.image.file, public=self.is_public())
 
     def __unicode__(self):
         return self.title
@@ -1166,6 +1148,46 @@ class Event(TendenciBaseModel):
         if self.registration_configuration:
             limit = self.registration_configuration.limit
         return int(limit)
+
+    @classmethod
+    def make_slug(self, length=7):
+        """
+        Returns newly generated slug
+        Option: length (default: 7)
+        """
+        return uuid.uuid1().get_hex()[:length]
+
+    def get_private_slug(self, absolute_url=False):
+        """
+        Returns private slug
+        Option to return absolute private URL
+        """
+        from tendenci.core.site_settings.utils import (
+            get_module_setting,
+            get_global_setting)
+
+        pk = self.pk or 'id'
+        private_slug = self.private_slug or Event.make_slug()
+
+        if absolute_url:
+            return '%s/%s/%s/%s' % (
+                get_global_setting('siteurl'),
+                get_module_setting('events', 'url'),
+                pk,
+                private_slug)
+
+        self.private_slug = private_slug
+        return private_slug
+
+    def is_private(self, slug=u''):
+        """
+        Check if event is private (i.e. if private enabled)
+        """
+        # print 'enable_private_slug', self.enable_private_slug
+        # print 'private_slug', self.private_slug
+        # print 'slug', slug
+
+        return all((self.enable_private_slug, self.private_slug, self.private_slug == slug))
 
 
 class CustomRegForm(models.Model):

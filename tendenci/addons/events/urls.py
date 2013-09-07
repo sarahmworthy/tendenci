@@ -1,6 +1,9 @@
 from django.conf.urls.defaults import patterns, url
 from tendenci.addons.events.feeds import LatestEntriesFeed
 from tendenci.core.site_settings.utils import get_setting
+from tendenci.addons.events.signals import init_signals
+
+init_signals()
 
 urlpath = get_setting('module', 'events', 'url')
 if not urlpath:
@@ -124,6 +127,8 @@ urlpatterns = patterns(
         {'roster_view': 'total'},
         name="event.registrant.export.total"),
 
+    url(r'^%s/(?P<id>\d+)/(?P<private_slug>\w+)/$' % urlpath, 'views.details', name='event.private_details'),
+
     # addons
     url(r'^%s/(?P<event_id>\d+)/addons/$' % urlpath, 'views.list_addons', name='event.list_addons'),
     url(r'^%s/(?P<event_id>\d+)/addons/add/$' % urlpath, 'views.add_addon', name='event.add_addon'),
@@ -145,7 +150,8 @@ urlpatterns = patterns(
     # custom registration form preview
     url(r'^%s/custom_reg_form/list/(?P<event_id>\d+)/$' % urlpath, 'views.event_custom_reg_form_list', name='event.event_custom_reg_form_list'),
 
-    url(r'^%s/(?P<id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.details', name="event"),
+    # free type
+    url(r'^%s/check_free_pass_eligibility/$' % urlpath, 'views.check_free_pass_eligibility', name='event.check_free_pass_eligibility'),
 
     # event types, need to be the last in the urls
     url(r'^%s/(?P<type>[\w\-\/]+)/$' % urlpath, 'views.month_view', name='event.month'),

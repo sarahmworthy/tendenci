@@ -9,6 +9,7 @@ import time as ttime
 import subprocess
 from sets import Set
 import calendar
+from dateutil.relativedelta import relativedelta
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -1511,7 +1512,7 @@ def membership_default_preview(
         app_fields = app_fields.filter(admin_only=False)
     app_fields = app_fields.order_by('position')
 
-    user_form = UserForm(app_fields)
+    user_form = UserForm(app_fields, request=request)
     profile_form = ProfileForm(app_fields)
     demographics_form = DemographicsForm(app_fields)
     membership_form = MembershipDefault2Form(app_fields,
@@ -2536,26 +2537,29 @@ def report_member_quick_list(request, template_name='reports/membership_quick_li
 def report_members_by_company(request, template_name='reports/members_by_company.html'):
     """ Total current members by company.
     """
-    active_mems = MembershipDefault.objects.filter(status=1, status_detail="active")
-    company_list = []
-
-    # get list of distinct companies
-    for member in active_mems:
-        if member.user.profile.company:
-            if member.user.profile.company not in company_list:
-                company_list.append(member.user.profile.company)
+    company_list = Profile.objects.exclude(
+                                Q(member_number='') | 
+                                Q(company='')).values_list(
+                                'company',
+                                flat=True
+                                ).distinct().order_by('company')
 
     # get total number of active members for each company
     companies = []
+    companies_processed = []
     for company in company_list:
-        total_members = active_mems.filter(user__profile__company=company).count()
+        company = company.strip()
+        if company.lower() in companies_processed:
+            continue
+        total_members = Profile.objects.filter(company__iexact=company,
+                                            ).exclude(member_number=''
+                                            ).count()
         company_dict = {
             'name': company,
             'total_members': total_members
         }
         companies.append(company_dict)
-
-    companies = sorted(companies, key=lambda k: k['total_members'], reverse=True)
+        companies_processed.append(company.lower())
 
     EventLog.objects.log()
 
@@ -2668,17 +2672,21 @@ def report_grace_period_members(request, template_name='reports/grace_period_mem
 
 @staff_member_required
 def report_active_members_ytd(request, template_name='reports/active_members_ytd.html'):
-    import datetime
+    this_year = datetime.now().year
+    years = [this_year - i for i in range(5) ]
+    year_selected = request.GET.get('year', this_year)
+    try:
+        year_selected = int(year_selected)
+    except:
+        year_selected = this_year
+    if year_selected < 1900 or year_selected > this_year:
+        year_selected = this_year
 
-    year = datetime.datetime.now().year
-    years = [year, year - 1, year - 2, year - 3, year - 4]
-    if request.GET.get('year'):
-        year = int(request.GET.get('year'))
+    active_mems = MembershipDefault.objects.filter(status=True,
+                                                   status_detail__in=["active", 'archive'])
 
-    active_mems = MembershipDefault.objects.filter(status=True, status_detail="active")
-
-    total_new = active_mems.filter(join_dt__year=year).count()
-    total_renew = active_mems.filter(renew_dt__year=year).count()
+    total_new = 0
+    total_renew = 0
 
     months = []
     itermonths = iter(calendar.month_abbr)
@@ -2686,29 +2694,41 @@ def report_active_members_ytd(request, template_name='reports/active_members_ytd
 
     for index, month in enumerate(itermonths):
         index = index + 1
-        new_mems = active_mems.filter(join_dt__year=year, join_dt__month=index).count()
-        renew_mems = active_mems.filter(renew_dt__year=year, renew_dt__month=index).count()
+        start_dt = datetime(year_selected, index, 1)
+        end_dt = start_dt + relativedelta(months=1)
+        members = active_mems.filter(application_approved_dt__gte=start_dt,
+                                      application_approved_dt__lt=end_dt)
+        new_mems = members.filter(renewal=False).distinct('user__id',
+                                                          'membership_type__id'
+                                                          ).count()
+        renew_mems = members.filter(renewal=True).distinct('user__id',
+                                                          'membership_type__id'
+                                                          ).count()
 
-        if index is 12:
-            date = datetime.date(year, 12, 31)
-        else:
-            date = datetime.date(year, index + 1, 1) - datetime.timedelta(days=1)
-        total_active = MembershipDefault.objects.filter(
-            create_dt__lte=date,
-            expire_dt__gt=date,
-        ).count()
+        total_new += new_mems
+        total_renew += renew_mems
 
         month_dict = {
             'name': month,
             'new_mems': new_mems,
             'renew_mems': renew_mems,
-            'total_active': total_active
+            'total_active': (new_mems + renew_mems)
         }
         months.append(month_dict)
 
     EventLog.objects.log()
 
-    return render_to_response(template_name, {'months': months, 'total_new': total_new, 'total_renew': total_renew, 'years': years, 'year': year}, context_instance=RequestContext(request))
+    exclude_total = request.GET.get('exclude_total', False)
+    if request.GET.get('print', False):
+        template_name='reports/active_members_ytd_print.html'
+    return render_to_response(template_name,
+                              {'months': months,
+                               'total_new': total_new,
+                               'total_renew': total_renew,
+                               'years': years,
+                               'year_selected': year_selected,
+                               'exclude_total': exclude_total},
+                              context_instance=RequestContext(request))
 
 
 @staff_member_required

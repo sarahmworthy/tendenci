@@ -1,5 +1,8 @@
 from django.conf.urls.defaults import patterns, url, include
 from tendenci.core.site_settings.utils import get_setting
+from tendenci.addons.corporate_memberships.signals import init_signals
+
+init_signals()
 
 urlpath = get_setting('module', 'corporate_memberships', 'url')
 if not urlpath:
@@ -93,6 +96,11 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         name="corp_membership.reps_lookup"),
     url(r'^%s/delete_corp_rep/(?P<id>\d+)/$' % urlpath, 'delete_corp_rep',
         name="corp_membership.delete_rep"),
+                       
+    # edit free passes
+    url(r"^%s/free_passes/edit/(?P<id>\d+)/$" % urlpath,
+        "free_passes_edit",
+        name="corpmembership.free_passes_edit"),
 
     # notice
     (r'^%s/notices/' % urlpath, include('tendenci.addons.corporate_memberships.notices.urls')),
@@ -150,4 +158,6 @@ urlpatterns = patterns('tendenci.addons.corporate_memberships.views',
         name="reports-corp-mems-over-time"),
     url(r"^%s/reports/corp_mems_summary/$" % urlpath, "corp_mems_summary",
         name="reports-corp-mems-summary"),
+    url(r"^%s/reports/free_passes_list/$" % urlpath, "free_passes_list",
+        name="corp_memb.reports.free_passes_list"),
 )

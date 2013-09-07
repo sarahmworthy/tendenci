@@ -55,6 +55,7 @@ from tendenci.core.imports.utils import get_unique_username
 from tendenci.libs.abstracts.models import OrderingBaseModel
 from tendenci.addons.industries.models import Industry
 from tendenci.addons.regions.models import Region
+from tendenci.addons.events.models import Event, Registrant
 
 
 FIELD_CHOICES = (
@@ -131,6 +132,10 @@ class CorporateMembershipType(OrderingBaseModel, TendenciBaseModel):
                                  "All individual members applying " + \
                                  "under or equal to the threashold " + \
                                  "limit receive the threshold prices."))
+    number_passes = models.PositiveIntegerField(_('Number Passes'),
+                                               default=0,
+                                               blank=True)
+    
 
     def __unicode__(self):
         return self.name
@@ -430,6 +435,9 @@ class CorpMembership(TendenciBaseModel):
     anonymous_creator = models.ForeignKey('Creator', null=True)
     admin_notes = models.TextField(_('Admin notes'),
                                blank=True, null=True)
+    total_passes_allowed = models.PositiveIntegerField(_('Total Passes Allowed'),
+                                               default=0,
+                                               blank=True)
 
     perms = generic.GenericRelation(ObjectPermission,
                                       object_id_field="object_id",
@@ -488,6 +496,21 @@ class CorpMembership(TendenciBaseModel):
     @property
     def module_name(self):
         return self._meta.module_name
+
+    @property
+    def free_pass_used(self):
+        return self.passes_used.count()
+    
+    @property
+    def free_pass_total(self):
+        return self.total_passes_allowed
+    
+    @property
+    def free_pass_avail(self):
+        total = self.free_pass_total
+        if not total:
+            return 0
+        return total - self.free_pass_used
 
     @property
     def authentication_method(self):
@@ -1226,6 +1249,21 @@ class CorpMembership(TendenciBaseModel):
                         status=True
                             ).exclude(
                         status_detail='archive').count()
+
+
+class FreePassesStat(TendenciBaseModel):
+    user = models.ForeignKey(User, null=True)
+    corp_membership = models.ForeignKey("CorpMembership",
+                                related_name="passes_used")
+    event = models.ForeignKey(Event, related_name="passes_used")
+    registrant = models.ForeignKey(Registrant, null=True)
+
+    def set_creator_owner(self, request_user):
+        if request_user and not request_user.is_anonymous():
+            self.creator = request_user
+            self.owner = request_user
+            self.creator_username = request_user.username
+            self.owner_username = request_user.username
 
 
 class CorpMembershipApp(TendenciBaseModel):

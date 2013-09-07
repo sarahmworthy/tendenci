@@ -42,6 +42,7 @@ from tendenci.addons.corporate_memberships.models import (
                                             CorpMembershipRep,
                                             CorpMembership,
                                             CorpProfile,
+                                            FreePassesStat,
                                             IndivMembershipRenewEntry,
                                             CorpMembershipAppField,
                                             CorpMembershipImport,
@@ -58,6 +59,7 @@ from tendenci.addons.corporate_memberships.models import (
 from tendenci.addons.corporate_memberships.forms import (
                                          CorpMembershipForm,
                                          CorpProfileForm,
+                                         FreePassesForm,
                                          CorpMembershipRenewForm,
                                          RosterSearchAdvancedForm,
                                          CorpMembershipSearchForm,
@@ -100,6 +102,44 @@ from tendenci.apps.profiles.models import Profile
 #from tendenci.addons.corporate_memberships.settings import use_search_index
 from tendenci.core.site_settings.utils import get_setting
 
+
+@staff_member_required
+def free_passes_list(request,
+    template='corporate_memberships/reports/free_passes_list.html'):
+    """
+    List the stat of all free passes.
+    """
+    corp_memberships = CorpMembership.objects.filter(
+                            corporate_membership_type__number_passes__gt=0
+                            ).exclude(status_detail='archive'
+                            ).order_by('corp_profile__name')
+
+    context = {'corp_memberships': corp_memberships}
+    return render_to_response(template, context, RequestContext(request))
+    
+
+@staff_member_required
+def free_passes_edit(request, id,
+            template='corporate_memberships/free_passes_edit.html'):
+    """
+    Edit total free passes allowed for corp. membership
+    """
+    corp_membership = get_object_or_404(CorpMembership, id=id)
+    form = FreePassesForm(request.POST or None, instance=corp_membership)
+    if request.method == 'POST':
+        if form.is_valid():
+            corp_membership = form.save()
+            # log an event
+            EventLog.objects.log(instance=corp_membership)
+            messages.add_message(request, messages.SUCCESS,
+                    'Successfully updated free passes for %s' % corp_membership) 
+            # redirect to view 
+            return HttpResponseRedirect(reverse('corpmembership.view',
+                                                args=[corp_membership.id]))      
+    
+    context = {'corp_membership': corp_membership,
+               'form': form}
+    return render_to_response(template, context, RequestContext(request))
 
 @csrf_exempt
 @login_required
@@ -241,8 +281,11 @@ def corpmembership_add(request, slug='',
             corp_membership = corpmembership_form.save(
                                                 creator=creator,
                                                 corp_profile=corp_profile)
-            # calculate the expiration
+            
             corp_memb_type = corp_membership.corporate_membership_type
+            # assign free passes
+            corp_membership.total_passes_allowed = corp_memb_type.number_passes
+            # calculate the expiration
             corp_membership.expiration_dt = corp_memb_type.get_expiration_dt(
                                         join_dt=corp_membership.join_dt)
 
@@ -521,7 +564,8 @@ def corpmembership_view(request, id,
     context = {"corporate_membership": corp_membership,
                'all_records': all_records,
                'app_fields': app_fields,
-               'app': app}
+               'app': app,
+               'user_can_edit': can_edit}
     return render_to_response(template, context, RequestContext(request))
 
 

@@ -85,6 +85,7 @@ from tendenci.addons.events.forms import (
     MessageAddForm,
     RegistrationForm,
     RegistrantForm,
+    FreePassCheckForm,
     RegistrantBaseFormSet,
     Reg8nConfPricingForm,
     PendingEventForm,
@@ -177,8 +178,8 @@ def event_custom_reg_form_list(request, event_id, template_name="events/event_cu
 
 
 @is_enabled('events')
-def details(request, id=None, hash=None, template_name="events/view.html"):
-    if not id:
+def details(request, id=None, hash=None, private_slug=u'', template_name="events/view.html"):
+    if not id and not private_slug:
         return HttpResponseRedirect(reverse('event.month'))
 
     event = get_object_or_404(Event, pk=id)
@@ -195,6 +196,12 @@ def details(request, id=None, hash=None, template_name="events/view.html"):
     hash_url = ""
     if (not event.allow_anonymous_view) and has_perm(request.user,'events.change_event', event):
         hash_url = get_setting('site', 'global', 'siteurl') + reverse('event', args=([event.pk, event.hash]))
+
+    if event.is_private(private_slug):
+        pass
+    else:
+        if not has_view_perm(request.user, 'events.view_event', event):
+            raise Http403
 
     if event.registration_configuration:
         event.limit = event.get_limit()
@@ -1519,6 +1526,37 @@ def register(request, event_id=0, hash=None,
 
 
 @is_enabled('events')
+@csrf_exempt
+def check_free_pass_eligibility(request, form_class=FreePassCheckForm):
+    """
+    Check if there is any free pass available for the corp. individual
+    with the email or member_number provided. 
+    """
+    form = form_class(request.POST or None)
+    ret_dict = {'is_corp_member': False}
+
+    if form.is_valid():
+        from tendenci.addons.corporate_memberships.utils import get_user_corp_membership
+
+        member_number = form.cleaned_data['member_number'].strip()
+        email = form.cleaned_data['email'].strip()
+        corp_membership = get_user_corp_membership(
+                                member_number=member_number,
+                                email=email)
+        
+        if corp_membership:
+            ret_dict['is_corp_member'] = True
+            ret_dict['pass_total'] = corp_membership.free_pass_total
+            ret_dict['pass_used'] = corp_membership.free_pass_used
+            ret_dict['pass_avail'] = corp_membership.free_pass_avail
+            ret_dict['corp_name'] = corp_membership.corp_profile.name
+            ret_dict['corp_id'] = corp_membership.id
+
+    return HttpResponse(json.dumps(ret_dict))
+                                       
+    
+
+@is_enabled('events')
 def multi_register(request, event_id=0, template_name="events/reg8n/multi_register.html"):
     """
     This view has 2 POST states. Instead of a GET and a POST.
@@ -2199,6 +2237,33 @@ def month_view(request, year=None, month=None, type=None, template_name='events/
     weekdays = calendar.weekheader(10).split()
     cal = Calendar(calendar.SUNDAY).monthdatescalendar(year, month)
 
+    # Check for empty pages for far-reaching years
+    if abs(year - datetime.now().year) > 6:
+        filters = get_query_filters(request.user, 'events.view_event')
+        is_events = Event.objects.filter(filters).filter(
+            (Q(start_dt__gte=cal[0][0]) & Q(start_dt__lte=cal[-1:][0][6])) | (Q(end_dt__gte=cal[0][0]) & Q(end_dt__lte=cal[-1:][0][6])) | (Q(end_dt__gte=cal[-1:][0][6]) & Q(start_dt__lte=cal[0][0]))).distinct()
+        if not is_events:
+            # Try to redirect old dates to the earliest event
+            if year < datetime.now().year:
+                latest_event = Event.objects.filter(start_dt__gte=datetime(month=month, day=1, year=year)).order_by('start_dt')
+                if latest_event.count() > 0:
+                    latest_month = latest_event[0].start_dt.month
+                    latest_year = latest_event[0].start_dt.year
+                    current_date = datetime(month=month, day=1, year=year).strftime('%b %Y')
+                    latest_date = latest_event[0].start_dt.strftime('%b %Y')
+                    messages.add_message(request, messages.INFO, 'No Events were found for %s. The next event is on %s, shown below.' % (current_date, latest_date))
+                    return HttpResponseRedirect(reverse('event.month', args=[latest_year, latest_month]))
+            # Try to redirect far future dates to the latest event
+            else:
+                latest_event = Event.objects.filter(end_dt__lte=datetime(month=next_month, day=1, year=next_year)).order_by('-end_dt')
+                if latest_event.count() > 0:
+                    latest_month = latest_event[0].end_dt.month
+                    latest_year = latest_event[0].end_dt.year
+                    current_date = datetime(month=month, day=1, year=year).strftime('%b %Y')
+                    latest_date = latest_event[0].end_dt.strftime('%b %Y')
+                    messages.add_message(request, messages.INFO, 'No Events were found for %s. The next event is on %s, shown below.' % (current_date, latest_date))
+                    return HttpResponseRedirect(reverse('event.month', args=[latest_year, latest_month]))
+
     types = Type.objects.all().order_by('name')
 
     EventLog.objects.log()
@@ -2237,6 +2302,30 @@ def day_view(request, year=None, month=None, day=None, template_name='events/day
             int(tomorrow.month),
             int(tomorrow.day)
         ))
+
+    # Check for empty pages for far-reaching years
+    if abs(year - datetime.now().year) > 6:
+        filters = get_query_filters(request.user, 'events.view_event')
+        is_events = Event.objects.filter(filters).filter(end_dt__gte=day_date, start_dt__lte=tomorrow)
+        if not is_events:
+            # Try to redirect old dates to the earliest event
+            if year < datetime.now().year:
+                latest_event = Event.objects.filter(start_dt__gte=day_date).order_by('start_dt')
+                if latest_event.count() > 0:
+                    latest_month = latest_event[0].start_dt.month
+                    latest_year = latest_event[0].start_dt.year
+                    latest_day = latest_event[0].start_dt.day
+                    messages.add_message(request, messages.INFO, 'No Events were found for %s. The next event is on %s, shown below.' % (day_date.strftime('%x'), latest_event[0].start_dt.strftime('%x')))
+                    return HttpResponseRedirect(reverse('event.day', args=[latest_year, latest_month, latest_day]))
+            # Try to redirect far future dates to the latest event
+            else:
+                latest_event = Event.objects.filter(end_dt__lte=day_date).order_by('-end_dt')
+                if latest_event.count() > 0:
+                    latest_month = latest_event[0].end_dt.month
+                    latest_year = latest_event[0].end_dt.year
+                    latest_day = latest_event[0].end_dt.day
+                    messages.add_message(request, messages.INFO, 'No Events were found for %s. The next event is on %s, shown below.' % (day_date.strftime('%x'), latest_event[0].end_dt.strftime('%x')))
+                    return HttpResponseRedirect(reverse('event.day', args=[latest_year, latest_month, latest_day]))
 
     EventLog.objects.log()
 
@@ -2757,7 +2846,6 @@ def message_add(request, event_id, form_class=MessageAddForm, template_name='eve
         if form.is_valid():
 
             email.sender = get_setting('site', 'global', 'siteemailnoreplyaddress')
-            email.sender = email.sender or request.user.email
 
             email.sender_display = request.user.get_full_name()
             email.reply_to = request.user.email
