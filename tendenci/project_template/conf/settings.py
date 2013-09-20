@@ -275,6 +275,7 @@ if SITE_SETTINGS_KEY_ENV:
 
 CACHE_PRE_KEY = SITE_CACHE_KEY
 JOHNNY_MIDDLEWARE_KEY_PREFIX = SITE_CACHE_KEY
+JOHNNY_TABLE_BLACKLIST = ('base_updatetracker')
 
 LOCAL_CACHE_PATH = env('LOCAL_CACHE_PATH', os.path.join(PROJECT_ROOT, "cache"))
 
@@ -422,6 +423,12 @@ if os.path.exists(os.path.join(PROJECT_ROOT, 'addons/impersonation/')):
 DEFAULT_INSTALLED_APPS = INSTALLED_APPS
 from tendenci.core.registry.utils import update_addons
 INSTALLED_APPS = update_addons(INSTALLED_APPS, SITE_ADDONS_PATH)
+
+# Salesforce Integration
+SALESFORCE_USERNAME = env('SALESFORCE_USERNAME', '')
+SALESFORCE_PASSWORD = env('SALESFORCE_PASSWORD', '')
+SALESFORCE_SECURITY_TOKEN = env('SALESFORCE_SECURITY_TOKEN', '')
+SALESFORCE_AUTO_UPDATE = env('SALESFORCE_AUTO_UPDATE', '')
 
 # local settings for development
 try:
