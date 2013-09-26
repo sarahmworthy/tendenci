@@ -34,18 +34,33 @@
 
 .t .files-wrap .file-wrap.grid-wrap {
 	width: 220px; 
-	height: 220px; 
 	float: left;
 	padding: 10px;
 	margin: 0 10px 20px 10px;
 	position: relative;
 	background-color: #F6F6F6;
+	word-wrap: break-word;
 }
 
-.t .files-wrap .file-wrap h2 {
+.t .files-wrap .file-wrap.grid-wrap .categories,
+.t .files-wrap .file-wrap.grid-wrap .tags,
+.t .files-wrap .file-wrap.grid-wrap .related-content {
+	display: none;
+}
+
+.t .files-wrap .file-wrap.list-wrap h2 {
 	width: 85%;
 	margin-bottom: 6px;
 }
+
+.t .files-wrap .file-wrap.grid-wrap h2 {
+	text-align: center;
+}
+
+.t .files-wrap .file-wrap.grid-wrap h2 a {
+	font-size: 16px;
+}
+
 .t .files-wrap .file-wrap .content {
 	margin-bottom: 10px;
 }
@@ -70,6 +85,21 @@
 	float: left;
 	margin-right: 10px;
 }
+
+.t .file-wrap.grid-wrap .icon {
+	min-height: 200px;
+	position: relative;
+}
+
+.t .file-wrap.grid-wrap .icon img {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	margin: auto;
+}
+
 .t .file-wrap .meta {
 	margin-top: 20px;
 }
@@ -87,6 +117,12 @@
 	background-color: #EEE;
 }
 
+.t .file-wrap.grid-wrap .options {
+	display: none;
+}
+.t .file-wrap.grid-wrap:hover .options {
+	display: block;
+}
 .t .options {
 	text-align: right;
 	position: absolute;
@@ -94,6 +130,7 @@
 	background-color: #F6F6F6;
 	padding: 10px 3px 10px 10px;
 	white-space: nowrap;
+	z-index: 999;
 }
 
 .t .quick-options {
