@@ -24,12 +24,22 @@
 	margin-bottom: 20px;
 }
 
-.t .files-wrap .file-wrap {
+.t .files-wrap .file-wrap.list-wrap {
 	border: 1px solid #CCC;
 	padding: 10px;
 	margin-bottom: 20px;
 	position: relative;
 	background-color: white;
+}
+
+.t .files-wrap .file-wrap.grid-wrap {
+	width: 220px; 
+	height: 220px; 
+	float: left;
+	padding: 10px;
+	margin: 0 10px 20px 10px;
+	position: relative;
+	background-color: #F6F6F6;
 }
 
 .t .files-wrap .file-wrap h2 {
@@ -56,7 +66,7 @@
 	background-color: white;
 }
 
-.t .file-wrap .icon {
+.t .file-wrap.list-wrap .icon {
 	float: left;
 	margin-right: 10px;
 }

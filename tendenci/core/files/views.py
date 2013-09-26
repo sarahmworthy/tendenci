@@ -211,6 +211,7 @@ def search(request, template_name="files/search.html"):
         template_name, {
             'files': files,
             'form': form,
+            'layout': get_setting("module", "files", "layout"),
         }, context_instance=RequestContext(request))
 
 

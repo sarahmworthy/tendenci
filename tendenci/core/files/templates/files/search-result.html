@@ -4,35 +4,20 @@
 
 {% tags_for_object file as tags %}
 
-<div class="file-wrap">
+<div class="file-wrap {{ layout }}-wrap">
     <div class="options">
         <div class="quick-options">
             {% file_options request.user file %}           
         </div>
     </div>
 
-    {% if file.icon %}
-    <div class="icon"><img src="{{ file.icon }}" /></div>
-    {% endif %}
+    {% file_thumbnail layout file %}
 
     <h2><a href="{% url file file.pk %}">{{ file.get_name }}</a></h2>
 
     <div class="download">
         <a title="Download {{ file.ext }}" href="{% url file file.pk 'download' %}">{% trans "Download" %} this {{ file.type }}</a>
     </div>
-
-    {% if file.get_content %}
-    <div class="related-content">
-        <p>
-            <strong>{% trans "Related Content" %}:</strong>
-        {% if file.get_content.get_absolute_url %}
-            <a href="{{ file.get_content.get_absolute_url }}">{{ file.get_content }}</a>
-        {% else %}
-            {{ file.get_content }}
-        {% endif %}
-        </p>
-    </div>
-    {% endif %}
 
     <div class="meta">
         {% with file.category_set as file_cat %}
