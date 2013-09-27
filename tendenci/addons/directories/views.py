@@ -55,6 +55,8 @@ def search(request, template_name="directories/search.html"):
     filters = get_query_filters(request.user, 'directories.view_directory')
     directories = Directory.objects.filter(filters).distinct()
     cat = None
+    category = None
+    sub_category = None
 
     if not request.user.is_anonymous():
         directories = directories.select_related()
@@ -68,16 +70,21 @@ def search(request, template_name="directories/search.html"):
 
     if form.is_valid():
         cat = form.cleaned_data['search_category']
+        category = form.cleaned_data['category']
+        sub_category = form.cleaned_data['sub_category']
 
         if query and cat:
             directories = directories.filter( **{cat : query} )
+
+    if category:
+        directories = directories.filter(categories__category__id=category)
+    if sub_category:
+        directories = directories.filter(categories__parent__id=sub_category)
 
     directories = directories.order_by('headline')
 
     EventLog.objects.log()
 
-    # Query list of category and subcategory for dropdown filters
-    category = request.GET.get('category')
     try:
         category = int(category)
     except:
@@ -162,31 +169,7 @@ def add(request, form_class=DirectoryForm, template_name="directories/add.html")
                 # set the expiration date
                 directory.expiration_dt = directory.activation_dt + timedelta(days=directory.requested_duration)
 
-            # We set the logo to None temporarily because we need
-            # the PK when we save to get the filepath of the file
-            logo = directory.logo
-            directory.logo = None
-
-            directory = update_perms_and_save(request, form, directory)
-
-            # directory now has a pk, so we can reassign the logo
-            # and resave
-            directory.logo = logo
-
-            if directory.logo:
-                directory.logo.file.seek(0)
-
-                directory.save(log=False)
-
-                if settings.USE_S3_STORAGE:
-                    resize_s3_image(directory.logo.name)
-                else:
-                    try:
-                        logo = Image.open(directory.logo.path)
-                        logo.thumbnail((200,200),Image.ANTIALIAS)
-                        logo.save(directory.logo.path)
-                    except:
-                        pass                
+            directory = update_perms_and_save(request, form, directory)               
                         
             # create invoice
             directory_set_inv_payment(request.user, directory, pricing)

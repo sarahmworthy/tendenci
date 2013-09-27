@@ -496,6 +496,15 @@ class MembershipDefault(TendenciBaseModel):
         return ('membership.details', [self.pk])
         # return ('admin:memberships_membershipdefault_change', [self.pk])
 
+    @models.permalink
+    def get_current_membership_url(self):
+        """
+        Returns link to url of the most current membership.
+        """
+        memberships = self.user.membershipdefault_set.filter(membership_type=self.membership_type).order_by('-id')
+
+        return ('membership.details', [memberships[0].pk])
+
     @property
     def group(self):
         return self.membership_type.group
@@ -734,26 +743,23 @@ class MembershipDefault(TendenciBaseModel):
         self.application_approved_dt = \
             self.application_approved_dt or NOW
 
-        if request_user.is_authenticated():  # else: don't set
+        if request_user and request_user.is_authenticated():  # else: don't set
             self.application_approved_user = request_user
+            self.application_approved_denied_user = request_user
+            self.action_taken_user = request_user
 
         # application approved/denied ---------------
         self.application_approved_denied_dt = \
             self.application_approved_denied_dt or NOW
-        if request_user.is_authenticated():  # else: don't set
-            self.application_approved_denied_user = request_user
 
         # action_taken ------------------------------
         self.action_taken = True
         self.action_taken_dt = self.action_taken_dt or NOW
-        if request_user.is_authenticated():  # else: don't set
-            self.action_taken_user = request_user
 
         self.set_join_dt()
         self.set_renew_dt()
         self.set_expire_dt()
-        if not self.member_number:
-            self.set_member_number()
+        self.set_member_number()
         self.save()
 
         # user in [membership] group
@@ -780,9 +786,13 @@ class MembershipDefault(TendenciBaseModel):
         """
         NOW = datetime.now()
 
-        dupe = deepcopy(self)
-
-        dupe.pk = None  # disconnect from db record
+        if self.is_pending():
+            dupe = self
+        elif any((self.is_active(), self.is_expired())):
+            dupe = deepcopy(self)
+            dupe.pk = None  # disconnect from db record
+        else:
+            return False
 
         dupe.status = True,
         dupe.status_detail = 'active'
@@ -1574,7 +1584,7 @@ class MembershipDefault(TendenciBaseModel):
         """
         # if member_number; get out
         if self.member_number:
-            return None
+            return self.member_number
 
         memberships = self.qs_memberships().exclude(
             member_number__exact=u'').order_by('-pk')
@@ -1584,6 +1594,8 @@ class MembershipDefault(TendenciBaseModel):
 
         if not self.member_number:
             self.member_number = self.create_member_number()
+
+        return self.member_number
 
     def is_paid_online(self):
         """

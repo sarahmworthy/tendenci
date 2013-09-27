@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 import codecs
 import cStringIO
 import csv
+import chardet
 
 from django.conf import settings
 from django.template.defaultfilters import slugify
@@ -85,11 +86,12 @@ def tcurrency(mymoney):
     if not currency_symbol:
         currency_symbol = "$"
 
-    if not isinstance(mymoney, str):
+    if not isinstance(mymoney, basestring):
         if mymoney >= 0:
-            return currency_symbol + intcomma(mymoney)
+            fmt = '%s%s'
         else:
-            return currency_symbol + '(%s)' % intcomma(mymoney)
+            fmt = '%s(%s)'
+        return fmt % (currency_symbol, intcomma(mymoney))
     else:
         return mymoney
     
