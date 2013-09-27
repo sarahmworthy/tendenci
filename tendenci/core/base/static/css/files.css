@@ -1,10 +1,10 @@
 
 
 .t {
-	width: 90%;
+	width: 98%;
 }
 .t h2 {
-	margin: 0 auto 10px 0;
+	margin: 8px auto 8px 0;
 }
 
 .t ul.files-nav {
@@ -33,13 +33,17 @@
 }
 
 .t .files-wrap .file-wrap.grid-wrap {
-	width: 220px; 
-	float: left;
-	padding: 10px;
-	margin: 0 10px 20px 10px;
-	position: relative;
-	background-color: #F6F6F6;
-	word-wrap: break-word;
+	width: 215px; 
+	height: 330px; 
+  	float: left;
+	margin: 0 7px 12px;
+  	position: relative;
+  	background-color: #F6F6F6;
+  	word-wrap: break-word;
+}
+  
+.t .files-wrap .grid-wrap .download {
+	margin-left: 15px;
 }
 
 .t .files-wrap .file-wrap.grid-wrap .categories,
@@ -87,8 +91,11 @@
 }
 
 .t .file-wrap.grid-wrap .icon {
-	min-height: 200px;
-	position: relative;
+	height: 192px;
+	width: 192px;
+	margin: 12px;
+  	position: relative;
+	/* overflow: hidden; */
 }
 
 .t .file-wrap.grid-wrap .icon img {
@@ -103,6 +110,12 @@
 .t .file-wrap .meta {
 	margin-top: 20px;
 }
+
+.t .files-wrap .grid-wrap .meta {
+	margin-left: -9px;
+	margin-top: -6px;
+}
+
 .t .file-wrap h2 a.broken {
 	text-decoration: line-through;
 }

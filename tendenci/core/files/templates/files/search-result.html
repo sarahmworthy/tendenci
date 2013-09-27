@@ -51,7 +51,15 @@
         </div>
         {% endif %}
 
-        <div class="submitted"><a href="{% url event_log.search %}?source=files&object_id={{ file.pk }}">{% trans "Updated" %} {{ file.update_dt|date:"D d M Y P" }} {% trans "by" %} {{ file.owner }}</a></div>
+        <div class="submitted">
+            <a href="{% url event_log.search %}?source=files&object_id={{ file.pk }}">
+            {% trans "Updated" %} 
+            {% if layout == "list" %}{{ file.update_dt|date:"D d M Y P" }} 
+            {% else %}{{ file.update_dt|date:"m/d/y P" }}<br>
+            {% endif %}
+            {% trans "by" %} {{ file.owner }}
+            </a>
+        </div>
     </div>
 
     <!-- delete-file form -->
