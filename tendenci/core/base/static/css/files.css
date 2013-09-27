@@ -1,5 +1,3 @@
-
-
 .t {
 	width: 98%;
 }
@@ -112,7 +110,7 @@
 }
 
 .t .files-wrap .grid-wrap .meta {
-	margin-left: -9px;
+	margin-left: -5px;
 	margin-top: -6px;
 }
 
@@ -220,7 +218,7 @@
 	padding: 5px 0;
 }
 .t.most-viewed td.file-name {
-	
+
 }
 .t.most-viewed td.change,
 .t.most-viewed td.delete {
