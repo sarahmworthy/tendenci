@@ -1047,9 +1047,6 @@ class Reg8nEditForm(BetterModelForm):
         if not get_setting('module', 'discounts', 'enabled'):
             del self.fields['discount_eligible']
 
-        if not get_setting('module', 'discounts', 'enabled'):
-            del self.fields['discount_eligible']
-
     def clean_use_custom_reg(self):
         value = self.cleaned_data['use_custom_reg']
         data_list = value.split(',')
