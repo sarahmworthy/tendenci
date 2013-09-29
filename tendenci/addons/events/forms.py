@@ -1043,6 +1043,9 @@ class Reg8nEditForm(BetterModelForm):
         
         if not get_setting('module', 'corporate_memberships', 'usefreepass'):
             del self.fields['allow_free_pass']
+ 
+        if not get_setting('module', 'discounts', 'enabled'):
+            del self.fields['discount_eligible']
 
         if not get_setting('module', 'discounts', 'enabled'):
             del self.fields['discount_eligible']
