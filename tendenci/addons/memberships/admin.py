@@ -653,7 +653,7 @@ class MembershipTypeAdmin(admin.ModelAdmin):
                 group.name = '%s%s' % (group.name, str(num))
 
             group.label = instance.name
-            group.type = 'membership'
+            group.type = 'system_generated'
             group.email_recipient = request.user.email
             group.show_as_option = 0
             group.allow_self_add = 0
@@ -680,8 +680,6 @@ class MembershipTypeAdmin(admin.ModelAdmin):
 
 class NoticeAdmin(admin.ModelAdmin):
     def notice_log(self):
-        if self.notice_time == 'attimeof':
-            return '--'
         return '<a href="%s%s?notice_id=%d">View logs</a>' % (get_setting('site', 'global', 'siteurl'),
                          reverse('membership.notice.log.search'), self.id)
     notice_log.allow_tags = True

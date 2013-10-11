@@ -671,13 +671,19 @@ class MembershipDefault(TendenciBaseModel):
             typical membership emails.
         Returns outcome via boolean.
         """
-        return Notice.send_notice(
+        ret = Notice.send_notice(
             request=request,
             emails=self.user.email,
             notice_type=notice_type,
             membership=self,
             membership_type=self.membership_type,
         )
+        # log notice
+        Notice.log_notices([self],
+                           notice_type=notice_type
+                           )
+        
+        return ret
 
     def email_corp_reps(self, request):
         """
@@ -2244,6 +2250,35 @@ class Notice(models.Model):
         return template.render(context)
 
     @classmethod
+    def log_notices(cls, memberships, **kwargs):
+        """
+        Log notices for the list of memberships.
+        """
+        if not memberships:
+            return False
+
+        notice_type = kwargs.get('notice_type') or 'joined'
+        notice_time = kwargs.get('notice_time') or 'attimeof'
+        field_dict = {
+            'notice_time': notice_time,
+            'notice_type': notice_type,
+            'status': True,
+            'status_detail': 'active',
+        }
+        for notice in Notice.objects.filter(**field_dict):
+            notice_log = NoticeLog(notice=notice,
+                                       num_sent=len(memberships))
+            notice_log.save()
+            for membership in memberships:
+                # log record
+                notice_log_record = NoticeDefaultLogRecord(
+                                        notice_log=notice_log,
+                                        membership=membership)
+                notice_log_record.save()
+        return True
+        
+
+    @classmethod
     def send_notice(cls, **kwargs):
         """
         Send notice to notice_type specified
@@ -3250,7 +3285,7 @@ class AppEntry(TendenciBaseModel):
             invoice.object_id = self.pk
 
         # update invoice with details
-        invoice.estimate = True
+        invoice.estimate = ('estimate' == status_detail)
         invoice.status_detail = status_detail
 
         invoice.bill_to = '%s %s' % (self.first_name, self.last_name)

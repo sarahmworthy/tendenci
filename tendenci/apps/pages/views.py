@@ -12,7 +12,6 @@ from django.db.models import Q
 from tendenci.core.base.http import Http403
 from tendenci.core.base.utils import template_exists
 from tendenci.core.base.views import file_display
-from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.event_logs.models import EventLog
 from tendenci.core.meta.models import Meta as MetaTags
 from tendenci.core.meta.forms import MetaForm
@@ -93,15 +92,17 @@ def search(request, template_name="pages/search.html"):
     """
     Search pages.
     """
-    query = request.GET.get('q', None)
+    query = request.GET.get('q')
 
     filters = get_query_filters(request.user, 'pages.view_page')
     pages = Page.objects.filter(filters).distinct()
     if query:
-        pages = pages.filter(Q(title__icontains=query)|
-                             Q(content__icontains=query)|
-                             Q(slug__icontains=query))
-    pages = pages.exclude(status_detail='archive')
+        pages = pages.filter(
+            Q(title__icontains=query) \
+            | Q(content__icontains=query) \
+            | Q(slug__icontains=query))
+        pages = pages.exclude(status_detail='archive')
+
     pages = pages.order_by('-create_dt')
 
     EventLog.objects.log()
