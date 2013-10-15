@@ -1,0 +1,113 @@
+{% load base_filters %}
+{% load i18n %}
+
+{% if MODULE_THEME_WALKTHROUGH %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}walkthrough/css/walkthrough.css" type="text/css" />
+
+    <div id="walkthrough">
+      <div id="walkthrough-intro" class="walkthrough-item" style="display:none;">
+        <p class="tooltipTitle">{% trans "Customize your Homepage Walkthrough" %}</p>
+            <p>{% trans "Greetings, this walkthrough would introduce you to the customizable elements available in your homepage." %}</p>
+            <br>
+            <a href="javascript:;" class="next-step" style="float:right;">{% trans "Next Step" %}</a>
+      </div>
+
+      <div id="walkthrough-logo" class="walkthrough-item" style="display:none;">
+        <p class="tooltipTitle">{% trans "Upload your Logo" %}</p>
+            <p>{% trans 'Hover over the sample image, and select the "Upload Logo". Select the logo of your choice on the modal popup that would show up.' %}</p>
+            <br>
+            <a href="javascript:;" class="prev-step" style="float:left;">{% trans "Prev Step" %}</a>
+            <a href="javascript:;" class="next-step" style="float:right;">{% trans "Next Step" %}</a>
+      </div>
+
+      <div id="walkthrough-space_1" class="walkthrough-item" style="display:none;">
+        <p class="tooltipTitle">{% trans "Customize Spaces" %}</p>
+            <p>{% trans 'This is a sample space available in your homepage. You can change its contents by hovering over it, and select the "Edit Space" that would appear on top. There are other spaces available in your homepage, and customizing them are as easy as this one.' %}</p>
+            <br>
+            <a href="javascript:;" class="prev-step" style="float:left;">{% trans "Prev Step" %}</a>
+            <a href="javascript:;" class="next-step" style="float:right;">{% trans "Next Step" %}</a>
+      </div>
+
+      <div id="walkthrough-done" class="walkthrough-item" style="display:none;">
+        <p class="tooltipTitle">{% trans "Enjoy Customizing your Homepage!" %}</p>
+            <p>{% trans "That's all we have to offer. Hope that you enjoyed this tour." %}</p>
+            <br>
+            <a href="javascript:;" class="prev-step" style="float:left;">{% trans "Prev Step" %}</a>
+      </div>
+
+    </div>
+    <script src="{{ STATIC_URL }}walkthrough/js/walkthrough.js" type="text/javascript"></script>
+    <script>
+    $(document).ready(function(){
+        $('#walkthrough').pagewalkthrough({
+            steps: [
+               {
+                   wrapper: '',
+                   margin: 0,
+                   popup:
+                   {
+                       content: '#walkthrough-intro',
+                       type: 'modal',
+                       offsetHorizontal: 0,
+                       offsetVertical: 0,
+                       width: '400'
+                   }        
+               },
+               {% with MODULE_THEME_WALKTHROUGH|split:";" as sections %}
+                  {% for sec in sections %}
+                     {% with sec|split:":" as sec_items %}
+                      {% if sec_items.1 %}
+                       {
+                           wrapper: '#' + "{{ sec_items.0 }}".trim(),
+                           margin: '10px 0 0 0',
+                           popup:
+                           {
+                               content: '#walkthrough-' + "{{ sec_items.0 }}".trim(),
+                               type: 'tooltip',
+                               position: "{{ sec_items.1 }}".trim(),
+                               offsetHorizontal: 0,
+                               offsetVertical: 0,
+                               width: '400'
+                           },
+                           accessable: true
+                       },
+                       {% endif %}
+                      {% endwith %}
+                    {% endfor %}
+                  {% endwith %}
+               {
+                   wrapper: '',
+                   margin: '0',
+                   popup:
+                   {
+                       content: '#walkthrough-done',
+                       type: 'modal',
+                       position: 'top',
+                       offsetHorizontal: 0,
+                       offsetVertical: 0,
+                       width: '400'
+                   }                
+               },
+
+        ],
+            name: 'Walkthrough',
+            onClose: function(){
+                if($.pagewalkthrough('currIndex') != 3){
+                    alert("{% trans "You can not close before you finish all the walkthrough steps." %}");
+                    return false;
+                }
+                return true;
+            }
+        });
+
+        $('.prev-step').live('click', function(e){
+            $.pagewalkthrough('prev',e);
+        });
+
+        $('.next-step').live('click', function(e){
+            $.pagewalkthrough('next',e);
+        });
+
+    });
+  </script>
+{% endif %}
