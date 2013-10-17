@@ -53,28 +53,24 @@
                        width: '400'
                    }        
                },
-               {% with MODULE_THEME_WALKTHROUGH|split:";" as sections %}
-                  {% for sec in sections %}
-                     {% with sec|split:":" as sec_items %}
-                      {% if sec_items.1 %}
-                       {
-                           wrapper: '#' + "{{ sec_items.0 }}".trim(),
-                           margin: '10px 0 0 0',
-                           popup:
-                           {
-                               content: '#walkthrough-' + "{{ sec_items.0 }}".trim(),
-                               type: 'tooltip',
-                               position: "{{ sec_items.1 }}".trim(),
-                               offsetHorizontal: 0,
-                               offsetVertical: 0,
-                               width: '400'
-                           },
-                           accessable: true
-                       },
+                      {% for k,v in THEME_INFO.Walkthrough.items %}
+                        {% if k != '__name__' %}
+                         {
+                             wrapper: '#' + "{{ k.strip }}",
+                             margin: '10px 0 0 0',
+                             popup:
+                             {
+                                 content: '#walkthrough-' + "{{ k.strip }}",
+                                 type: 'tooltip',
+                                 position: "{{ v.strip }}",
+                                 offsetHorizontal: 0,
+                                 offsetVertical: 0,
+                                 width: '400'
+                             },
+                             accessable: true
+                         },
                        {% endif %}
-                      {% endwith %}
-                    {% endfor %}
-                  {% endwith %}
+                      {% endfor %}
                {
                    wrapper: '',
                    margin: '0',
