@@ -110,7 +110,7 @@ def build_settings_form(user, settings):
             if setting.client_editable:
                 fields.update({"%s" % setting.name: forms.CharField(**options)})
             else:
-                if user.is_superuser:
+                if user.is_superuser and setting.scope_category != 'theme':
                     fields.update({"%s" % setting.name: forms.CharField(**options)})
 
         elif setting.input_type == 'select':
