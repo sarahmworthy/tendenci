@@ -320,7 +320,7 @@ def month_redirect(request):
 
 
 @is_enabled('events')
-def search(request, redirect=False, template_name="events/search.html"):
+def search(request, redirect=False, past=False, template_name="events/search.html"):
     """
     This page lists out all the upcoming events starting
     from today.  If a search index is available, this page
@@ -347,15 +347,25 @@ def search(request, redirect=False, template_name="events/search.html"):
         events = events.filter(Q(title__icontains=query)|
                                Q(description__icontains=query)|
                                Q(tags__icontains=query))
+    if past:
+        filter_op = 'lt'
+    else:
+        filter_op = 'gte'
     if event_type:
-        events = events.filter(type__slug=event_type,
-                               end_dt__gte=start_dt)
-    events = events.filter(start_dt__gte=start_dt)
+        date_filter = {'type__slug': event_type,
+                       'end_dt__%s' %filter_op: start_dt}
+        events = events.filter(**date_filter)
+    else:
+        date_filter = {'start_dt__%s' %filter_op: start_dt}
+        events = events.filter(**date_filter)
 
     if with_registration:
         events = events.filter(registration_configuration__enabled=True)
 
-    events = events.order_by('start_dt', '-priority')
+    if past:
+        events = events.order_by('-start_dt', '-priority')
+    else:
+        events = events.order_by('start_dt', '-priority')
 
     types = Type.objects.all().order_by('name')
 
@@ -365,6 +375,7 @@ def search(request, redirect=False, template_name="events/search.html"):
         'events': events,
         'types': types,
         'now': datetime.now(),
+        'past': past,
         'event_type': event_type,
         'start_dt': start_dt,
         'with_registration': with_registration,
