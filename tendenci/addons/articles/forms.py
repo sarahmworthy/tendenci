@@ -13,7 +13,7 @@ from tendenci.apps.user_groups.models import Group
 
 
 SEARCH_CATEGORIES_ADMIN = (
-    ('', '-- SELECT ONE --' ),
+    ('headline__icontains', 'Headline'),
     ('first_name__icontains', 'Author First Name'),
     ('last_name__icontains', 'Author Last Name'),
     ('id', 'Article ID'),
@@ -26,7 +26,6 @@ SEARCH_CATEGORIES_ADMIN = (
     ('creator__username', 'Creator Username'),
 
     ('featured', 'Featured Article'),
-    ('headline__icontains', 'Headline'),
 
     ('owner__id', 'Owner Userid(#)'),
     ('owner__username', 'Owner Username'),
@@ -36,13 +35,12 @@ SEARCH_CATEGORIES_ADMIN = (
 )
 
 SEARCH_CATEGORIES = (
-    ('', '-- SELECT ONE --' ),
+    ('headline__icontains', 'Headline'),
     ('last_name__icontains', 'Author Last Name'),
     ('first_name__icontains', 'Author First Name'),
     ('id', 'Article ID'),
 
     ('body__icontains', 'Body'),
-    ('headline__icontains', 'Headline'),
     ('tags__icontains', 'Tags'),
 )
 

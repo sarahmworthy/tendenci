@@ -47,6 +47,14 @@ def detail(request, slug=None, hash=None, template_name="articles/view.html"):
     if (article.status_detail).lower() != 'active' and (not request.user.profile.is_superuser):
         raise Http403
 
+    if article.release_dt >= datetime.now():
+        if not any([
+            has_perm(request.user, 'articles.view_article'),
+            request.user == article.owner,
+            request.user == article.creator
+            ]):
+            raise Http403
+
     if has_view_perm(request.user, 'articles.view_article', article):
         EventLog.objects.log(instance=article)
         return render_to_response(template_name, {'article': article},
@@ -90,7 +98,10 @@ def search(request, template_name="articles/search.html"):
             articles = articles.filter( release_dt__month=date.month, release_dt__day=date.day, release_dt__year=date.year )
 
     if not has_perm(request.user, 'articles.view_article'):
-        articles = articles.filter(release_dt__lte=datetime.now())
+        if request.user.is_anonymous():
+            articles = articles.filter(release_dt__lte=datetime.now())
+        else:
+            articles = articles.filter(Q(release_dt__lte=datetime.now()) | Q(owner=request.user) | Q(creator=request.user))
 
     # don't use order_by with "whoosh"
     if not query or settings.HAYSTACK_SEARCH_ENGINE.lower() != "whoosh":
@@ -121,7 +132,15 @@ def search_redirect(request):
 def print_view(request, slug, template_name="articles/print-view.html"):
     article = get_object_or_404(Article, slug=slug)
 
-    if has_perm(request.user, 'articles.view_article', article):
+    if article.release_dt >= datetime.now():
+        if not any([
+            has_perm(request.user, 'articles.view_article'),
+            request.user == article.owner,
+            request.user == article.creator
+            ]):
+            raise Http403
+
+    if has_view_perm(request.user, 'articles.view_article', article):
         EventLog.objects.log(instance=article)
         return render_to_response(template_name, {'article': article},
             context_instance=RequestContext(request))
