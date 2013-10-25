@@ -31,7 +31,7 @@ class StoryForm(TendenciBaseForm):
         label=_('Expires'),
         required=False,
         help_text=_('Uncheck if you want this story to never expire'),
-        initial=True,
+        initial=False,
     )
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
@@ -132,7 +132,7 @@ class StoryAdminForm(TendenciBaseForm):
         label=_('Expires'),
         required=False,
         help_text=_('Uncheck if you want this story to never expire'),
-        initial=True,
+        initial=False,
     )
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
