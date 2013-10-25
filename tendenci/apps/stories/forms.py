@@ -30,7 +30,7 @@ class StoryForm(TendenciBaseForm):
     expires = forms.BooleanField(
         label=_('Expires'),
         required=False,
-        help_text=_('Uncheck if you want this story to never expire'),
+        help_text=_('Check if you want this story to expire and be sure to specify the end date.'),
         initial=False,
     )
     status_detail = forms.ChoiceField(
@@ -131,7 +131,7 @@ class StoryAdminForm(TendenciBaseForm):
     expires = forms.BooleanField(
         label=_('Expires'),
         required=False,
-        help_text=_('Uncheck if you want this story to never expire'),
+        help_text=_('Check if you want this story to expire and be sure to specify the end date.'),
         initial=False,
     )
     status_detail = forms.ChoiceField(
