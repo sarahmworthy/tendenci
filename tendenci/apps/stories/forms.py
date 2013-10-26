@@ -125,6 +125,7 @@ class StoryForm(TendenciBaseForm):
             story.image = None
         return story
 
+
 class StoryAdminForm(TendenciBaseForm):
     start_dt = SplitDateTimeField(label=_('Start Date/Time'), initial=datetime.now())
     end_dt = SplitDateTimeField(label=_('End Date/Time'), initial=END_DT_INITIAL)
