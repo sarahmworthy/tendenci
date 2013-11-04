@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -11,7 +11,6 @@ from django.contrib import messages
 from django.conf import settings
 
 from tendenci.core.base.http import Http403
-from tendenci.core.base.utils import now_localized
 from tendenci.core.perms.object_perms import ObjectPermission
 
 from tendenci.core.perms.decorators import is_enabled
@@ -138,7 +137,7 @@ def add(request, form_class=ResumeForm, template_name="resumes/add.html"):
                 resume.status_detail = 'pending'
 
             # set up the expiration time based on requested duration
-            now = now_localized()
+            now = datetime.now()
             resume.expiration_dt = now + timedelta(days=resume.requested_duration)
 
             resume = update_perms_and_save(request, form, resume)
@@ -281,7 +280,7 @@ def approve(request, id, template_name="resumes/approve.html"):
     resume = get_object_or_404(Resume, pk=id)
 
     if request.method == "POST":
-        resume.activation_dt = now_localized()
+        resume.activation_dt = datetime.now()
         resume.allow_anonymous_view = True
         resume.status = True
         resume.status_detail = 'active'

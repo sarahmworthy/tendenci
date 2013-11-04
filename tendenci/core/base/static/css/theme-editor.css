@@ -189,6 +189,7 @@ input.btn {
 .upload-link .swfupload {
   position: absolute;
   top: 0;
+  left: 0;
 }
 
 .btn {
