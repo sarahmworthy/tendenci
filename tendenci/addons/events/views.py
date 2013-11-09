@@ -1487,7 +1487,7 @@ def recurring_details(request, id, template_name="events/recurring_view.html"):
 
 
 @is_enabled('events')
-def register_pre(request, event_id, template_name="events/reg8n/register_pre2.html"):
+def register_pre(request, event_id, hash=None, template_name="events/reg8n/register_pre2.html"):
     event = get_object_or_404(Event, pk=event_id)
 
     use_hash = hash == event.hash
