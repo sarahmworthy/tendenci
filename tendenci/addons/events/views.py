@@ -74,7 +74,8 @@ from tendenci.addons.events.models import (
     RegAddonOption,
     RegistrationConfiguration,
     EventPhoto,
-    Place)
+    Place,
+    RecurringEvent)
 from tendenci.addons.events.forms import (
     EventForm,
     Reg8nEditForm,
@@ -100,7 +101,8 @@ from tendenci.addons.events.forms import (
     DisplayAttendeesForm,
     ReassignTypeForm,
     EventRegistrantSearchForm,
-    MemberRegistrationForm)
+    MemberRegistrationForm,
+    ApplyRecurringChangesForm)
 from tendenci.addons.events.utils import (
     email_registrants,
     render_event_email,
@@ -121,7 +123,8 @@ from tendenci.addons.events.utils import (
     render_registrant_excel,
     event_import_process,
     check_month,
-    create_member_registration)
+    create_member_registration,
+    get_recurrence_dates)
 from tendenci.addons.events.addons.forms import RegAddonForm
 from tendenci.addons.events.addons.formsets import RegAddonBaseFormSet
 from tendenci.addons.events.addons.utils import get_available_addons
@@ -484,31 +487,174 @@ def print_view(request, id, template_name="events/print-view.html"):
 @login_required
 def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
     event = get_object_or_404(Event, pk=id)
-    # custom reg_form queryset
-    reg_form_queryset = get_ACRF_queryset(event)
-    regconfpricing_params = {'reg_form_queryset': reg_form_queryset}
 
-    SpeakerFormSet = modelformset_factory(
-        Speaker,
-        formset=SpeakerBaseFormSet,
-        form=SpeakerForm,
-        extra=1,
-        can_delete=True
-    )
+    if not has_perm(request.user,'events.change_event', event):
+        raise Http403
 
-    if event.registration_configuration and\
-             event.registration_configuration.regconfpricing_set.all():
-        extra = 0
+    if request.method == "POST":
+        eventform_params = {'edit_mode': True}
+        form_event = form_class(request.POST, request.FILES, instance=event,
+                                user=request.user, **eventform_params)
+        form_attendees = DisplayAttendeesForm(request.POST)
+        post_data = request.POST
+        if 'apply_changes_to' not in post_data:
+            post_data = {'apply_changes_to':'self'}
+        form_apply_recurring = ApplyRecurringChangesForm(post_data)
+
+        forms = [form_event, form_apply_recurring, form_attendees]
+        if all([form.is_valid() for form in forms]):
+            apply_changes_to = form_apply_recurring.cleaned_data.get('apply_changes_to')
+            display_registrants = form_attendees.cleaned_data.get('display_event_registrants')
+            display_registrants_to = form_attendees.cleaned_data.get('display_registrants_to')
+
+            f = form_event.cleaned_data['photo_upload']
+            if f:
+                image = EventPhoto()
+                image.content_type = ContentType.objects.get_for_model(event.__class__)
+                image.creator = request.user
+                image.creator_username = request.user.username
+                image.owner = request.user
+                image.owner_username = request.user.username
+                filename = "%s" % (f.name)
+                f.file.seek(0)
+                image.file.save(filename, f)
+
+            event = form_event.save(commit=False)
+            event.display_event_registrants = display_registrants
+            event.display_registrants_to = display_registrants_to
+            if f:
+                event.image = image
+
+            # update all permissions and save the model
+            event = update_perms_and_save(request, form_event, event)
+            EventLog.objects.log(instance=event)
+
+            if apply_changes_to == 'self':
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.location_edit', args=[event.pk]))
+            else:
+                eventform_params2 = {'edit_mode': True, 'recurring_mode': True}
+                recurring_events = event.recurring_event.event_set.exclude(pk=event.pk)
+                if apply_changes_to == 'rest':
+                    recurring_events = recurring_events.filter(start_dt__gte=event.start_dt)
+
+                for cur_event in recurring_events:
+                    form_event2 = form_class(request.POST, request.FILES, instance=cur_event,
+                                             user=request.user, **eventform_params2)
+                    if form_event2.is_valid():
+                        cur_event = form_event2.save(commit=False)
+                        cur_event.display_event_registrants = display_registrants
+                        cur_event.display_registrants_to = display_registrants_to
+                        if f:
+                            cur_event.image = image
+                        else:
+                            cur_event.image = event.image
+
+                        # update all permissions and save the model
+                        cur_event = update_perms_and_save(request, form_event2, cur_event)
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated the recurring events for %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event.recurring', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.location_edit', args=[event.pk]))
     else:
-        extra = 1
+        eventform_params = {'edit_mode': True}
+        form_event = form_class(instance=event, user=request.user, **eventform_params)
+        form_attendees = DisplayAttendeesForm(
+            initial={
+                'display_event_registrants':event.display_event_registrants,
+                'display_registrants_to':event.display_registrants_to,
+            }
+        )
+        form_apply_recurring = ApplyRecurringChangesForm()
 
-    RegConfPricingSet = modelformset_factory(
-        RegConfPricing,
-        formset=RegConfPricingBaseModelFormSet,
-        form=Reg8nConfPricingForm,
-        extra=extra,
-        can_delete=True
-    )
+    multi_event_forms = [form_event, form_attendees]
+    if event.is_recurring_event:
+        multi_event_forms = multi_event_forms + [form_apply_recurring]
+
+    # response
+    return render_to_response(template_name, 
+        {'event': event, 'multi_event_forms': multi_event_forms, 'label': "overview"},
+        context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+@login_required
+def location_edit(request, id, form_class=PlaceForm, template_name="events/edit.html"):
+    event = get_object_or_404(Event, pk=id)
+
+    if not has_perm(request.user,'events.change_event', event):
+        raise Http403
+
+    if request.method == "POST":
+        form_place = form_class(request.POST, instance=event.place, prefix='place')
+        post_data = request.POST
+        if 'apply_changes_to' not in post_data:
+            post_data = {'apply_changes_to':'self'}
+        form_apply_recurring = ApplyRecurringChangesForm(post_data)
+
+        forms = [form_place, form_apply_recurring]
+        if all([form.is_valid() for form in forms]):
+            apply_changes_to = form_apply_recurring.cleaned_data.get('apply_changes_to')
+
+            place = form_place.save(commit=False)
+            EventLog.objects.log(instance=event)
+
+            if apply_changes_to == 'self':
+                if place.event_set.count() > 1 and (place._original_name != place.name):
+                    # Create a new place
+                    place.pk = None
+                place.save()
+                event.place = place
+                event.save(log=False)
+
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.organizer_edit', args=[event.pk]))
+            else:
+                recurring_events = event.recurring_event.event_set.all()
+                if apply_changes_to == 'rest':
+                    recurring_events = recurring_events.filter(start_dt__gte=event.start_dt)
+                    # Check if place is associated to a previous event
+                    place_in_past_events = place.event_set.filter(start_dt__lt=event.start_dt,
+                                                  recurring_event=event.recurring_event
+                                                  ).exists()
+
+                    if (place._original_name != place.name) and place_in_past_events:
+                        place.pk = None
+                        
+                place.save()
+                for cur_event in recurring_events:
+                    cur_event.place = place
+                    cur_event.save(log=False)
+
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated the recurring events for %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event.recurring', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.organizer_edit', args=[event.pk]))
+    else:
+        form_place = form_class(instance=event.place, prefix='place')
+        form_apply_recurring = ApplyRecurringChangesForm()
+
+    multi_event_forms = [form_place]
+    if event.is_recurring_event:
+        multi_event_forms = multi_event_forms + [form_apply_recurring]
+
+    # response
+    return render_to_response(template_name, 
+        {'event': event, 'multi_event_forms': multi_event_forms, 'label': "location"},
+        context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+@login_required
+def organizer_edit(request, id, form_class=OrganizerForm, template_name="events/edit.html"):
+    event = get_object_or_404(Event, pk=id)
+
+    if not has_perm(request.user,'events.change_event', event):
+        raise Http403
 
     # tried get_or_create(); but get a keyword argument :(
     try: # look for an organizer
@@ -519,220 +665,353 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
         organizer.event = [event]
         organizer.save()
 
-    if has_perm(request.user,'events.change_event', event):
-        if request.method == "POST":
-            # single forms
-            form_event = form_class(request.POST, request.FILES, instance=event, user=request.user)
-            form_place = PlaceForm(request.POST, instance=event.place, prefix='place')
-            form_organizer = OrganizerForm(
-                request.POST,
-                instance=organizer,
-                prefix='organizer'
-            )
+    if request.method == "POST":
+        form_organizer = form_class(request.POST, instance=organizer, prefix='organizer')
+        post_data = request.POST
+        if 'apply_changes_to' not in post_data:
+            post_data = {'apply_changes_to':'self'}
+        form_apply_recurring = ApplyRecurringChangesForm(post_data)
 
-            form_regconf = Reg8nEditForm(
-                request.POST,
-                instance=event.registration_configuration,
-                reg_form_queryset=reg_form_queryset,
-                prefix='regconf'
-            )
-            form_attendees = DisplayAttendeesForm(request.POST)
+        forms = [form_organizer, form_apply_recurring]
+        if all([form.is_valid() for form in forms]):
+            apply_changes_to = form_apply_recurring.cleaned_data.get('apply_changes_to')
 
-            # form sets
-            form_speaker = SpeakerFormSet(
-                request.POST,
-                request.FILES,
-                queryset=event.speaker_set.all(),
-                prefix='speaker'
-            )
+            organizer = form_organizer.save(commit=False)
+            EventLog.objects.log(instance=event)
 
-            conf_reg_form_required = False      # if reg_form is required on regconf
-            pricing_reg_form_required = False  # if reg_form is required on regconfpricing
-            if form_regconf.is_valid():
-                (use_custom_reg_form,
-                 reg_form_id,
-                 bind_reg_form_to_conf_only
-                 ) = form_regconf.cleaned_data['use_custom_reg'].split(',')
-                if use_custom_reg_form == '1':
-                    if bind_reg_form_to_conf_only == '1':
-                        conf_reg_form_required = True
-                    else:
-                        pricing_reg_form_required = True
-                    regconfpricing_params.update({'reg_form_required': pricing_reg_form_required})
+            if apply_changes_to == 'self':
+                if organizer.event.count() > 1 and (organizer._original_name != organizer.name):
+                    # Remove event from organizer
+                    organizer.event.remove(event)
+                    # Create a new organizer
+                    organizer.pk = None
+                organizer.save()
+                # Readd event to organizer
+                organizer.event.add(event)
 
-            form_regconfpricing = RegConfPricingSet(
-                request.POST,
-                queryset=RegConfPricing.objects.filter(
-                    reg_conf=event.registration_configuration,
-                    status=True,
-                ),
-                prefix='regconfpricing',
-                **regconfpricing_params
-            )
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.speaker_edit', args=[event.pk]))
+            else:
+                recurring_events = event.recurring_event.event_set.all()
+                if apply_changes_to == 'rest':
+                    recurring_events = recurring_events.filter(start_dt__gte=event.start_dt)
+                    # Check if organizer is associated to a previous event
+                    organizer_in_past_events = organizer.event.filter(
+                                                 start_dt__lt=event.start_dt,
+                                                  recurring_event=event.recurring_event
+                                                  ).exists()
 
-            # label the form sets
-            form_speaker.label = "Speaker(s)"
-            form_regconfpricing.label = "Pricing(s)"
+                    if (organizer._original_name != organizer.name) and organizer_in_past_events:
+                        organizer.pk = None
+                        
+                organizer.save()
+                for cur_event in recurring_events:
+                    # Remove previous organizer from event
+                    for org in cur_event.organizer_set.all():
+                        org.event.remove(cur_event)
+                    # Add new organizer
+                    organizer.event.add(cur_event)
 
-            forms = [
-                form_event,
-                form_place,
-                form_speaker,
-                form_organizer,
-                form_regconf,
-                form_attendees,
-                form_regconfpricing
-            ]
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated the recurring events for %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event.recurring', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.speaker_edit', args=[event.pk]))
+    else:
+        form_organizer = form_class(instance=organizer, prefix='organizer')
+        form_apply_recurring = ApplyRecurringChangesForm()
 
-            if all([form.is_valid() for form in forms]):
-                # pks have to exist; before making relationships
-                place = form_place.save()
-                regconf = form_regconf.save()
-                speakers = form_speaker.save()
-                organizer = form_organizer.save()
-                regconf_pricing = form_regconfpricing.save()
+    multi_event_forms = [form_organizer]
+    if event.is_recurring_event:
+        multi_event_forms = multi_event_forms + [form_apply_recurring]
 
-                event = form_event.save(commit=False)
-                event.display_event_registrants = form_attendees.cleaned_data['display_event_registrants']
-                event.display_registrants_to = form_attendees.cleaned_data['display_registrants_to']
+    # response
+    return render_to_response(template_name, 
+        {'event': event, 'multi_event_forms': multi_event_forms, 'label': "organizer"},
+        context_instance=RequestContext(request))
 
-                # update all permissions and save the model
-                event = update_perms_and_save(request, form_event, event)
 
-                assign_files_perms(place)
-                assign_files_perms(organizer)
+@is_enabled('events')
+@login_required
+def speaker_edit(request, id, form_class=SpeakerForm, template_name="events/edit.html"):
+    event = get_object_or_404(Event, pk=id)
 
-                # handle image
-                f = form_event.cleaned_data['photo_upload']
-                if f:
-                    image = EventPhoto()
-                    image.object_id = event.id
-                    image.content_type = ContentType.objects.get_for_model(event.__class__)
-                    image.creator = request.user
-                    image.creator_username = request.user.username
-                    image.owner = request.user
-                    image.owner_username = request.user.username
-                    filename = "%s-%s" % (event.id, f.name)
-                    f.file.seek(0)
-                    image.file.save(filename, f)
-                    event.image = image
+    if not has_perm(request.user,'events.change_event', event):
+        raise Http403
 
-                # make dict (i.e. speaker_bind); bind speaker with speaker image
-                pattern = re.compile('speaker-\d+-name')
-                speaker_keys = list(set(re.findall(pattern, ' '.join(request.POST))))
-                speaker_bind = {}
-                for speaker_key in speaker_keys:  # loop through speaker form items
-                    speaker_name = request.POST.get(speaker_key)
-                    if speaker_name:  # if speaker name found in request
-                        speaker_file = request.FILES.get(speaker_key.replace('name','file'))
-                        if speaker_file:  # if speaker file found in request
-                            # e.g. speaker_bind['eloy zuniga'] = <file>
-                            speaker_bind[speaker_name] = speaker_file
+    SpeakerFormSet = modelformset_factory(
+        Speaker,
+        formset=SpeakerBaseFormSet,
+        form=form_class,
+        extra=1,
+        can_delete=True
+    )
+
+    if request.method == "POST":
+        form_speaker = SpeakerFormSet(
+            request.POST, request.FILES,
+            queryset=event.speaker_set.all(), prefix='speaker'
+        )
+        post_data = request.POST
+        if 'apply_changes_to' not in post_data:
+            post_data = {'apply_changes_to':'self'}
+        form_apply_recurring = ApplyRecurringChangesForm(post_data)
+
+        forms = [form_speaker, form_apply_recurring]
+        if all([form.is_valid() for form in forms]):
+            apply_changes_to = form_apply_recurring.cleaned_data.get('apply_changes_to')
+
+            speakers = form_speaker.save(commit=False)
+            EventLog.objects.log(instance=event)
+
+            if apply_changes_to == 'self':
+                for speaker in speakers:
+                    if (speaker.pk and (speaker.event.count() > 1) and
+                        (speaker._original_name != speaker.name)):
+                        # Remove the event from previous speaker
+                        speaker.event.remove(event)
+                        # Create new speaker
+                        speaker.pk = None
+                    speaker.save()
+                    speaker.event.add(event)
+
+                # Only delete when speaker has no more events associated to it
+                for del_speaker in form_speaker.deleted_objects:
+                    del_speaker.event.remove(event)
+                    if not del_speaker.event.count():
+                        del_speaker.delete()
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % event)
+                redirect_url = reverse('event', args=[event.pk])
+            else:
+                recurring_events = event.recurring_event.event_set.all()
+                if apply_changes_to == 'rest':
+                    recurring_events = recurring_events.filter(start_dt__gte=event.start_dt)
 
                 for speaker in speakers:
-                    speaker.event = [event]
+                    if speaker.pk and (speaker._original_name != speaker.name):
+                        # Check if speaker is associated to a previous event
+                        if speaker.event.filter(
+                                                start_dt__lt=event.start_dt,
+                                                recurring_event=event.recurring_event
+                                                  ).exists():                                                  
+#                             # Remove the events from previous speaker
+#                             for recur_event in recurring_events:
+#                                 speaker.event.remove(recur_event)
+                            speaker.pk = None
                     speaker.save()
-                    assign_files_perms(speaker)
+                    speaker.event = recurring_events
 
-                    # match speaker w/ speaker image
-                    binary_files = []
-                    if speaker.name in speaker_bind:
-                        binary_files = [speaker_bind[speaker.name]]
-                    files = File.objects.save_files_for_instance(request, speaker, files=binary_files)
+                speaker_ids = [speaker.pk for speaker in speakers]
+                for recur_event in recurring_events:
+                    # remove other speakers that previously associated to some of the occurrences
+                    # but are not being added/edited
+                    speakers_to_remove = recur_event.speaker_set.exclude(id__in=speaker_ids)
+                    if speakers_to_remove:
+                        for speaker in speakers_to_remove:
+                            speaker.event.remove(recur_event)
 
-                    for f in files:
-                        f.allow_anonymous_view = event.allow_anonymous_view
-                        f.allow_user_view = event.allow_user_view
-                        f.allow_member_view = event.allow_member_view
-                        f.save()
+                # Only delete when speaker has no more events associated to it
+                if form_speaker.deleted_objects:
+                    for recur_event in recurring_events:
+                        for del_speaker in form_speaker.deleted_objects:
+                            try:
+                                del_speaker.event.remove(recur_event)
+                            except ValueError:
+                                pass
+                            if not del_speaker.event.count():
+                                del_speaker.delete()
 
-                if not conf_reg_form_required and regconf.reg_form:
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated the recurring events for %s' % event)
+                redirect_url = reverse('event.recurring', args=[event.pk])
+
+            # make dict (i.e. speaker_bind); bind speaker with speaker image
+            pattern = re.compile('speaker-\d+-name')
+            speaker_keys = list(set(re.findall(pattern, ' '.join(request.POST))))
+            speaker_bind = {}
+            for speaker_key in speaker_keys:  # loop through speaker form items
+                speaker_name = request.POST.get(speaker_key)
+                if speaker_name:  # if speaker name found in request
+                    speaker_file = request.FILES.get(speaker_key.replace('name','file'))
+                    if speaker_file:  # if speaker file found in request
+                        # e.g. speaker_bind['eloy zuniga'] = <file>
+                        speaker_bind[speaker_name] = speaker_file
+
+            for speaker in speakers:
+                assign_files_perms(speaker)
+
+                # match speaker w/ speaker image
+                binary_files = []
+                if speaker.name in speaker_bind:
+                    binary_files = [speaker_bind[speaker.name]]
+                files = File.objects.save_files_for_instance(request, speaker, files=binary_files)
+
+                for f in files:
+                    f.allow_anonymous_view = event.allow_anonymous_view
+                    f.allow_user_view = event.allow_user_view
+                    f.allow_member_view = event.allow_member_view
+                    f.save()
+
+            if "_save" in request.POST:
+                return HttpResponseRedirect(redirect_url)
+            return HttpResponseRedirect(reverse('event.regconf_edit', args=[event.pk]))
+    else:
+        form_speaker = SpeakerFormSet(
+            queryset=event.speaker_set.all(),
+            prefix='speaker', auto_id='speaker_formset'
+        )
+        form_speaker.label = "Speaker(s)"
+        form_apply_recurring = ApplyRecurringChangesForm()
+
+    multi_event_forms = [form_speaker]
+    if event.is_recurring_event:
+        multi_event_forms = multi_event_forms + [form_apply_recurring]
+
+    # response
+    return render_to_response(template_name, 
+        {'event': event, 'multi_event_forms': multi_event_forms, 'label': "speakers"},
+        context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+@login_required
+def regconf_edit(request, id, form_class=Reg8nEditForm, template_name="events/edit.html"):
+    event = get_object_or_404(Event, pk=id)
+
+    if not has_perm(request.user,'events.change_event', event):
+        raise Http403
+
+    reg_form_queryset = get_ACRF_queryset(event)
+
+    if request.method == "POST":
+        form_regconf = form_class(
+            request.POST, instance=event.registration_configuration,
+            reg_form_queryset=reg_form_queryset, prefix='regconf'
+        )
+        post_data = request.POST
+        if 'apply_changes_to' not in post_data:
+            post_data = {'apply_changes_to':'self'}
+        form_apply_recurring = ApplyRecurringChangesForm(post_data)
+
+        forms = [form_regconf, form_apply_recurring]
+        if all([form.is_valid() for form in forms]):
+            apply_changes_to = form_apply_recurring.cleaned_data.get('apply_changes_to')
+
+            regconf = form_regconf.save()
+            (use_custom_reg_form,
+             reg_form_id,
+             bind_reg_form_to_conf_only
+            ) = form_regconf.cleaned_data.get('use_custom_reg').split(',')
+            if not (use_custom_reg_form == '1' and bind_reg_form_to_conf_only == '1'):
+                if regconf.reg_form:
                     regconf.reg_form = None
                     regconf.save()
 
-                for regconf_price in regconf_pricing:
-                    regconf_price.reg_conf = regconf
+            EventLog.objects.log(instance=event)
 
-                    if not pricing_reg_form_required:
-                        regconf_price.reg_form = None
-
-                    regconf_price.save()
-
-                organizer.event.add(event)
-
-                # update event
-                event.place = place
-                event.registration_configuration = regconf
-                event.save(log=False)
-
-                # un-tie the reg_form from the pricing
-                if not pricing_reg_form_required:
-                    for price in regconf.regconfpricing_set.all():
-                        if price.reg_form:
-                            price.reg_form = None
-                            price.save()
-
+            if apply_changes_to == 'self':
                 messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % event)
-                return HttpResponseRedirect(reverse('event', args=[event.pk]))
-        else:
-            # single forms
-            form_event = form_class(instance=event, user=request.user)
-            form_place = PlaceForm(instance=event.place, prefix='place')
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.pricing_edit', args=[event.pk]))
+            else:
+                recurring_events = event.recurring_event.event_set.exclude(pk=event.pk)
+                if apply_changes_to == 'rest':
+                    recurring_events = recurring_events.filter(start_dt__gte=event.start_dt)
 
-            form_organizer = OrganizerForm(
-                instance=organizer,
-                prefix='organizer'
-            )
-            form_regconf = Reg8nEditForm(
-                instance=event.registration_configuration,
-                reg_form_queryset=reg_form_queryset,
-                prefix='regconf'
-            )
-            form_attendees = DisplayAttendeesForm(
-                initial={
-                    'display_event_registrants':event.display_event_registrants,
-                    'display_registrants_to':event.display_registrants_to,
-                }
-            )
+                for cur_event in recurring_events:
+                    form_regconf2 = form_class(
+                        request.POST, instance=cur_event.registration_configuration,
+                        reg_form_queryset=reg_form_queryset, recurring_edit=True, prefix='regconf'
+                    )
+                    if form_regconf2.is_valid():
+                        regconf = form_regconf2.save()
 
-            # form sets
-            form_speaker = SpeakerFormSet(
-                queryset=event.speaker_set.all(),
-                prefix='speaker',
-                auto_id='speaker_formset'
-            )
-
-
-            form_regconfpricing = RegConfPricingSet(
-                queryset=RegConfPricing.objects.filter(
-                    reg_conf=event.registration_configuration,
-                    status=True,
-                ),
-                prefix='regconfpricing',
-                auto_id='regconfpricing_formset',
-                **regconfpricing_params
-            )
-
-            # label the form sets
-            form_speaker.label = "Speaker(s)"
-            form_regconfpricing.label = "Pricing(s)"
-
-        # response
-        return render_to_response(template_name, {
-            'event': event,
-            'multi_event_forms':[
-                form_event,
-                form_place,
-                form_organizer,
-                form_speaker,
-                form_regconf,
-                form_attendees,
-                form_regconfpricing
-                ],
-            },
-            context_instance=RequestContext(request))
+                messages.add_message(request, messages.SUCCESS, 'Successfully updated the recurring events for %s' % event)
+                if "_save" in request.POST:
+                    return HttpResponseRedirect(reverse('event.recurring', args=[event.pk]))
+                return HttpResponseRedirect(reverse('event.pricing_edit', args=[event.pk]))
     else:
+        form_regconf = Reg8nEditForm(
+            instance=event.registration_configuration,
+            reg_form_queryset=reg_form_queryset,
+            prefix='regconf'
+        )
+        form_apply_recurring = ApplyRecurringChangesForm()
+
+    multi_event_forms = [form_regconf]
+    if event.is_recurring_event:
+        multi_event_forms = multi_event_forms + [form_apply_recurring]
+
+    # response
+    return render_to_response(template_name, 
+        {'event': event, 'multi_event_forms': multi_event_forms, 'label': "regconf"},
+        context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+@login_required
+def pricing_edit(request, id, form_class=Reg8nConfPricingForm, template_name="events/edit.html"):
+    event = get_object_or_404(Event, pk=id)
+    reg_conf = event.registration_configuration
+    if not has_perm(request.user,'events.change_event', event):
         raise Http403
+
+    reg_form_queryset = get_ACRF_queryset(event)
+    pricing_reg_form_required = (reg_conf.use_custom_reg_form and
+                                 not reg_conf.bind_reg_form_to_conf_only)
+    regconfpricing_params = {'reg_form_queryset': reg_form_queryset,
+                             'reg_form_required': pricing_reg_form_required}
+
+    if reg_conf and reg_conf.regconfpricing_set.all():
+        extra = 0
+    else:
+        extra = 1
+
+    RegConfPricingSet = modelformset_factory(
+        RegConfPricing,
+        formset=RegConfPricingBaseModelFormSet,
+        form=form_class,
+        extra=extra,
+        can_delete=True
+    )
+
+    if request.method == "POST":
+        form_regconfpricing = RegConfPricingSet(
+            request.POST,
+            queryset=RegConfPricing.objects.filter(
+                reg_conf=reg_conf,
+                status=True,
+            ), prefix='regconfpricing', **regconfpricing_params
+        )
+        if form_regconfpricing.is_valid():
+            regconf_pricing = form_regconfpricing.save()
+
+            for regconf_price in regconf_pricing:
+                regconf_price.reg_conf = reg_conf
+                if not pricing_reg_form_required:
+                    regconf_price.reg_form = None
+                regconf_price.save()
+
+            EventLog.objects.log(instance=event)
+            messages.add_message(request, messages.SUCCESS, 'Successfully updated %s' % event)
+            return HttpResponseRedirect(reverse('event', args=[event.pk]))
+    else:
+        form_regconfpricing = RegConfPricingSet(
+            queryset=RegConfPricing.objects.filter(
+                reg_conf=event.registration_configuration,
+                status=True,
+            ), prefix='regconfpricing', auto_id='regconfpricing_formset',
+            **regconfpricing_params
+        )
+        form_regconfpricing.label = "Pricing(s)"
+
+    multi_event_forms = [form_regconfpricing]
+
+    # response
+    return render_to_response(template_name, 
+        {'event': event, 'multi_event_forms': multi_event_forms, 'label': "pricing"},
+        context_instance=RequestContext(request))
 
 
 @is_enabled('events')
@@ -963,7 +1242,55 @@ def add(request, year=None, month=None, day=None, \
                 event.registration_configuration = regconf
                 event.save(log=False)
 
-                messages.add_message(request, messages.SUCCESS, 'Successfully added %s' % event)
+                if form_event.cleaned_data['is_recurring_event']:
+                    init_date = datetime.strptime(form_event.cleaned_data['start_dt'], '%Y-%m-%d %H:%M')
+                    init_end = datetime.strptime(form_event.cleaned_data['end_dt'], '%Y-%m-%d %H:%M')
+                    event_length = init_end - init_date
+                    freq = int(form_event.cleaned_data['frequency'])
+                    r_type = int(form_event.cleaned_data['repeat_type'])
+                    end_recurring = form_event.cleaned_data['end_recurring']
+                    recur_every = form_event.cleaned_data['recurs_on']
+                    recur_event = RecurringEvent(repeat_type=r_type,
+                                                 frequency=freq,
+                                                 starts_on=init_date,
+                                                 ends_on=end_recurring)
+                    recur_event.save()
+                    event.is_recurring_event = True
+                    event.recurring_event = recur_event
+                    event.save()
+
+                    event_list = get_recurrence_dates(r_type, init_date, end_recurring, freq, recur_every)[:20]
+                    for counter in range(1, len(event_list)):
+                        new_event = copy_event(event, request.user, reuse_rel=True)
+                        new_event.start_dt = event_list[counter]
+                        new_event.end_dt = event_list[counter] + event_length
+                        new_event.is_recurring_event = True
+                        new_event.recurring_event = recur_event
+                        new_event.allow_anonymous_view = event.allow_anonymous_view
+                        new_event.save()
+
+                        reg_conf = new_event.registration_configuration
+                        # Do not copy custom reg form on registration configuration
+                        reg_conf.use_custom_reg_form = False
+                        reg_conf.reg_form = None
+                        reg_conf.bind_reg_form_to_conf_only = False
+                        reg_conf.save()
+                        for pricing in reg_conf.regconfpricing_set.all():
+                            start_dt_diff = pricing.start_dt - event.start_dt
+                            end_dt_diff = pricing.end_dt - event.end_dt
+                            # Do not copy custom reg form on pricings
+                            pricing.reg_form = None
+                            # Adjust pricing dates
+                            pricing.start_dt = new_event.start_dt + start_dt_diff
+                            pricing.end_dt = new_event.end_dt + end_dt_diff
+                            pricing.save()
+
+                    messages.add_message(request, messages.SUCCESS, 'Successfully added the recurring event %s' % event)
+                    redirect_url = reverse('event.recurring', args=[event.pk])
+                else:
+                    messages.add_message(request, messages.SUCCESS, 'Successfully added %s' % event)
+                    redirect_url = reverse('event', args=[event.pk])
+
                 # notification to administrator(s) and module recipient(s)
                 recipients = get_notice_recipients('site', 'global', 'allnoticerecipients')
                 if recipients and notification:
@@ -975,8 +1302,8 @@ def add(request, year=None, month=None, day=None, \
                         'SITE_GLOBAL_SITEDISPLAYNAME': get_setting('site', 'global', 'sitedisplayname'),
                         'SITE_GLOBAL_SITEURL': get_setting('site', 'global', 'siteurl'),
                     })
+                return HttpResponseRedirect(redirect_url)
 
-                return HttpResponseRedirect(reverse('event', args=[event.pk]))
         else:  # if not post request
             event_init = {}
 
@@ -1089,7 +1416,78 @@ def delete(request, id, template_name="events/delete.html"):
 
 
 @is_enabled('events')
-def register_pre(request, event_id, hash=None, template_name="events/reg8n/register_pre2.html"):
+@login_required
+def delete_recurring(request, id, template_name="events/delete_recurring.html"):
+    event = get_object_or_404(Event, pk=id)
+
+    if not has_perm(request.user,'events.delete_event'):
+        raise Http403
+
+    if not event.is_recurring_event:
+        raise Http404
+
+    event_list = event.recurring_event.event_set.all()
+    if request.method == "POST":
+        recurring_manager = event.recurring_event
+        for event in event_list:
+            eventlog = EventLog.objects.log(instance=event)
+                # send email to admins
+            recipients = get_notice_recipients('site', 'global', 'allnoticerecipients')
+            if recipients and notification:
+                notification.send_emails(recipients,'event_deleted', {
+                    'event':event,
+                    'request':request,
+                    'user':request.user,
+                    'registrants_paid':event.registrants(with_balance=False),
+                    'registrants_pending':event.registrants(with_balance=True),
+                    'eventlog_url': reverse('event_log', args=[eventlog.pk]),
+                    'SITE_GLOBAL_SITEDISPLAYNAME': get_setting('site', 'global', 'sitedisplayname'),
+                    'SITE_GLOBAL_SITEURL': get_setting('site', 'global', 'siteurl'),
+                })
+            reg_conf = event.registration_configuration
+            if event.image:
+                event.image.delete()
+            event.delete()
+
+            # The one-to-one relationship is on events which 
+            # doesn't delete the registration_configuration record.
+            # The delete must occur on registration_configuration
+            # for both to be deleted. An honest accident on 
+            # one-to-one fields. 
+            try:
+                reg_conf.delete()
+            except:
+                # roll back the transaction to fix the error for postgresql
+                #"current transaction is aborted, commands ignored until 
+                # end of transaction block"
+                connection._rollback()
+        recurring_manager.delete()
+        messages.add_message(request, messages.SUCCESS, 'Successfully deleted the recurring event for "%s"' % event)
+
+        return HttpResponseRedirect(reverse('event.search'))
+    
+    return render_to_response(template_name, {'event': event, 'events': event_list}, 
+            context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+@login_required
+def recurring_details(request, id, template_name="events/recurring_view.html"):
+    event = get_object_or_404(Event, pk=id)
+
+    if not event.is_recurring_event:
+        raise Http404
+
+    recurring_detail = event.recurring_event
+    event_list = recurring_detail.event_set.order_by('start_dt')
+
+    return render_to_response(template_name,
+            {'event':event, 'recurring_event':recurring_detail, 'events':event_list},
+            context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+def register_pre(request, event_id, template_name="events/reg8n/register_pre2.html"):
     event = get_object_or_404(Event, pk=event_id)
 
     use_hash = hash == event.hash

@@ -29,16 +29,25 @@
     {% event_nav user event %}
     <div class="event-wrap">
 		<div class="info">
-	        <h1>{{ event.title }}</h1>
+	        <h1>
+            {% if event.priority %}
+                <div class="event-priority"></div>
+            {% endif %}
+            {% if event.is_recurring_event %}
+                <div class="event-recurring"></div>
+            {% endif %}
+            {{ event.title }}</h1>
 
-            <ul class="tabs">
-                <li class="dropdown active">
-                    <a id="event_detail_tab" href="#">{% trans "Event Details" %}</a>
-                </li>
-                <li class="dropdown">
-                    <a id="event_files_tab" href="#">{% trans "Event Files" %}</a>
-                </li>
-            </ul>
+            <div class="event-tabs">
+                <ul class="tabs">
+                    <li class="dropdown active">
+                        <a id="event_detail_tab" href="#">{% trans "Event Details" %}</a>
+                    </li>
+                    <li class="dropdown">
+                        <a id="event_files_tab" href="#">{% trans "Event Files" %}</a>
+                    </li>
+                </ul>
+            </div>
 
             <div class="details-wrap">
                 {% for speaker in speakers %}

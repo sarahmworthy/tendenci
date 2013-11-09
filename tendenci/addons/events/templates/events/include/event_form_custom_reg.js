@@ -59,9 +59,15 @@ $(document).ready(function() {
     
     var toggle_custom_reg_form = function(){
     	if (reg_enabled_checkbox.is(':checked')){
-    		user_custom_reg_block.show();
     		discount_eligible_box.show();
-    		toggle_use_custom_reg_options();
+            if (!$("#id_is_recurring_event").is(':checked')) {
+        		user_custom_reg_block.show();
+        		toggle_use_custom_reg_options();
+            }else {
+        		use_custom_reg_checkbox.attr('checked', false);
+        		user_custom_reg_block.hide();
+        		pricing_reg_forms.hide();
+            }
     	}else{
     		use_custom_reg_checkbox.attr('checked', false);
     		user_custom_reg_block.hide();
@@ -102,7 +108,7 @@ $(document).ready(function() {
         toggle_email_reminder($this);
     });
     
-    if ($("#id_display_event_registrants:checked").length == 1) {
+    if ($("#id_display_event_registrants").is(':checked')) {
         //$('fieldset.attendees .form-field:not(fieldset.attendees .form-field:first)').show();
         $('div.id_display_registrants_to').parent().show();
     }else {
@@ -110,12 +116,60 @@ $(document).ready(function() {
         $('div.id_display_registrants_to').parent().hide();
     }
     $('#id_display_event_registrants').click(function(){
-        if($("#id_display_event_registrants:checked").length == 1){
+        if($("#id_display_event_registrants").is(':checked')){
             //$('fieldset.attendees .form-field:not(fieldset.attendees .form-field:first)').slideDown('fast');
             $('div.id_display_registrants_to').parent().slideDown('fast');
         }else{
             //$('fieldset.attendees .form-field:not(fieldset.attendees .form-field:first)').slideUp('fast');
             $('div.id_display_registrants_to').parent().slideUp('fast');
+        }
+    });
+
+    var recurringCheck = $('#id_is_recurring_event');
+    var repeatFreq = $('.form-field .id_frequency');
+    var repeatType = $('.form-field .id_repeat_type');
+    var recurOn = $('.form-field .id_recurs_on');
+    var endRecurring = $('.form-field .id_end_recurring');
+    var repeatValue = repeatType.find('select#id_repeat_type');
+
+    if (recurringCheck.is(':checked')) {
+        repeatFreq.show();
+        repeatType.show();
+        endRecurring.show();
+    }else {
+        repeatFreq.hide();
+        repeatType.hide();
+        endRecurring.hide();
+    }
+    // Hide Recurs On field when 'Daily' or 'Weekly' types are selected
+    if ((repeatValue.val() == 3) || (repeatValue.val() == 4)) {
+        recurOn.show();
+    }else {
+        recurOn.hide();
+    }
+
+    recurringCheck.click(function(){
+        if(recurringCheck.is(':checked')){
+            repeatFreq.slideDown('fast');
+            repeatType.slideDown('fast');
+            endRecurring.slideDown('fast');
+            if ((repeatValue.val() == 3) || (repeatValue.val() == 4)) {
+                recurOn.slideDown('fast');
+            }
+            toggle_custom_reg_form();
+        }else{
+            repeatFreq.slideUp('fast');
+            repeatType.slideUp('fast');
+            recurOn.slideUp('fast');
+            endRecurring.slideUp('fast');
+            toggle_custom_reg_form();
+        }
+    });
+    repeatValue.change(function(){
+        if (($(this).val() == 3) || ($(this).val() == 4)) {
+            recurOn.slideDown('fast');
+        }else {
+            recurOn.slideUp('fast');
         }
     });
 });

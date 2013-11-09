@@ -93,6 +93,8 @@ class Place(models.Model):
     An event can only be in one place
     A place can be used for multiple events
     """
+    _original_name = None
+
     name = models.CharField(max_length=150, blank=True)
     description = models.TextField(blank=True)
 
@@ -105,6 +107,10 @@ class Place(models.Model):
 
     # online location
     url = models.URLField(blank=True)
+
+    def __init__(self, *args, **kwargs):
+        super(Place, self).__init__(*args, **kwargs)
+        self._original_name = self.name
 
     def __unicode__(self):
         str_place = '%s %s %s %s %s' % (
@@ -853,10 +859,16 @@ class Organizer(models.Model):
     Event can have multiple organizers
     Organizer can maintain multiple events
     """
+    _original_name = None
+
     event = models.ManyToManyField('Event', blank=True)
     user = models.OneToOneField(User, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True) # static info.
     description = models.TextField(blank=True) # static info.
+
+    def __init__(self, *args, **kwargs):
+        super(Organizer, self).__init__(*args, **kwargs)
+        self._original_name = self.name
 
     def __unicode__(self):
         return self.name
@@ -867,6 +879,8 @@ class Speaker(models.Model):
     Event can have multiple speakers
     Speaker can attend multiple events
     """
+    _original_name = None
+
     event = models.ManyToManyField('Event', blank=True)
     user = models.OneToOneField(User, blank=True, null=True)
     name = models.CharField(_('Speaker Name'), blank=True, max_length=100) # static info.
@@ -874,6 +888,10 @@ class Speaker(models.Model):
     featured = models.BooleanField(
         default=False,
         help_text=_("All speakers marked as featured will be displayed when viewing the event."))
+
+    def __init__(self, *args, **kwargs):
+        super(Speaker, self).__init__(*args, **kwargs)
+        self._original_name = self.name
 
     def __unicode__(self):
         return self.name
@@ -895,6 +913,40 @@ class Speaker(models.Model):
             self.cached_photo = photo
 
         return photo
+
+
+class RecurringEvent(models.Model):
+    RECUR_DAILY = 1
+    RECUR_WEEKLY = 2
+    RECUR_MONTHLY = 3
+    RECUR_YEARLY = 4
+    RECURRENCE_CHOICES = (
+        (RECUR_DAILY, 'Day(s)'),
+        (RECUR_WEEKLY, 'Week(s)'),
+        (RECUR_MONTHLY, 'Month(s)'),
+        (RECUR_YEARLY, 'Year(s)')
+    )
+    repeat_type = models.IntegerField(_("Repeats"), choices=RECURRENCE_CHOICES)
+    frequency = models.IntegerField(_("Repeats every"))
+    starts_on = models.DateTimeField(default=datetime.now()+timedelta(days=30))
+    ends_on = models.DateTimeField()
+
+    class Meta:
+        verbose_name = _("Recurring Event")
+        verbose_name_plural = _("Recurring Events")
+
+    def get_info(self):
+        if self.repeat_type == self.RECUR_DAILY:
+            repeat_type = 'day(s)'
+        elif self.repeat_type == self.RECUR_WEEKLY:
+            repeat_type = 'week(s)'
+        elif self.repeat_type == self.RECUR_MONTHLY:
+            repeat_type = 'month(s)'
+        elif self.repeat_type == self.RECUR_YEARLY:
+            repeat_type = 'year(s)'
+        ends_on = self.ends_on.strftime("%b %d %Y")
+        return _("Repeats every %s %s until %s" %(self.frequency, repeat_type, ends_on))
+
 
 class Event(TendenciBaseModel):
     """
@@ -921,6 +973,10 @@ class Event(TendenciBaseModel):
     group = models.ForeignKey(Group, null=True, on_delete=models.SET_NULL, default=get_default_group)
     tags = TagField(blank=True)
     priority = models.BooleanField(default=False, help_text=_("Priority events will show up at the top of the event calendar day list and single day list. They will be featured with a star icon on the monthly calendar and the list view."))
+
+    # recurring events
+    is_recurring_event = models.BooleanField(_('Is Recurring Event'), default=False)
+    recurring_event = models.ForeignKey(RecurringEvent, null=True)
 
     # additional permissions
     display_event_registrants = models.BooleanField(_('Display Attendees'), default=False)

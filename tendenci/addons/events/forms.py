@@ -1,7 +1,7 @@
 import re
 import imghdr
 from os.path import splitext, basename
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django import forms
@@ -23,7 +23,7 @@ from tendenci.addons.events.models import (
     Sponsor, Organizer, Speaker, Type, TypeColorSet,
     RegConfPricing, Addon, AddonOption, CustomRegForm,
     CustomRegField, CustomRegFormEntry, CustomRegFieldEntry,
-    Registrant
+    RecurringEvent
 )
 
 from form_utils.forms import BetterModelForm
@@ -422,6 +422,7 @@ def _get_price_labels(pricing):
                                       target_display,
                                       end_dt) )
 
+
 class RadioImageFieldRenderer(forms.widgets.RadioFieldRenderer):
 
     def __iter__(self):
@@ -475,6 +476,27 @@ class EventForm(TendenciBaseForm):
                 required=True,
                 empty_label=None)
 
+    FREQUENCY_CHOICES = (
+        (1, '1'),
+        (2, '2'),
+        (3, '3'),
+        (4, '4'),
+        (5, '5'),
+        (6, '6'),
+        (7, '7'),
+        (8, '8'),
+        (9, '9'),
+        (10, '10'),
+    )
+    is_recurring_event = forms.BooleanField(label=_('Is Recurring?'), required=False)
+    repeat_type = forms.ChoiceField(label=_('Repeats'), choices=RecurringEvent.RECURRENCE_CHOICES, initial=RecurringEvent.RECUR_DAILY)
+    frequency = forms.ChoiceField(label=_('Repeats Every'), choices=FREQUENCY_CHOICES, initial=1)
+    end_recurring = forms.DateField(
+        label=_('Ends On'), initial=date.today()+timedelta(days=30),
+        widget=forms.DateInput(attrs={'class':'datepicker'}))
+    recurs_on = forms.ChoiceField(label=_('Recurs On'), widget=forms.RadioSelect, initial='weekday',
+        choices=(('weekday', 'the same day of the week'),('date','the same date'),))
+
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
 
@@ -485,6 +507,10 @@ class EventForm(TendenciBaseForm):
             'description',
             'start_dt',
             'end_dt',
+            'is_recurring_event',
+            'repeat_type',
+            'frequency',
+            'end_recurring',
             'on_weekend',
             'timezone',
             'priority',
@@ -507,16 +533,25 @@ class EventForm(TendenciBaseForm):
         fieldsets = [('Event Information', {
                       'fields': ['title',
                                  'description',
+                                 'is_recurring_event',
+                                 'frequency',
+                                 'repeat_type',
                                  'start_dt',
                                  'end_dt',
-                                 'on_weekend',
-                                 'timezone',
-                                 'priority',
-                                 'type',
-                                 'group',
-                                 'external_url',
-                                 'photo_upload',
-                                 'tags',
+                                 'recurs_on',
+                                 'end_recurring',
+                                 ],
+                      'legend': ''
+                      }),
+                      ('Event Information', {
+                       'fields': ['on_weekend',
+                                  'timezone',
+                                  'priority',
+                                  'type',
+                                  'group',
+                                  'external_url',
+                                  'photo_upload',
+                                  'tags',
                                  ],
                       'legend': ''
                       }),
@@ -537,6 +572,8 @@ class EventForm(TendenciBaseForm):
                     ]
 
     def __init__(self, *args, **kwargs):
+        edit_mode = kwargs.pop('edit_mode', False)
+        recurring_mode = kwargs.pop('recurring_mode', False)
         super(EventForm, self).__init__(*args, **kwargs)
 
         if self.instance.pk:
@@ -559,6 +596,23 @@ class EventForm(TendenciBaseForm):
         if not self.user.profile.is_superuser:
             if 'status_detail' in self.fields: self.fields.pop('status_detail')
 
+        if self.instance.is_recurring_event:
+            message = 'Changes here would be ignored if applied to other events in series.'
+            self.fields['start_dt'].help_text = message
+            self.fields['end_dt'].help_text = message
+
+        if edit_mode:
+            self.fields.pop('is_recurring_event')
+            self.fields.pop('repeat_type')
+            self.fields.pop('frequency')
+            self.fields.pop('end_recurring')
+            self.fields.pop('recurs_on')
+
+        if edit_mode and recurring_mode:
+            self.fields.pop('start_dt')
+            self.fields.pop('end_dt')
+            self.fields.pop('photo_upload')
+
     def clean_photo_upload(self):
         photo_upload = self.cleaned_data['photo_upload']
         if photo_upload:
@@ -578,6 +632,12 @@ class EventForm(TendenciBaseForm):
                 raise forms.ValidationError(_('Please keep filesize under %s. Current filesize %s') % (filesizeformat(max_upload_size), filesizeformat(photo_upload.size)))
 
         return photo_upload
+
+    def clean_end_recurring(self):
+        end_recurring = self.cleaned_data.get('end_recurring', None)
+        if end_recurring:
+            return datetime.combine(end_recurring, datetime.max.time())
+        return end_recurring
 
     def clean(self):
         cleaned_data = self.cleaned_data
@@ -600,6 +660,7 @@ class EventForm(TendenciBaseForm):
             event.image = None
         return event
 
+
 class DisplayAttendeesForm(forms.Form):
     display_event_registrants = forms.BooleanField(required=False)
     DISPLAY_REGISTRANTS_TO_CHOICES=(("public","Everyone"),
@@ -610,6 +671,15 @@ class DisplayAttendeesForm(forms.Form):
                                                 widget=forms.RadioSelect,
                                                 initial='public')
     label = 'Display Attendees'
+
+
+class ApplyRecurringChangesForm(forms.Form):
+    APPLY_CHANGES_CHOICES = (("self","This event only"),
+                             ("rest","This and the following events in series"),
+                             ("all","All events in series"))
+    apply_changes_to = forms.ChoiceField(choices=APPLY_CHANGES_CHOICES,
+                                         widget=forms.RadioSelect, initial="self")
+
 
 class TypeChoiceField(forms.ModelChoiceField):
 
@@ -709,6 +779,7 @@ class PlaceForm(forms.ModelForm):
         ]
 
     def save(self, *args, **kwargs):
+        commit = kwargs.pop('commit', True)
         place = super(PlaceForm, self).save(commit=False)
         # Handle case if place is given
         if self.cleaned_data.get('place'):
@@ -723,11 +794,13 @@ class PlaceForm(forms.ModelForm):
                 place_obj.country != place.country or \
                 place_obj.url != place.url:
                 place.pk = None
-                place.save()
+                if commit:
+                    place.save()
             else:
                 place = place_obj
         else:
-            place.save()
+            if commit:
+                place.save()
         return place
 
 
@@ -751,6 +824,29 @@ class SpeakerBaseFormSet(BaseModelFormSet):
                 if name and name in names:
                     raise forms.ValidationError(_("Speakers in an event must have distinct names. '%s' is already used." % name))
                 names.append(name)
+
+    def save(self, *args, **kwargs):
+        commit = kwargs.pop('commit', True)
+        self.deleted_objects = []
+        if not commit:
+            self.saved_forms = []
+        saved_instances = []
+
+        for form in self.initial_forms:
+            pk_name = self._pk_field.name
+            raw_pk_value = form._raw_value(pk_name)
+            pk_value = form.fields[pk_name].clean(raw_pk_value)
+            pk_value = getattr(pk_value, 'pk', pk_value)
+
+            speaker = self._existing_object(pk_value)
+            if self.can_delete and self._should_delete_form(form):
+                self.deleted_objects.append(speaker)
+                continue
+            saved_instances.append(self.save_existing(form, speaker, commit=commit))
+
+        new_instances = self.save_new_objects(commit)
+
+        return saved_instances + new_instances
 
 
 class SpeakerForm(BetterModelForm):
@@ -1005,6 +1101,7 @@ class Reg8nEditForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         reg_form_queryset = kwargs.pop('reg_form_queryset', None)
+        self.recurring_edit = kwargs.pop('recurring_edit', False)
         super(Reg8nEditForm, self).__init__(*args, **kwargs)
 
         #custom_reg_form = CustomRegForm.objects.all()
@@ -1038,6 +1135,10 @@ class Reg8nEditForm(BetterModelForm):
                                           )
             reminder_edit_link = '<a href="%s" target="_blank">Edit Reminder Email</a>' % \
                                 reverse('event.edit.email', args=[self.instance.event.id])
+            if self.instance.event.is_recurring_event:
+                message = 'Changes here would be ignored if applied to other events in series.'
+                self.fields['use_custom_reg'].help_text = message
+
             self.fields['reminder_days'].help_text = '%s<br /><br />%s' % \
                                         (self.fields['reminder_days'].help_text,
                                          reminder_edit_link)
@@ -1055,6 +1156,9 @@ class Reg8nEditForm(BetterModelForm):
  
         if not get_setting('module', 'discounts', 'enabled'):
             del self.fields['discount_eligible']
+
+        if self.recurring_edit:
+            del self.fields['use_custom_reg']
 
     def clean_use_custom_reg(self):
         value = self.cleaned_data['use_custom_reg']
@@ -1096,28 +1200,29 @@ class Reg8nEditForm(BetterModelForm):
         # handle three fields here - use_custom_reg_form, reg_form,
         # and bind_reg_form_to_conf_only
         # split the value from use_custom_reg and assign to the 3 fields
-        use_custom_reg_data_list = (self.cleaned_data['use_custom_reg']).split(',')
-        try:
-            self.instance.use_custom_reg_form = int(use_custom_reg_data_list[0])
-        except:
-            self.instance.use_custom_reg_form = 0
+        if not self.recurring_edit:
+            use_custom_reg_data_list = (self.cleaned_data['use_custom_reg']).split(',')
+            try:
+                self.instance.use_custom_reg_form = int(use_custom_reg_data_list[0])
+            except:
+                self.instance.use_custom_reg_form = 0
 
-        try:
-            self.instance.bind_reg_form_to_conf_only = int(use_custom_reg_data_list[2])
-        except:
-            self.instance.bind_reg_form_to_conf_only = 0
+            try:
+                self.instance.bind_reg_form_to_conf_only = int(use_custom_reg_data_list[2])
+            except:
+                self.instance.bind_reg_form_to_conf_only = 0
 
-        try:
-            reg_form_id = int(use_custom_reg_data_list[1])
-        except:
-            reg_form_id = 0
+            try:
+                reg_form_id = int(use_custom_reg_data_list[1])
+            except:
+                reg_form_id = 0
 
-        if reg_form_id:
-            if self.instance.use_custom_reg_form and self.instance.bind_reg_form_to_conf_only:
-                reg_form = CustomRegForm.objects.get(id=reg_form_id)
-                self.instance.reg_form = reg_form
-            else:
-                self.instance.reg_form = None
+            if reg_form_id:
+                if self.instance.use_custom_reg_form and self.instance.bind_reg_form_to_conf_only:
+                    reg_form = CustomRegForm.objects.get(id=reg_form_id)
+                    self.instance.reg_form = reg_form
+                else:
+                    self.instance.reg_form = None
 
         return super(Reg8nEditForm, self).save(*args, **kwargs)
 

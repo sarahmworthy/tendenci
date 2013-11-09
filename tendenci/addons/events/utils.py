@@ -1,39 +1,44 @@
 # NOTE: When updating the registration scheme be sure to check with the
 # anonymous registration impementation of events in the registration module.
-
 import ast
 import re
 import os.path
 from datetime import datetime, timedelta
 from datetime import date
+from dateutil.rrule import *
 from decimal import Decimal
-from django.db import models
-from django.core.urlresolvers import reverse
-from django.utils.html import strip_tags
+
 from django.contrib.auth.models import User
-from django.template.defaultfilters import slugify
-from django.utils import simplejson
-from django.db.models.fields import FieldDoesNotExist
+from django.core.urlresolvers import reverse
 from django.db import connection
+from django.db import models
+from django.db.models.fields import FieldDoesNotExist
+from django.forms.models import modelformset_factory
 from django.template import Context, Template
+from django.template.defaultfilters import slugify
 from django.template.loader import render_to_string
+from django.utils import simplejson
+from django.utils.html import strip_tags
 from pytz import timezone
 from pytz import UnknownTimeZoneError
-
-from tendenci.core.site_settings.utils import get_setting
-from tendenci.core.perms.utils import get_query_filters
-from tendenci.core.imports.utils import extract_from_excel
-from tendenci.core.base.utils import format_datetime_range
-from tendenci.apps.discounts.models import Discount, DiscountUse
-from tendenci.apps.discounts.utils import assign_discount
 
 from tendenci.addons.events.models import (Event, Place, Speaker, Organizer,
     Registration, RegistrationConfiguration, Registrant, RegConfPricing,
     CustomRegForm, Addon, AddonOption, CustomRegField, Type,
-    TypeColorSet)
-from tendenci.addons.events.forms import (FormForCustomRegForm,
-    EMAIL_AVAILABLE_TOKENS)
-from tendenci.addons.events.forms import FormForCustomRegForm
+    TypeColorSet, RecurringEvent, EventPhoto)
+from tendenci.addons.events.forms import (FormForCustomRegForm, Reg8nEditForm,
+    EMAIL_AVAILABLE_TOKENS, EventForm, PlaceForm, SpeakerForm, OrganizerForm,
+    Reg8nConfPricingForm, RegConfPricingBaseModelFormSet, ApplyRecurringChangesForm,
+    DisplayAttendeesForm)
+from tendenci.apps.discounts.models import Discount, DiscountUse
+from tendenci.apps.discounts.utils import assign_discount
+from tendenci.core.site_settings.utils import get_setting
+from tendenci.core.perms.utils import get_query_filters
+from tendenci.core.imports.utils import extract_from_excel
+from tendenci.core.base.utils import format_datetime_range
+from tendenci.core.files.models import File
+from tendenci.core.perms.utils import update_perms_and_save
+
 
 try:
     from tendenci.apps.notifications import models as notification
@@ -1232,7 +1237,7 @@ def clean_price(price, user):
 
     return price, price_pk, amount
 
-def copy_event(event, user):
+def copy_event(event, user, reuse_rel=False):
     #copy event
     new_event = Event.objects.create(
         title = event.title,
@@ -1270,36 +1275,45 @@ def copy_event(event, user):
     #copy place
     place = event.place
     if place:
-        new_place = Place.objects.create(
-            name = place.name,
-            description = place.description,
-            address = place.address,
-            city = place.city,
-            state = place.state,
-            zip = place.zip,
-            country = place.country,
-            url = place.url,
-        )
-        new_event.place = new_place
+        if reuse_rel:
+            new_event.place = place
+        else:
+            new_place = Place.objects.create(
+                name = place.name,
+                description = place.description,
+                address = place.address,
+                city = place.city,
+                state = place.state,
+                zip = place.zip,
+                country = place.country,
+                url = place.url,
+            )
+            new_event.place = new_place
         new_event.save()
 
     #copy speakers
     for speaker in event.speaker_set.all():
-        new_speaker = Speaker.objects.create(
-            user = speaker.user,
-            name = speaker.name,
-            description = speaker.description,
-        )
-        new_speaker.event.add(new_event)
+        if reuse_rel:
+            speaker.event.add(new_event)
+        else:
+            new_speaker = Speaker.objects.create(
+                user = speaker.user,
+                name = speaker.name,
+                description = speaker.description,
+            )
+            new_speaker.event.add(new_event)
 
     #copy organizers
     for organizer in event.organizer_set.all():
-        new_organizer = Organizer.objects.create(
-            user = organizer.user,
-            name = organizer.name,
-            description = organizer.description,
-        )
-        new_organizer.event.add(new_event)
+        if reuse_rel:
+            organizer.event.add(new_event)
+        else:
+            new_organizer = Organizer.objects.create(
+                user = organizer.user,
+                name = organizer.name,
+                description = organizer.description,
+            )
+            new_organizer.event.add(new_event)
 
     #copy registration configuration
     old_regconf = event.registration_configuration
@@ -1404,6 +1418,27 @@ def get_custom_registrants_initials(entries, **kwargs):
             fields_d[field_key] = field_entry.value
         initials.append(fields_d)
     return initials
+
+
+def get_recurrence_dates(repeat_type, start_dt, end_dt, frequency, recur_every):
+    weeknum = (start_dt.day - 1)/7 + 1
+    if weeknum > 4:
+        weeknum = -1
+    weekday = datetime.weekday(start_dt)
+    if repeat_type == RecurringEvent.RECUR_DAILY:
+        return rrule(DAILY, dtstart=start_dt, until=end_dt, interval=frequency)
+    elif repeat_type == RecurringEvent.RECUR_WEEKLY:
+        return rrule(WEEKLY, dtstart=start_dt, until=end_dt, interval=frequency)
+    elif repeat_type == RecurringEvent.RECUR_MONTHLY:
+        if recur_every == 'date':
+            return rrule(MONTHLY, dtstart=start_dt, until=end_dt, interval=frequency)
+        else:
+            return rrule(MONTHLY, dtstart=start_dt, until=end_dt, interval=frequency, bysetpos=weeknum, byweekday=weekday)
+    elif repeat_type == RecurringEvent.RECUR_YEARLY:
+        if recur_every == 'date':
+            return rrule(YEARLY, dtstart=start_dt, until=end_dt, interval=frequency)
+        else:
+            return rrule(YEARLY, dtstart=start_dt, until=end_dt, interval=frequency, bymonth=start_dt.month, bysetpos=weeknum, byweekday=weekday)
 
 
 def event_import_process(import_i, preview=True):
