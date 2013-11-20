@@ -270,6 +270,8 @@ def application_detail_default(request, **kwargs):
             membership = form.save(request=request, commit=False)
 
             if membership.get_invoice():
+
+                # is online payment
                 online_payment_requirements = (
                     membership.get_invoice().total > 0,
                     membership.payment_method,
@@ -284,20 +286,25 @@ def application_detail_default(request, **kwargs):
                             membership.get_invoice().guid]
                     ))
 
+            # show membership edit page
             if request.user.profile.is_superuser:
                 return HttpResponseRedirect(reverse(
                 'admin:memberships_membershipdefault_change',
                 args=[membership.pk]
                 ))
 
+            # show confirmation page
             return HttpResponseRedirect(reverse(
                 'membership.application_confirmation_default',
                 args=[membership.guid]
             ))
 
     else:
+
+        # create default form
         form = MembershipDefaultForm(request=request)
 
+    # show application
     return render_to_response(
         'memberships/applications/detail_default.html', {
         'form': form,
@@ -1582,6 +1589,9 @@ def membership_default_add(request, slug='', template='memberships/applications/
             raise Http404
 
         app = corp_app.memb_app
+        
+        if not has_perm(request.user, 'memberships.view_app', app):
+            raise Http403
 
         cm_id = kwargs.get('cm_id')
         if not cm_id:
@@ -1630,6 +1640,9 @@ def membership_default_add(request, slug='', template='memberships/applications/
     else:  # regular membership
 
         app = get_object_or_404(MembershipApp, slug=slug)
+        
+        if not has_perm(request.user, 'memberships.view_app', app):
+            raise Http403
 
         if app.use_for_corp:
             redirect_url = reverse('membership_default.corp_pre_add')
