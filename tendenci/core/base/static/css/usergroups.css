@@ -75,13 +75,10 @@
 }
 
 /* group search */
-
 .t form.search-form input[type="text"] {
-
 	padding:5px;
 	width:273px;
 }
-
 
 .t form.search-form {
     margin-bottom: 45px;
@@ -93,11 +90,9 @@
     color: red;
 }
 
-
 .t form.search-form .q .errorlist {
     margin-left: 6px;
 }
-
 
 .t form.search-form input[type="submit"] {
     height: 28px;
