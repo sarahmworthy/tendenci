@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load i18n %}
 
 <p>{% blocktrans with object.title as obj_title %}Your job posting "{{ obj_title }}" has been approved.{% endblocktrans %}
@@ -9,7 +10,7 @@
 
 {% if object.invoice %}
 <p>
-	{% blocktrans %}To view the invoice, go to:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}">{{ SITE_GLOBAL_SITEURL }}{% url invoice.view object.invoice.pk %}</a>
+	{% blocktrans %}To view the invoice, go to:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url 'invoice.view' object.invoice.pk %}">{{ SITE_GLOBAL_SITEURL }}{% url 'invoice.view' object.invoice.pk %}</a>
 </p>
 {% endif %}
 

@@ -1,4 +1,7 @@
 {% extends "reports/base.html" %}
+
+{% load url from future %}
+
 {% load reports_tags %}
 {% load i18n %}
 
@@ -13,7 +16,7 @@
     Currently showing members who renewed in the last {{ days }} days.
     {% endblocktrans %}
 {% endif %}
-<form class="search-form" action="{% url reports-renewed-members %}" method="get">
+<form class="search-form" action="{% url 'reports-renewed-members' %}" method="get">
 <label for="id_days">{% trans "Filter by renew date" %}:</label><select name="days" id="id_days" onchange="this.form.submit();">
 <option value="" selected="selected">-----------</option>
 <option value="30">Last 30 days</option>
@@ -26,7 +29,7 @@
 </form>
 
 {% if members %}
-<p><a href="{% url reports-renewed-members %}?output=csv">
+<p><a href="{% url 'reports-renewed-members' %}?output=csv">
     Download CSV File</a></p>
     <table>
         <tr>

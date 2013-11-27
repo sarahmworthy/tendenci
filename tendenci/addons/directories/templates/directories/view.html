@@ -1,4 +1,7 @@
 {% extends "directories/base.html" %}
+
+{% load url from future %}
+
 {% load directory_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -76,7 +79,7 @@
 
         {% include "directories/meta.html" %}
 
-        <div>{% url directory directory.pk as the_url %}</div>
+        <div>{% url 'directory' directory.pk as the_url %}</div>
         <div class="fb-connect">{% fb_like_button_iframe the_url %}</div>
 
     </div>

@@ -1,4 +1,7 @@
 {% extends "forms/base.html" %}
+
+{% load url from future %}
+
 {% load forms_tags %}
 {% load i18n %}
 
@@ -22,7 +25,7 @@
 	    <h2>{{ form }}</h2>
 		
 		<div class="delete-form">
-		    <form action="{% url form_delete form.pk %}" method="post">{% csrf_token %}
+		    <form action="{% url 'form_delete' form.pk %}" method="post">{% csrf_token %}
 		        <input type="submit" value="Delete {% firstof MODULE_FORMS_LABEL 'Form' %}" />
 		    </form>
 	    </div>

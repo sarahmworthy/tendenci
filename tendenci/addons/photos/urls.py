@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import url, patterns
+from django.conf.urls import url, patterns
 from tendenci.addons.photos.feeds import LatestAlbums, LatestAlbumPhotos
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.addons.photos.signals import init_signals

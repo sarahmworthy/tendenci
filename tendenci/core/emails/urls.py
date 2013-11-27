@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url, include
+from django.conf.urls import patterns, url, include
 
 urlpatterns = patterns('tendenci.core.emails.views',
     url(r'^$', 'search', name="emails"),

@@ -1,4 +1,7 @@
 {% extends page.template %}
+
+{% load url from future %}
+
 {% load i18n %}
 
 {% block title %}{{ page.get_title }}{% endblock %}
@@ -23,7 +26,7 @@
         
         <div class="content">{{ page.content|safe }}</div>
 
-        <form action="{% if edit_button %}{% url page.edit page.pk %}{% else %}{% url page.add %}{% endif %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+        <form action="{% if edit_button %}{% url 'page.edit' page.pk %}{% else %}{% url 'page.add' %}{% endif %}" method="post" enctype="multipart/form-data">{% csrf_token %}
             <div style="display:none;">
                 {{ form.as_p }}
                 {{ metaform.as_p }}

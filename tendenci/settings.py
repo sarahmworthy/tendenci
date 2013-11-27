@@ -80,8 +80,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'tendenci.libs.swfupload.middleware.SSLRedirectMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'johnny.middleware.LocalStoreClearMiddleware',
-    'johnny.middleware.QueryCacheMiddleware',
+    #'johnny.middleware.LocalStoreClearMiddleware',
+    #'johnny.middleware.QueryCacheMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'pagination.middleware.PaginationMiddleware',
     'tendenci.apps.profiles.middleware.ProfileMiddleware',
@@ -175,7 +175,6 @@ INSTALLED_APPS = (
     # applications
     'pagination',
     'tagging',
-    'avatar',
     'tinymce',
     'haystack',
     'captcha',
@@ -183,6 +182,7 @@ INSTALLED_APPS = (
     'tastypie',
     'tendenci.libs.model_report',
 
+    'tendenci.apps.avatars',
     'tendenci.apps.entities',
     'tendenci.core.base',
     'tendenci.core.site_settings',

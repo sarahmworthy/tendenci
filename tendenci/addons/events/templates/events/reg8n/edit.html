@@ -1,4 +1,7 @@
 {% extends "events/base.html" %}
+
+{% load url from future %}
+
 {% load event_tags %}
 {% load styled_forms %}
 {% load i18n %}
@@ -22,7 +25,7 @@
 				{% event_options user event %} 	       
              </div>
 		</div>
-    	<form action="{% url event.edit.registration event.pk %}" method="post">{% csrf_token %}
+    	<form action="{% url 'event.edit.registration' event.pk %}" method="post">{% csrf_token %}
     	<div class="forms">
             {{ form|styled_form }}
 

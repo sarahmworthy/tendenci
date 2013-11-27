@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load base_tags %}
 {% load perm_tags %}
 {% load i18n %}
@@ -7,9 +8,9 @@
 
 <div class="t-iconrow">
 	{% if can_edit %}
-		<a class="option-link edit" href="{% url job_pricing.edit opt_object.pk %}">{% trans "Edit" %}</a>
+		<a class="option-link edit" href="{% url 'job_pricing.edit' opt_object.pk %}">{% trans "Edit" %}</a>
 	{% endif %}
 	{% if can_delete %}
-		<a class="option-link delete" href="{% url job_pricing.delete opt_object.pk %}">{% trans "Delete" %}</a>
+		<a class="option-link delete" href="{% url 'job_pricing.delete' opt_object.pk %}">{% trans "Delete" %}</a>
 	{% endif %}
 </div>

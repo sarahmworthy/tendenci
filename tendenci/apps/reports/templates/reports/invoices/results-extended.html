@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load base_filters %}
 {% load i18n %}
 
@@ -90,7 +91,7 @@
                 <td>{{ invoice.bill_to_email }}</td>    
                 <td>
                     {% if invoice.get_object.event.pk %}
-                    <a href="{% url event invoice.get_object.event.pk %}">{{ invoice.get_object.event.pk }}</a> - {{ invoice.get_object.event.title|truncatewords:"3" }}
+                    <a href="{% url 'event' invoice.get_object.event.pk %}">{{ invoice.get_object.event.pk }}</a> - {{ invoice.get_object.event.title|truncatewords:"3" }}
 
                     {% elif invoice.get_object.membership_type.pk %}
                     {{ invoice.get_object.membership_type.name }}
@@ -100,7 +101,7 @@
                 {% with payment=invoice.get_first_approved_payment %}
                 <td class="inv-payment-id">
                     {% if payment %}
-                    <a href="{% url payment.view payment.pk payment.guid %}">
+                    <a href="{% url 'payment.view' payment.pk payment.guid %}">
                     {{ payment.pk }}</a>
                     {% endif %}</td>
                 <td class="inv-payer">{{ payment.first_name }} {{ payment.last_name }}</td>

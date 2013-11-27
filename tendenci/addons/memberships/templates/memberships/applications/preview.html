@@ -1,4 +1,7 @@
 {% extends "memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load base_filters %}
 {% load i18n %}
 {% load membership_tags %}
@@ -50,9 +53,9 @@
 <div class="application-form-wrap">
     
     <div class="alert-message" data-alert="alert">
-        <a class="close" href="#">×</a>
+        <a class="close" href="#">x</a>
         <p>
-            This is the preview of "{{ app.name }}". Back to <a href="{% url admin:memberships_membershipapp_change app.id %}">App Edit</a>.
+            This is the preview of "{{ app.name }}". Back to <a href="{% url 'admin:memberships_membershipapp_change' app.id %}">App Edit</a>.
         </p>
     </div>
 

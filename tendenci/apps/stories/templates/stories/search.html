@@ -1,4 +1,7 @@
 {% extends "stories/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load story_tags %}
 {% load search_tags %}
@@ -12,7 +15,7 @@
 {% block extra_head %}
 {{ block.super }}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/stories.css">
-<link rel="alternate" type="application/rss+xml" title="Latest Stories" href="{% url story.feed %}" />
+<link rel="alternate" type="application/rss+xml" title="Latest Stories" href="{% url 'story.feed' %}" />
 {% endblock %}
 
 {% block body %}

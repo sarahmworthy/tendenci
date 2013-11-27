@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load base_filters %}
 {% load i18n %}
 {% load corporate_memberships_tags %}
@@ -51,12 +54,12 @@
 <div class="application-form-wrap">
  {% corpmemb_nav request.user %}
         <div class="alert-message" data-alert="alert">
-            <a class="close" href="#">×</a>
+            <a class="close" href="#">x</a>
             <p>
                 This is the preview{% if current_app.id == app.id%}
-                of the <a href="{% url corpmembership.add current_app.slug %}">current application</a>.
+                of the <a href="{% url 'corpmembership.add' current_app.slug %}">current application</a>.
                 {% else %}
-               . This application is NOT the current application. <a href="{% url corpmembership.add current_app.slug %}">Click here to view current application</a>.
+               . This application is NOT the current application. <a href="{% url 'corpmembership.add' current_app.slug %}">Click here to view current application</a>.
                 {% endif %}
             </p>
         </div>

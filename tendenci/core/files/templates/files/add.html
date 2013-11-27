@@ -1,4 +1,7 @@
 {% extends "files/base.html" %}
+
+{% load url from future %}
+
 {% load file_tags %}
 {% load styled_forms %}
 {% load i18n %}
@@ -19,7 +22,7 @@
     <h1>{% trans "Add File" %}</h1>
 
     <div class="file-wrap">
-    <form action="{% url file.add %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+    <form action="{% url 'file.add' %}" method="post" enctype="multipart/form-data">{% csrf_token %}
     	<div class="forms">
 			{{ form|styled_form }}
 			<fieldset class="boxy-grey" >

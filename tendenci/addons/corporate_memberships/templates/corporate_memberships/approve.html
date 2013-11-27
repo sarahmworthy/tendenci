@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base.html" %}
+
+{% load url from future %}
+
 {% load base_filters %}
 {% load corporate_memberships_tags %}
 {% load i18n %}
@@ -26,7 +29,7 @@
 		<tr>
 			<td>Corp. Name:</td>
 			<td>
-			<strong><a href="{% url corp_memb.view corporate_membership.id %}" target="_blank">{{ corporate_membership.name }}</a></strong>
+			<strong><a href="{% url 'corp_memb.view' corporate_membership.id %}" target="_blank">{{ corporate_membership.name }}</a></strong>
 			</td>
 		</tr>
 		<tr>
@@ -84,9 +87,9 @@
    {% if renew_entry %}
 	   <div style="height:1px;width:80%;border-bottom:1px dashed #ccc;margin-bottom:1em;">&nbsp;</div>
 	   <div>
-	   	{% blocktrans with renew_entry.create_dt|date:"d-M-Y" as create_date %}Renewed on {{ create_date }} by:{% endblocktrans %} <a href="{% url profile renew_entry.creator.username %}">{{ renew_entry.creator.get_full_name }}</a>
+	   	{% blocktrans with renew_entry.create_dt|date:"d-M-Y" as create_date %}Renewed on {{ create_date }} by:{% endblocktrans %} <a href="{% url 'profile' renew_entry.creator.username %}">{{ renew_entry.creator.get_full_name }}</a>
 	   	<br />
-	   	<a href="{% url invoice.view renew_entry.invoice.id %}">{% trans "View Invoice" %}</a>
+	   	<a href="{% url 'invoice.view' renew_entry.invoice.id %}">{% trans "View Invoice" %}</a>
 	   	<br />
 	   	{% trans "New expiration date upon approval: " %}<b>{{ new_expiration_dt }}</b>
 	   	
@@ -100,7 +103,7 @@
 				<tr><td width="50%" class="indiv-header">{% trans "Name" %}</td><td width="50%" class="indiv-header">{% trans "Member Number" %}</td></tr>
 				{% for indiv_renew_entry in indiv_renew_entries %}
 					<tr>
-					<td><a href="{% url profile indiv_renew_entry.membership.user.username %}">{{ indiv_renew_entry.membership.user.get_full_name }}</a></td>
+					<td><a href="{% url 'profile' indiv_renew_entry.membership.user.username %}">{{ indiv_renew_entry.membership.user.get_full_name }}</a></td>
 					<td>{{ indiv_renew_entry.membership.member_number }}</td>
 					</tr>
 				{% endfor %}

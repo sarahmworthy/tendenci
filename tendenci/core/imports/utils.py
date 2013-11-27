@@ -7,7 +7,7 @@ from django.db import models
 from django.http import HttpResponse
 from django.db.models.fields import AutoField, FieldDoesNotExist
 from django.utils.encoding import smart_str
-from django.core.validators import email_re
+from django.utils.html import simple_email_re as email_re
 from django.core.files.storage import default_storage
 
 import xlrd

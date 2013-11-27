@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.admin import SimpleListFilter
 from django.contrib.contenttypes.models import ContentType
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from django.template.defaultfilters import slugify
 from django.http import HttpResponse
 from django.utils.html import escape

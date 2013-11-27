@@ -1,5 +1,8 @@
 {% extends "photos/base.html" %}
 
+{% load url from future %}
+
+
 {% load i18n %}
 {% load humanize %}
 {% load pagination_tags %}
@@ -44,7 +47,7 @@
         {% if task_id %}
             function refresh(){
                 $.ajax({
-                    url: "{% url photoset_zip_status photo_set.id task_id %}",
+                    url: "{% url 'photoset_zip_status' photo_set.id task_id %}",
                     success: function(data){
                         if (data != "DNE"){
                             $('#zip-wait').hide();

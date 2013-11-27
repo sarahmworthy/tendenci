@@ -1,4 +1,7 @@
 {% extends "site_base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 
 {% block extra_head %}
@@ -19,7 +22,7 @@
   $(document).ready(function() {    
     var status_check = function(){
         $.ajax({
-           url: "{% url update_tendenci.check %}",
+           url: "{% url 'update_tendenci.check' %}",
            success: function(status_data){
                if (status_data == 'False') {
                   location.reload()

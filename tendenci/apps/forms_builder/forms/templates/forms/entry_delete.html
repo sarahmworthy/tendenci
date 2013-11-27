@@ -1,4 +1,7 @@
 {% extends "forms/base.html" %}
+
+{% load url from future %}
+
 {% load forms_tags %}
 {% load i18n %}
 
@@ -27,7 +30,7 @@
 	    </h3>
 		
 		<div class="delete-form">
-		    <form action="{% url form_entry_delete entry.pk %}" method="post">{% csrf_token %}
+		    <form action="{% url 'form_entry_delete' entry.pk %}" method="post">{% csrf_token %}
 		        <input type="submit" value="Delete Entry" />
 		    </form>
 	    </div>

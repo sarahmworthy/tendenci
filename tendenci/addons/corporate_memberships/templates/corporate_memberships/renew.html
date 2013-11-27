@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load base_filters %}
 {% load corporate_memberships_tags %}
 {% load styled_forms %}
@@ -99,7 +102,7 @@
 <div id="main-forms">
 <div class="forms">
 	<p>
-     <a href="{% url corp_memb.view corporate_membership.id %}" target="_blank">{{ corporate_membership.name }}</a><br />
+     <a href="{% url 'corp_memb.view' corporate_membership.id %}" target="_blank">{{ corporate_membership.name }}</a><br />
      	{% if corporate_membership.address %}
   			{{ corporate_membership.address }} 
   		{% endif %}

@@ -1,4 +1,5 @@
-<form class="search-form" action="{% if past %}{% url event.past_search %}{% else %}{% url event.search %}{% endif %}" method="get">
+{% load url from future %}
+<form class="search-form" action="{% if past %}{% url 'event.past_search' %}{% else %}{% url 'event.search' %}{% endif %}" method="get">
 
 <div class="form-field clearfix">
     <div class="id_start_dt">

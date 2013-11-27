@@ -1,4 +1,7 @@
 {% extends "events/base.html" %}
+
+{% load url from future %}
+
 {% load event_tags %}
 {% load base_tags %}
 {% load perm_tags %}
@@ -60,7 +63,7 @@
 	</div>
     
 	<div align="right">
-    <form class="import" method="post" action="{% url event.import_process import_i.pk %}">{% csrf_token %}
+    <form class="import" method="post" action="{% url 'event.import_process' import_i.pk %}">{% csrf_token %}
 	<input type="submit" class="submit-btn" name="submit" value="Import Now" >
 	</form>
 	</div>

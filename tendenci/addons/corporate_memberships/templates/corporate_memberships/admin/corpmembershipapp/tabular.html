@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load i18n admin_static admin_modify %}
 <div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
   <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
@@ -195,7 +196,7 @@
         if ($('.dynamic-fields').length == 0){
             $.ajax({
                type: "POST",
-               url: "{% url corpmemberships.get_app_fields %}",
+               url: "{% url 'corpmemberships.get_app_fields' %}",
                success: function(status_data){
                    var objs = $.parseJSON(status_data);
                     for (var i=0; i<objs.length; i++){

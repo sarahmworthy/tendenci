@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load i18n %}
 <div class="group">
 <form method="POST" action="">{% csrf_token %}
@@ -12,7 +13,7 @@
         {% for user in users %}
         <tr>
             <td>{{ user.id }}</td>
-            <td><a href="{% if user.username %}{% url profile user.username %}{% else %}{% url profile.edit user.id  %}{% endif %}">{{ user.username }}</a></td>
+            <td><a href="{% if user.username %}{% url 'profile' user.username %}{% else %}{% url 'profile.edit' user.id  %}{% endif %}">{{ user.username }}</a></td>
             <td>{{ user.first_name }}</td>
             <td>{{ user.last_name }}</td>
             <td>{{ user.email }}</td>

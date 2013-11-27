@@ -15,7 +15,7 @@ import cgi
 import urllib
 
 from django.conf import settings
-from django.utils import simplejson
+import json as simplejson
 from django.contrib.auth import authenticate
 
 from tendenci.addons.social_auth.backends import BaseOAuth, OAuthBackend, USERNAME

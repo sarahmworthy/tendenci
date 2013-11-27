@@ -349,7 +349,7 @@ def api_rp_setup(data):
         result_code
     """
     from decimal import Decimal
-    from django.core.validators import email_re
+    from django.utils.html import simple_email_re as email_re
     import dateutil.parser as dparser
     from tendenci.core.imports.utils import get_unique_username
     
@@ -551,7 +551,7 @@ def api_add_rp(data):
                       'trial_amount',
                       )
     from decimal import Decimal
-    from django.core.validators import email_re
+    from django.utils.html import simple_email_re as email_re
     import dateutil.parser as dparser
     from tendenci.core.imports.utils import get_unique_username
     

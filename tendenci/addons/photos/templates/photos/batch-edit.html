@@ -1,5 +1,8 @@
 {% extends "photos/base-wide.html" %}
 
+{% load url from future %}
+
+
 {% load i18n %}
 {% load photo_tags %}
 {% load base_tags %}
@@ -61,7 +64,7 @@
                         </select>
                     </div>
                     <div class="save-wrap">
-                        <input type="submit" value="Save all changes to these photos" onclick="event.preventDefault(); save_changes('{% url photoset_details photo_set.id %}');"/>
+                        <input type="submit" value="Save all changes to these photos" onclick="event.preventDefault(); save_changes('{% url 'photoset_details' photo_set.id %}');"/>
                     </div>
                 </div>
             </div>

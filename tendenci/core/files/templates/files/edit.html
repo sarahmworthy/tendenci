@@ -1,5 +1,8 @@
 {% extends "files/base.html" %}
 
+{% load url from future %}
+
+
 {% load file_tags %}
 {% load styled_forms %}
 {% load i18n %}
@@ -20,7 +23,7 @@
     <h1>{% trans "File Edit" %}</h1>
 
     <div class="forms">
-	    <form action="{% url file.edit file.pk %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+	    <form action="{% url 'file.edit' file.pk %}" method="post" enctype="multipart/form-data">{% csrf_token %}
 	        {{ form|styled_form }}
 	        <fieldset class="boxy-grey" >
                 <legend id="category-title" style="cursor: pointer"><span>+</span> {% trans "Category" %}</legend>

@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url, include
+from django.conf.urls import patterns, url, include
 from tendenci.core.site_settings.utils import get_setting
 
 urlpath = get_setting('module', 'memberships', 'url')

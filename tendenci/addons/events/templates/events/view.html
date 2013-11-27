@@ -1,4 +1,7 @@
 {% extends "events/base-wide.html" %}
+
+{% load url from future %}
+
 {% load perm_tags %}
 {% load event_tags %}
 {% load tagging_tags %}
@@ -55,7 +58,7 @@
                 <div class="speaker-wrap">
                     {% if speaker.get_photo %}
                     <div class="speaker-photo">
-                        <img alt="Speaker: {{ speaker.name }}" src="{% url file speaker.get_photo.pk %}"  width="100" />
+                        <img alt="Speaker: {{ speaker.name }}" src="{% url 'file' speaker.get_photo.pk %}"  width="100" />
                     </div>
                     {% endif %}
                     <div class="speaker">
@@ -80,7 +83,7 @@
                 </div>              
                 {% endfor %}
                 {% if speakers_length > 1 %}
-                <a href="{% url event.speakers event.pk %}">{% trans "View all speakers" %}</a>
+                <a href="{% url 'event.speakers' event.pk %}">{% trans "View all speakers" %}</a>
                 {% endif %}
 	        
                 <!-- event description -->
@@ -228,7 +231,7 @@
             </div>
             {% endif %}
             
-            {% url event event.pk as the_url %}
+            {% url 'event' event.pk as the_url %}
             <p>{% fb_like_button_iframe the_url %}</p>
 		</div> <!-- end vitals -->
 

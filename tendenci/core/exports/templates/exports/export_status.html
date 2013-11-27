@@ -1,4 +1,7 @@
 {% extends "exports/base.html" %}
+
+{% load url from future %}
+
 {% load base_tags %}
 {% load base_filters %}
 {% load i18n %}
@@ -19,7 +22,7 @@
         {% if export.status == "completed" %}
             <h1>{% trans "Export Completed!" %}</h1>
             <p class="timestamp">{{ datetime.now }}</p>
-            <p class="msg">{% trans "Download" %} <a href="{% url export.download export.pk %}">{% trans "here" %}</a></p>
+            <p class="msg">{% trans "Download" %} <a href="{% url 'export.download' export.pk %}">{% trans "here" %}</a></p>
         {% else %}
             <h1>{% trans "Processing Export!" %}</h1>
             <p class="timestamp">{{ datetime.now }}</p>

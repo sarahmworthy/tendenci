@@ -1,4 +1,7 @@
 {% extends "memberships/base.html" %}
+
+{% load url from future %}
+
 {% load membership_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -16,7 +19,7 @@
     
     <h1>{% trans "Import Memberships from CSV file" %}</h1>
     
-    <form method='post' action='{% url membership_import %}' enctype="multipart/form-data">{% csrf_token %}
+    <form method='post' action='{% url 'membership_import' %}' enctype="multipart/form-data">{% csrf_token %}
     {{ form.as_p }}
     <input type='submit' value='Submit'>
     </form>

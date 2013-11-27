@@ -1,4 +1,5 @@
+{% load url from future %}
 {% if obj.type == 'image' %}
-	<img src="{% url file obj.pk %}" />
+	<img src="{% url 'file' obj.pk %}" />
 {% endif %}
 

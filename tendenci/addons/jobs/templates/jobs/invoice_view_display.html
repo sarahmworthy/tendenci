@@ -1,10 +1,11 @@
+{% load url from future %}
 {% load base_filters %}
 {% load i18n %}
 
 <tr>
     <td>
 		{% if obj %}
-			Job #<a href="{% url job obj.slug %}">{{ obj.pk }}</a> {{ obj.title|truncatewords:5 }}
+			Job #<a href="{% url 'job' obj.slug %}">{{ obj.pk }}</a> {{ obj.title|truncatewords:5 }}
 		{% else %}
 			Job information not available
 		{% endif%}

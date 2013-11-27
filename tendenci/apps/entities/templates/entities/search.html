@@ -1,4 +1,7 @@
 {% extends "entities/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load entity_tags %}
 {% load base_tags %}
@@ -47,13 +50,13 @@
 			</div>
 
 
-            <h2><a href="{% url entity entity.pk %}">{{ entity.entity_name|striptags|truncatewords:20|safe }}</a></h2>
+            <h2><a href="{% url 'entity' entity.pk %}">{{ entity.entity_name|striptags|truncatewords:20|safe }}</a></h2>
 			<div class="meta">
             	<div class="submitted">{% blocktrans with entity.create_dt|date:"long" as submit_date and entity.creator as entity_creator %} Submitted on {{ submit_date }} by {{ entity_creator }}{% endblocktrans %}</div>
             </div>
 
             <!-- delete-entity form -->
-            <form name="entity-delete" method="POST" action="{% url entity.delete entity.pk %}">{% csrf_token %}
+            <form name="entity-delete" method="POST" action="{% url 'entity.delete' entity.pk %}">{% csrf_token %}
                 <input type="hidden" name="action" value="delete">
             </form>
 

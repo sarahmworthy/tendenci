@@ -1,4 +1,7 @@
 {% extends "events/base.html" %}
+
+{% load url from future %}
+
 {% load event_tags %}
 {% load styled_forms %}
 {% load avatar_tags %}
@@ -55,9 +58,9 @@
     </div>
     <div class="form-wrap">
         {% if hash %}
-            <form action="{% url event.cancel_registrant event.pk registrant.hash %}" method="post">{% csrf_token %}
+            <form action="{% url 'event.cancel_registrant' event.pk registrant.hash %}" method="post">{% csrf_token %}
         {% else %}
-            <form action="{% url event.cancel_registrant event.pk registrant.pk  %}" method="post">{% csrf_token %}
+            <form action="{% url 'event.cancel_registrant' event.pk registrant.pk  %}" method="post">{% csrf_token %}
         {%  endif %}
             <div class="forms">
                 <input type="submit" value="Cancel Event Registration" />

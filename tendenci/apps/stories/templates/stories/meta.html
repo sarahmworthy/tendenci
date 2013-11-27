@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load base_filters %}
 {% load story_tags %}
 {% load base_tags %}
@@ -8,9 +9,9 @@
         {% with story.category_set as story_cat %}
         {% if story_cat.category %}
         <div class="categories">
-            <strong>{% trans "Category:" %} </strong><a href="{% url stories %}?q=category:{{ story_cat.category }}">{{ story_cat.category }}</a>
+            <strong>{% trans "Category:" %} </strong><a href="{% url 'stories' %}?q=category:{{ story_cat.category }}">{{ story_cat.category }}</a>
             {% if story_cat.sub_category %}
-                | <strong>{% trans "Sub Category:" %} </strong><a href="{% url stories %}?q=sub_category:{{ story_cat.sub_category }}">{{ story_cat.sub_category }}</a>
+                | <strong>{% trans "Sub Category:" %} </strong><a href="{% url 'stories' %}?q=sub_category:{{ story_cat.sub_category }}">{{ story_cat.sub_category }}</a>
             {% endif %}
         </div>
         {% endif %}
@@ -20,7 +21,7 @@
         <div class="tags">
             <strong>Tags: </strong>
             {% for tag in story.tags|tag_split %}
-                <a href="{% url stories %}?q=tag:{{ tag }}">{{ tag }}</a>{% if not forloop.last %}, {% endif %}
+                <a href="{% url 'stories' %}?q=tag:{{ tag }}">{{ tag }}</a>{% if not forloop.last %}, {% endif %}
             {% endfor %}
         </div>
         {% endif %}
@@ -41,7 +42,7 @@
     </div>
     
     <div class="meta-right">
-        <a class="print-link" href="{% url story.print_details story.pk %}">{% trans "Print" %}</a>
+        <a class="print-link" href="{% url 'story.print_details' story.pk %}">{% trans "Print" %}</a>
     </div>
 </div>
 
@@ -56,13 +57,13 @@
     </div>
     <div class="edit-links">
     <ul>
-        <li><a class="eventlog-link" href="{% url event_log.search %}?object_id={{ story.pk }}&source={{ story.opt_app_label }}">{% trans "Eventlogs" %}</a></li>
-        <li><a class="edit-link" href="{% url story.edit story.pk %}">{% trans "Edit" %}</a></li>
+        <li><a class="eventlog-link" href="{% url 'event_log.search' %}?object_id={{ story.pk }}&source={{ story.opt_app_label }}">{% trans "Eventlogs" %}</a></li>
+        <li><a class="edit-link" href="{% url 'story.edit' story.pk %}">{% trans "Edit" %}</a></li>
         <li><a class="options-link" href="#">{% trans "Options" %} <small>&#9650;</small></a>
         <div class="options-list">
             <ul>
-                <li><a class="delete" href="{% url story.delete story.pk %}">{% trans "Delete" %}</a></li>               
-                <li><a href="{% url category.update story.opt_app_label story.opt_module_name story.pk %}">{% trans "Edit Categories" %}</a></li>
+                <li><a class="delete" href="{% url 'story.delete' story.pk %}">{% trans "Delete" %}</a></li>               
+                <li><a href="{% url 'category.update' story.opt_app_label story.opt_module_name story.pk %}">{% trans "Edit Categories" %}</a></li>
                 
             </ul>
         </div>

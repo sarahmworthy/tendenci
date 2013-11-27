@@ -1,4 +1,7 @@
 {% extends "memberships/base.html" %}
+
+{% load url from future %}
+
 {% load membership_tags %}
 {% load styled_forms %}
 {% load i18n %}
@@ -18,7 +21,7 @@
     <h1>{% trans "Membership Edit" %}</h1>
     
     <div class="membership-wrap">
-    	<form action="{% url membership.edit membership.pk %}" method="post">{% csrf_token %}
+    	<form action="{% url 'membership.edit' membership.pk %}" method="post">{% csrf_token %}
     	<div class="forms">
  			{{ form|styled_form }}
         	<input type="submit" value="{% trans 'Save Membership Changes' %}" />

@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load bootstrap_pagination_tags %}
 {% load avatar_tags %}
@@ -45,7 +48,7 @@
  
 <h1>Roster - 
     {% if corp_membership %}
-    <a href="{% url corpmembership.view corp_membership.id %}">{{ corp_profile.name }}</a>
+    <a href="{% url 'corpmembership.view' corp_membership.id %}">{{ corp_profile.name }}</a>
     {% else %}
     ALL
     {% endif %}
@@ -148,7 +151,7 @@
 				    	<div class="status-{{ membership.status_detail }}">
 				    	    {% trans "Status: " %}
 				    	    {% if request.user.profile.is_superuser %}
-				    	    <a href="{% url admin:memberships_membershipdefault_change membership.pk %}">{{ membership.status_detail|capfirst }}</a>
+				    	    <a href="{% url 'admin:memberships_membershipdefault_change' membership.pk %}">{{ membership.status_detail|capfirst }}</a>
 				    	    
 				    	    {% else %}
 				    	    {{ membership.status_detail|capfirst }}

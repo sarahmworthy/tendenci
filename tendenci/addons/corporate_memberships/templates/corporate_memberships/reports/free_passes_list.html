@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load corporate_memberships_tags %}
 {% load i18n %}
 
@@ -26,7 +29,7 @@
         <tbody>
             {% for corp_membership in corp_memberships %}
             <tr>
-                <td><a href="{% url corpmembership.view corp_membership.id %}">{{ corp_membership.corp_profile.name|truncatechars:40 }}</a></td>
+                <td><a href="{% url 'corpmembership.view' corp_membership.id %}">{{ corp_membership.corp_profile.name|truncatechars:40 }}</a></td>
                 <td class="align_center">{{ corp_membership.free_pass_total }}</td>
                 <td class="align_center">{{ corp_membership.free_pass_used }}</td>
                 <td class="align_center">{{ corp_membership.free_pass_avail }}</td>

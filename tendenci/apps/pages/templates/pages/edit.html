@@ -1,4 +1,7 @@
 {% extends "pages/base.html" %}
+
+{% load url from future %}
+
 {% load base_tags %}
 {% load page_tags %}
 {% load perm_tags %}
@@ -31,7 +34,7 @@
     <h1>{% firstof MODULE_PAGES_LABEL 'Page' %} {% trans "Edit" %}</h1>
 
     <div class="page-wrap">
-        <form action="{% url page.edit page.pk %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+        <form action="{% url 'page.edit' page.pk %}" method="post" enctype="multipart/form-data">{% csrf_token %}
     	<div class="forms">
 			{{ form|styled_form }}
             <fieldset class="boxy-grey" >
@@ -51,7 +54,7 @@
         	<input class="previewButton" type="button" value="Preview"/>
         	{% if page.status %}
         	<div class="form-delete-link">
-        	    <a class="delete" title="{% trans 'Link to delete confirmation page' %}" href="{% url page.delete page.pk %}">
+        	    <a class="delete" title="{% trans 'Link to delete confirmation page' %}" href="{% url 'page.delete' page.pk %}">
         	        {% trans "Delete" %}
         	    </a>
         	</div>
@@ -114,7 +117,7 @@
             var form = $('div.page-wrap > form');
 		    var url = form.attr('action');
             $('form #id_preview_for').val('edit');
-		    form.attr('action', "{% url page.preview page.pk %}");
+		    form.attr('action', "{% url 'page.preview' page.pk %}");
 		    form.attr('target', '_blank');
 		    form.submit();
 		    

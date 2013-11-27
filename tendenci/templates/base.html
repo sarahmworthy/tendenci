@@ -1,3 +1,4 @@
+{% load url from future %}
 <!DOCTYPE html>
 {% load perm_tags %}
 {# admin left for deprecation for custom templates/themes #}
@@ -14,7 +15,7 @@
     <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss/" />
     {% block meta_canonical_url %}{% endblock %}
     <link href="{{ STATIC_URL }}css/global_tendenci.css" rel="stylesheet" type="text/css" />
-    <link rel="search" type="application/opensearchdescription+xml" title="{{ SITE_GLOBAL_SITEDISPLAYNAME }}" href="{{ SITE_GLOBAL_SITEURL }}{% url open_search %}">
+    <link rel="search" type="application/opensearchdescription+xml" title="{{ SITE_GLOBAL_SITEDISPLAYNAME }}" href="{{ SITE_GLOBAL_SITEURL }}{% url 'open_search' %}">
     {% block extra_head %}{% endblock %}
     <link href="{{ STATIC_URL }}css/websymbols.css" rel="stylesheet" type="text/css" />
     {% if request.user.is_authenticated %}

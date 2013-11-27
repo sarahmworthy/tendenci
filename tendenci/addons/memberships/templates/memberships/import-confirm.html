@@ -1,4 +1,7 @@
 {% extends "memberships/base.html" %}
+
+{% load url from future %}
+
 {% load membership_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -23,7 +26,7 @@
     <em>{{ stats.updated }}</em> {{ stats.updated|pluralize:"was,were" }} updated,
 	and <em>{{ stats.skipped }}</em> {{ stats.skipped|pluralize:"was,were" }} skipped.</p>
 
-	<p class="link"><a href="{% url membership.search %}">{% trans "Back to membership search page." %}</a></p>
+	<p class="link"><a href="{% url 'membership.search' %}">{% trans "Back to membership search page." %}</a></p>
 
 </div>
 {% endblock %}

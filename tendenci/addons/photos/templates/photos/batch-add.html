@@ -1,4 +1,7 @@
 {% extends "photos/base-wide.html" %}
+
+{% load url from future %}
+
 {% load photo_tags %}
 
 {% load i18n %}
@@ -55,7 +58,7 @@
 		swfupload = new SWFUpload({
 		debug: false,
 		
-		upload_url: "{% url photos_batch_add photoset_id %}",
+		upload_url: "{% url 'photos_batch_add' photoset_id %}",
 		flash_url: "{{ LOCAL_STATIC_URL }}swfupload/swfupload.swf",
 		post_params: {
 			"title" : "", 

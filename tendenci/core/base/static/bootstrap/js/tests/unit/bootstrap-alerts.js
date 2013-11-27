@@ -12,7 +12,7 @@ $(function () {
 
       test("should fade element out on clicking .close", function () {
         var alertHTML = '<div class="alert-message warning fade in">'
-          + '<a class="close" href="#">×</a>'
+          + '<a class="close" href="#">x</a>'
           + '<p><strong>Holy guacamole!</strong> Best check yo self, you’re not looking too good.</p>'
           + '</div>'
           , alert = $(alertHTML).alert()
@@ -26,7 +26,7 @@ $(function () {
         $.support.transition = false
 
         var alertHTML = '<div class="alert-message warning fade in">'
-          + '<a class="close" href="#">×</a>'
+          + '<a class="close" href="#">x</a>'
           + '<p><strong>Holy guacamole!</strong> Best check yo self, you’re not looking too good.</p>'
           + '</div>'
           , alert = $(alertHTML).appendTo('#qunit-runoff').alert()

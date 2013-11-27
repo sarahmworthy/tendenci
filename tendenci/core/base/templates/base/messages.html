@@ -1,7 +1,7 @@
 {% block messages %}
     {% if request.impersonation_message %}
     <div class="alert-message block-message fade in warning" data-alert="alert">
-        <a class="close" href="#">×</a>
+        <a class="close" href="#">x</a>
         {{ request.impersonation_message|safe }}
     </div>
     {% endif %}
@@ -9,7 +9,7 @@
     {% if messages %}
     {% for message in messages %}
         <div class="alert-message fade in{% if message.tags %} {{ message.tags }}{% endif %}" data-alert="alert">
-            <a class="close" href="#">×</a>
+            <a class="close" href="#">x</a>
             <p>{{ message|safe }}</p>
         </div>
     {% endfor %}

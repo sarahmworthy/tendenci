@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load i18n %}
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -9,9 +10,9 @@
 </head>
 <body bgcolor="#ffffff" text="#000000">
 <p>{% if request.user.is_superuser %}{% blocktrans %}The following resume was added 
-  to the {{ SITE_GLOBAL_SITEDISPLAYNAME }} Online Resume Bank by:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url profile request.user.username %}">{{request.user.get_full_name}}</a>
+  to the {{ SITE_GLOBAL_SITEDISPLAYNAME }} Online Resume Bank by:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url 'profile' request.user.username %}">{{request.user.get_full_name}}</a>
   (superuser){% else %} {% blocktrans %}The following resume was added 
-  to the {{ SITE_GLOBAL_SITEDISPLAYNAME }} Online Resume Bank by:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url profile request.user.username %}">{{request.user.get_full_name}}</a>. It needs to be activated{% endif %}:</p>
+  to the {{ SITE_GLOBAL_SITEDISPLAYNAME }} Online Resume Bank by:{% endblocktrans %} <a href="{{ SITE_GLOBAL_SITEURL }}{% url 'profile' request.user.username %}">{{request.user.get_full_name}}</a>. It needs to be activated{% endif %}:</p>
 <table width="100%" border="0" cellspacing="0" cellpadding="0">
   <tr> 
     <td width="2%">&nbsp;</td>
@@ -29,7 +30,7 @@
 {% if object.status_detail != 'active' %} 
     <br>
 <p>{% blocktrans %}To activate this resume, go 
-  to:{% endblocktrans %} <b><a href="{{ SITE_GLOBAL_SITEURL }}{% url resume.approve object.pk %}">{{ SITE_GLOBAL_SITEURL }}{% url resume.approve object.pk %}</a></b> 
+  to:{% endblocktrans %} <b><a href="{{ SITE_GLOBAL_SITEURL }}{% url 'resume.approve' object.pk %}">{{ SITE_GLOBAL_SITEURL }}{% url 'resume.approve' object.pk %}</a></b> 
   </p>
   {% endif %} 
  

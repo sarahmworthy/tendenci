@@ -1,4 +1,7 @@
 {% extends "redirects/base.html" %}
+
+{% load url from future %}
+
 {% load redirect_tags %}
 {% load i18n %}
 
@@ -22,7 +25,7 @@
 	    <h2>{{ Redirect }}</h2>
 		
 		<div class="delete-form">
-		    <form action="{% url redirect.delete redirect.pk %}" method="post">{% csrf_token %}
+		    <form action="{% url 'redirect.delete' redirect.pk %}" method="post">{% csrf_token %}
 		        <input type="submit" value="Delete Redirect" />
 		    </form>
 	    </div>

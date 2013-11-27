@@ -1,4 +1,7 @@
 {% extends "profiles/base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 {% load profile_tags %}
 {% load perm_tags %}
@@ -34,12 +37,12 @@
 <script type="text/javascript">
 function refresh(){
     $.ajax({
-        url: "{% url profile.export_check task_id %}",
+        url: "{% url 'profile.export_check' task_id %}",
         success: function(data){
             if (data != "DNE"){
                 $("#done").show();
                 $("#wait").hide();
-                window.location = "{% url profile.export_download task_id %}"
+                window.location = "{% url 'profile.export_download' task_id %}"
             } else {
                 setTimeout(refresh, 2000);
             }

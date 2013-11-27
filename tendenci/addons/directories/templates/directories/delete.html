@@ -1,4 +1,7 @@
 {% extends "directories/base.html" %}
+
+{% load url from future %}
+
 {% load directory_tags %}
 {% load i18n %}
 
@@ -23,7 +26,7 @@
         </div>
     </div>
     <div class="delete-form">
-        <form name="directory-delete" method="POST" action="{% url directory.delete directory.pk %}">{% csrf_token %}
+        <form name="directory-delete" method="POST" action="{% url 'directory.delete' directory.pk %}">{% csrf_token %}
             <input type="hidden" name="action" value="delete">
             <input type="submit" name="submit" value="{% trans 'Confirm Delete' %}">
         </form>

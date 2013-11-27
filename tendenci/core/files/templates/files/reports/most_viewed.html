@@ -1,4 +1,7 @@
 {% extends "files/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load file_tags %}
 {% load base_tags %}
@@ -20,7 +23,7 @@
 
     <h1>{% trans "Most Viewed Files" %}</h1>
 
-	<form class="search-form" action="{% url file.report_most_viewed %}" method="POST">
+	<form class="search-form" action="{% url 'file.report_most_viewed' %}" method="POST">
 
     {% for field in form %}
         <div class="fieldWrapper">

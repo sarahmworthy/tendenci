@@ -1,4 +1,7 @@
 {% extends "newsletters/base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 {% load base_filters %}
 
@@ -41,7 +44,7 @@
         <h1>{% trans 'Email Newsletters'%}</h1>
         
        {% if request.user.is_superuser %}
-       <p>Tendenci supports generating HTML newsletters that can be copied into most 3rd party email newsletter providers. Go to Tendenci's <a href="{% url admin:newsletters_newslettertemplate_changelist %}">Newsletter Templates</a> see your templates and generate new email newsletters.</p>
+       <p>Tendenci supports generating HTML newsletters that can be copied into most 3rd party email newsletter providers. Go to Tendenci's <a href="{% url 'admin:newsletters_newslettertemplate_changelist' %}">Newsletter Templates</a> see your templates and generate new email newsletters.</p>
        {% endif %}
 
        <h3>MailChimp</h3>
@@ -57,7 +60,7 @@
                
                <br /><br />
                MailChimp is not integrated with Tendenci. To start, you can 
-               <a href="{% url profile.export %}">export users</a>
+               <a href="{% url 'profile.export' %}">export users</a>
                to MailChimp.
            </div>
        
@@ -76,7 +79,7 @@
            
            <br /><br />
                Constant Contact is not integrated with Tendenci. To start, you can 
-               <a href="{% url profile.export %}">export users</a>
+               <a href="{% url 'profile.export' %}">export users</a>
                to Constant Contact.
            </div>
            

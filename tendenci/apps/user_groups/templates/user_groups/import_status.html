@@ -1,4 +1,7 @@
 {% extends "user_groups/base.html" %}
+
+{% load url from future %}
+
 {% load base_tags %}
 {% load base_filters %}
 {% load i18n %}
@@ -20,7 +23,7 @@
 	<p class="msg">We're not done yet! Come back and check on us again later. Thanks!</p>
     {% endif %}
     
-	<p class="link"><a href="{% url group.detail group.slug %}">{% trans "Back to" %} {{ group.name }}</a></p>
+	<p class="link"><a href="{% url 'group.detail' group.slug %}">{% trans "Back to" %} {{ group.name }}</a></p>
 </div>
 {% endblock %}
 

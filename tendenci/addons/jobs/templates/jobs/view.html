@@ -1,4 +1,7 @@
 {% extends "jobs/base.html" %}
+
+{% load url from future %}
+
 {% load job_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -163,7 +166,7 @@
 		{% endif %}
 {% endif %}
         {% include 'jobs/meta.html' %}
-        {% url job job.pk as the_url %}
+        {% url 'job' job.pk as the_url %}
         <p>{% fb_like_button_iframe the_url %}</p>
     </div>
 

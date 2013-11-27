@@ -248,7 +248,7 @@ if cm_api_key and cm_client_id:
         """Subscribe the subscriber to the campaign monitor list
            Check if sync_newsletters is True. Do nothing if False.
         """
-        from django.core.validators import email_re
+        from django.utils.html import simple_email_re as email_re
         from tendenci.apps.profiles.models import Profile
 
         if instance and instance.group and not instance.group.sync_newsletters:
@@ -332,7 +332,7 @@ if cm_api_key and cm_client_id:
     def delete_cm_subscriber(sender, instance=None, **kwargs):
         """Delete the subscriber from the campaign monitor list
         """
-        from django.core.validators import email_re
+        from django.utils.html import simple_email_re as email_re
 
         (name, email) = get_name_email(instance)
         if email and email_re.match(email):

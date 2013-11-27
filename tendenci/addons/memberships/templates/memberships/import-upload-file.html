@@ -1,4 +1,7 @@
 {% extends "memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load membership_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -21,10 +24,10 @@
 
     <p style="margin-bottom:0;">{% trans "<strong>Download</strong> and <strong>fill in</strong> your spreadsheet. <strong>Upload</strong> your updated spreadsheet, <strong>preview</strong>, and then <strong>submit</strong>." %}</p>
 
-    <p style="margin-top:0;">Please review your membership <a href="{% url settings.index 'module' 'memberships' %}">privacy settings</a> before importing.</p>
+    <p style="margin-top:0;">Please review your membership <a href="{% url 'settings.index' 'module' 'memberships' %}">privacy settings</a> before importing.</p>
 
 
-	<form method='post' action='{% url membership_import_upload_file %}' enctype="multipart/form-data">
+	<form method='post' action='{% url 'membership_import_upload_file' %}' enctype="multipart/form-data">
 
 		{% csrf_token %}
 

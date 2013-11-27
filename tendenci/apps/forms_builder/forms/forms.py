@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.utils.safestring import mark_safe
 from django.core.files.storage import default_storage
-from django.core.validators import email_re
+from django.utils.html import simple_email_re as email_re
 
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.payments.models import PaymentMethod

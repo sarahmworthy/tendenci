@@ -20,7 +20,7 @@ from django.db import connection
 from django.views.decorators.csrf import csrf_protect
 
 from djcelery.models import TaskMeta
-from johnny.cache import invalidate
+# from johnny.cache import invalidate
 
 from tendenci.core.base.decorators import ssl_required, password_required
 from tendenci.core.base.utils import get_pagination_page_range
@@ -35,8 +35,8 @@ from tendenci.core.event_logs.models import EventLog
 from tendenci.core.site_settings.utils import get_setting
 
 # for avatar
-from avatar.models import Avatar, avatar_file_path
-from avatar.forms import PrimaryAvatarForm
+from tendenci.apps.avatars.models import Avatar, avatar_file_path
+from tendenci.apps.avatars.forms import PrimaryAvatarForm
 
 # for group memberships
 from tendenci.apps.user_groups.models import GroupMembership
@@ -1234,7 +1234,7 @@ def merge_process(request, sid):
 
         # log an event
         EventLog.objects.log(description=description[:120])
-        invalidate('profiles_profile')
+        # invalidate('profiles_profile')
         messages.add_message(request, messages.SUCCESS, 'Successfully merged users. %s' % description)
 
     return redirect("profile.search")
@@ -1269,7 +1269,7 @@ def export(request, template_name="profiles/export.html"):
 
 
 def export_status(request, task_id, template_name="profiles/export_status.html"):
-    invalidate('celery_taskmeta')
+    # invalidate('celery_taskmeta')
     try:
         task = TaskMeta.objects.get(task_id=task_id)
     except TaskMeta.DoesNotExist:
@@ -1283,7 +1283,7 @@ def export_status(request, task_id, template_name="profiles/export_status.html")
 
 
 def export_check(request, task_id):
-    invalidate('celery_taskmeta')
+    # invalidate('celery_taskmeta')
     try:
         task = TaskMeta.objects.get(task_id=task_id)
     except TaskMeta.DoesNotExist:
@@ -1296,7 +1296,7 @@ def export_check(request, task_id):
 
 
 def export_download(request, task_id):
-    invalidate('celery_taskmeta')
+    # invalidate('celery_taskmeta')
     try:
         task = TaskMeta.objects.get(task_id=task_id)
     except TaskMeta.DoesNotExist:

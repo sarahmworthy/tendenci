@@ -1,4 +1,7 @@
 {% extends "stories/base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 {% load story_tags %}
 
@@ -24,7 +27,7 @@
 
         <h2>{% trans "Upload a Story Image" %}</h2>
         <p>
-        	{% trans "Title:" %} <a href="{% url stories.views.index story.pk%}">{{ story.title }}</a>
+        	{% trans "Title:" %} <a href="{% url 'stories.views.index' story.pk%}">{{ story.title }}</a>
         	<br />
         	<br />
         	{% trans "To upload image to this story, browse to your document and click Upload Image." %} 

@@ -1,4 +1,7 @@
 {% extends "events/base-wide.html" %}
+
+{% load url from future %}
+
 {% load event_tags %}
 {% load styled_forms %}
 {% load base_filters %}
@@ -25,7 +28,7 @@
     {% event_nav user event %}
     <h1>{% trans "Registration" %}</h1>
     <div>
-        <div class="event-title"><a href="{% url event event.id %}">{{ event.title }}</a></div>
+        <div class="event-title"><a href="{% url 'event' event.id %}">{{ event.title }}</a></div>
         {% if event.is_table %}
         <div class="event-price">{{ event_price|format_currency }} {{ pricing.title }} for a Table/Team of {{ pricing.quantity }}</div>
         {% endif %}

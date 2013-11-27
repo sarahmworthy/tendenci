@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
 from tendenci.addons.social_auth.views import auth, complete, associate, associate_complete, \
                               disconnect

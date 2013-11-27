@@ -1,8 +1,8 @@
 from django.template import Library
 from django.contrib.auth.models import User
 
-from avatar import AVATAR_DEFAULT_URL, AVATAR_GRAVATAR_BACKUP, AVATAR_GRAVATAR_DEFAULT
-from avatar.templatetags.avatar_tags import avatar_url
+from tendenci.apps.avatars import AVATAR_DEFAULT_URL, AVATAR_GRAVATAR_BACKUP, AVATAR_GRAVATAR_DEFAULT
+from tendenci.apps.avatars.templatetags.avatar_tags import avatar_url
 
 
 register = Library()

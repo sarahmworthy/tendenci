@@ -1,4 +1,7 @@
 {% extends "memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load base_filters %}
 {% load i18n %}
 {% load membership_tags %}
@@ -178,7 +181,7 @@
                 var prices = '0';
                 
                 $.post(
-                    '{% url discount.check_discount %}',
+                    '{% url 'discount.check_discount' %}',
                     {
                         'code':code,
                         'prices':prices,

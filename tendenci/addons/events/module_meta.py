@@ -2,7 +2,7 @@ from django.utils.html import strip_tags
 from django.utils.text import unescape_entities
 from tendenci.core.meta.utils import generate_meta_keywords
 from tendenci.core.site_settings.utils import get_setting
-from django.utils.text import truncate_words
+from django.template.defaultfilters import truncatewords
 from django.utils.html import strip_tags, strip_entities
 
 from tendenci.core.categories.models import Category
@@ -27,7 +27,7 @@ class EventMeta():
 
         description = strip_tags(description)
         description = strip_entities(description)
-        description = truncate_words(description, 40, '')
+        description = truncatewords(description, 40, '')
         return description
 
     def get_keywords(self):

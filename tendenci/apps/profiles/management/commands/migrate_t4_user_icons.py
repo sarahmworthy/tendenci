@@ -4,7 +4,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
-from avatar.models import Avatar, avatar_file_path
+from tendenci.apps.avatars.models import Avatar, avatar_file_path
 
 class Command(BaseCommand):
     """

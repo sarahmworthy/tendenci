@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load file_tags %}
 {% load tagging_tags %}
 {% load i18n %}
@@ -6,14 +7,14 @@
 
 <div class="file-wrap">
     {% if file.type == 'image' %}
-    <img src="{% url file file.pk %}"  width="100" />
+    <img src="{% url 'file' file.pk %}"  width="100" />
     {% elif file.icon %}
     <div class="icon"><img src="{{ file.icon }}" /></div>
     {% endif %}
 
-    <h2><a href="{% url file file.pk %}">{{ file.get_name }}</a></h2>
+    <h2><a href="{% url 'file' file.pk %}">{{ file.get_name }}</a></h2>
 
     <div class="download">
-        <a title="Download {{ file.ext }}" href="{% url file file.pk 'download' %}">{% trans "Download" %} this {{ file.type }}</a>
+        <a title="Download {{ file.ext }}" href="{% url 'file' file.pk 'download' %}">{% trans "Download" %} this {{ file.type }}</a>
     </div>
 </div>

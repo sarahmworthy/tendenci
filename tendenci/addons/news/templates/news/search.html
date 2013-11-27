@@ -1,4 +1,7 @@
 {% extends "news/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load news_tags %}
 {% load category_tags %}
@@ -15,7 +18,7 @@
 {% block extra_head %}
 {{ block.super }}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/news.css">
-<link rel="alternate" type="application/rss+xml" title="Latest News" href="{% url news.feed %}" />
+<link rel="alternate" type="application/rss+xml" title="Latest News" href="{% url 'news.feed' %}" />
 {% endblock %}
 
 {% block body %}

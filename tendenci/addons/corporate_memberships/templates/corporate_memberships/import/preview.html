@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load corporate_memberships_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -36,7 +39,7 @@
 			{% blocktrans with updated_override|length as overid %}and <em>{{ overid }}</em> will be updated (override){% endblocktrans %}
 		{% endif %}
 	{% endif %}. 
-	<em><a title="Looks good!" href="{% url corp_memb_import_confirm %}">{% trans "Import Now " %} &rarr;</a></em></p>
+	<em><a title="Looks good!" href="{% url 'corp_memb_import_confirm' %}">{% trans "Import Now " %} &rarr;</a></em></p>
 
 	<table>
 		<tr class="header">

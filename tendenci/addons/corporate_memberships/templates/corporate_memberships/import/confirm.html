@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base.html" %}
+
+{% load url from future %}
+
 {% load corporate_memberships_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -39,11 +42,11 @@
 		.</p>
 		
 		{% if invalid_skipped %}
-			<p style="background-color: yellow;"><a href="{% url corp_memb_import_download_invalid %}">{% trans "Download the Invalid Records?" %}</a></p>
+			<p style="background-color: yellow;"><a href="{% url 'corp_memb_import_download_invalid' %}">{% trans "Download the Invalid Records?" %}</a></p>
 		{% endif %}
 	
-		<p class="link"><a href="{% url corp_memb.search %}">{% trans "Go to Search " %}&raquo;</a></p>
-		<p class="link"><a href="{% url corp_import %}">{% trans "More Import " %}&raquo;</a></p>
+		<p class="link"><a href="{% url 'corp_memb.search' %}">{% trans "Go to Search " %}&raquo;</a></p>
+		<p class="link"><a href="{% url 'corp_import' %}">{% trans "More Import " %}&raquo;</a></p>
 		
 	</div>
 

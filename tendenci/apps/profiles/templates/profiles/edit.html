@@ -1,4 +1,7 @@
 {% extends "profiles/base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 {% load profile_tags %}
 {% load perm_tags %}
@@ -322,7 +325,7 @@
 									{{ form.username.errors }}
 								{% endif %}
                               <div>{{ form.username }}</div>
-			      <a href="{% url auth_password_change user_this.pk %}">{% trans "change password" %}</a>
+			      <a href="{% url 'auth_password_change' user_this.pk %}">{% trans "change password" %}</a>
 							 </td>
                            </tr>
                       

@@ -1,4 +1,7 @@
 {% extends "jobs/base.html" %}
+
+{% load url from future %}
+
 {% load job_tags %}
 {% load perm_tags %}
 {% load styled_forms %}
@@ -28,7 +31,7 @@
              </div>
 		</div>
 
-    <form action="{% url job.edit job.id %}" method="post">{% csrf_token %}
+    <form action="{% url 'job.edit' job.id %}" method="post">{% csrf_token %}
     	<div class="forms">
     		{{ form|styled_form }}
             <fieldset class="boxy-grey" >

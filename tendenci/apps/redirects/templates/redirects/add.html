@@ -1,4 +1,7 @@
 {% extends "redirects/base.html" %}
+
+{% load url from future %}
+
 {% load styled_forms %}
 {% load redirect_tags %}
 {% load i18n %}
@@ -16,7 +19,7 @@
     <h1>{% trans "Redirects Add" %}</h1>
    
     <div class="redirect-wrap">
-    	<form action="{% url redirect.add %}" method="post">{% csrf_token %}
+    	<form action="{% url 'redirect.add' %}" method="post">{% csrf_token %}
     	<div class="forms">
             {{ form|styled_form }}
         	<input type="submit" value="Add Redirect" />

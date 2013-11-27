@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load base_filters %}
 {% load i18n %}
 
@@ -5,7 +6,7 @@
     <td>
 		{% if obj %}
 
-			{% trans "Membership #" %}<a href="{% url admin:memberships_membershipdefault_change obj.pk %}" title="Membership">
+			{% trans "Membership #" %}<a href="{% url 'admin:memberships_membershipdefault_change' obj.pk %}" title="Membership">
 			{{ obj.pk }}</a>
 
 			{{ obj.membership_type.name|truncatewords:30 }} 

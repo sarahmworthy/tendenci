@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load i18n %}
 {% load email_filters %}
 {% load perm_tags %}
@@ -34,7 +35,7 @@
     {% if object.status_detail != 'active' %} 
         <p>
             {% blocktrans %}To activate this directory, go to:{% endblocktrans %}
-            <b><a href="{{ SITE_GLOBAL_SITEURL }}{% url directory.approve object.id %}">{{ SITE_GLOBAL_SITEURL }}{% url directory.approve object.id %}</a></b>
+            <b><a href="{{ SITE_GLOBAL_SITEURL }}{% url 'directory.approve' object.id %}">{{ SITE_GLOBAL_SITEURL }}{% url 'directory.approve' object.id %}</a></b>
         </p>
     {% endif %}
 </p>

@@ -1,4 +1,7 @@
 {% extends "invoices/base-wide.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 {% load base_filters %}
 {% load invoice_tags %}
@@ -32,7 +35,7 @@
               <td>{% trans "Invoice For" %}</td>
               <td class="td-right">
           {% if object.event.pk %}
-              <a href="{% url event.registration_confirmation object.event.pk object.pk %}">{{ object }}</a><br>
+              <a href="{% url 'event.registration_confirmation' object.event.pk object.pk %}">{{ object }}</a><br>
           <strong>Event Date:</strong> {{ object.event.start_dt }}
               {% else %}
           {{ SITE_GLOBAL_SITEDISPLAYNAME }}

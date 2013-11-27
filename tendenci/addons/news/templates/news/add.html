@@ -1,4 +1,7 @@
 {% extends "news/base.html" %}
+
+{% load url from future %}
+
 {% load news_tags %}
 {% load perm_tags %}
 {% load styled_forms %}
@@ -22,7 +25,7 @@
     <h1>{% firstof MODULE_NEWS_LABEL 'News' %} {% trans "Add" %}</h1>
 
     <div class="news-wrap">
-    	<form action="{% url news.add %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+    	<form action="{% url 'news.add' %}" method="post" enctype="multipart/form-data">{% csrf_token %}
 		<div class="forms">
 			{{ form|styled_form }}
         	<input type="submit" value="Add {% firstof MODULE_NEWS_LABEL 'News' %}" />

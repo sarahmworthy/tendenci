@@ -1,4 +1,7 @@
 {% extends "forms/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load forms_tags %}
 {% load base_filters %}
@@ -36,7 +39,7 @@
 				</a> 
 			</h3>
             <!-- delete form -->
-            <form name="entry-delete" method="POST" action="{% url form_entry_delete sub.subscriber.pk %}">{% csrf_token %}
+            <form name="entry-delete" method="POST" action="{% url 'form_entry_delete' sub.subscriber.pk %}">{% csrf_token %}
                 <input type="hidden" name="action" value="delete">
             </form>
 		</div>

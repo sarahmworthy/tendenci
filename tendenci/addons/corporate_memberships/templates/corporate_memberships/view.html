@@ -1,4 +1,7 @@
 {% extends "corporate_memberships/base.html" %}
+
+{% load url from future %}
+
 {% load base_tags %}
 {% load base_filters %}
 {% load perm_tags %}
@@ -32,7 +35,7 @@
 		</div>
 		
 		<!-- delete-corp_memb form -->
-	    <form name="corp-memb-delete" method="POST" action="{% url corp_memb.delete corporate_membership.pk %}">{% csrf_token %}
+	    <form name="corp-memb-delete" method="POST" action="{% url 'corp_memb.delete' corporate_membership.pk %}">{% csrf_token %}
 	        <input type="hidden" name="action" value="delete">
 	    </form>
 
@@ -40,7 +43,7 @@
 			
 			<div style="float: right;">
 				{% if corporate_membership.real_time_status_detail == 'active' %}
-				<a href="{% url membership.application_details_corp_pre corporate_membership.corp_app.memb_app.slug corporate_membership.pk %}" title="Join under this corporation">{% trans "Join under this corporation" %}</a>
+				<a href="{% url 'membership.application_details_corp_pre' corporate_membership.corp_app.memb_app.slug corporate_membership.pk %}" title="Join under this corporation">{% trans "Join under this corporation" %}</a>
 				{% endif %}
 				
 	    		
@@ -49,7 +52,7 @@
   		
     		<div class="corp-app-name">
 			 {% if can_change_app %}
-			 	{% trans "App: " %}<a href="{% url admin:corporate_memberships_corpmembershipapp_change corporate_membership.corp_app.id %}">{{ corporate_membership.corp_app.name }}</a>
+			 	{% trans "App: " %}<a href="{% url 'admin:corporate_memberships_corpmembershipapp_change' corporate_membership.corp_app.id %}">{{ corporate_membership.corp_app.name }}</a>
 			 {% else %}
 			 	{% trans "App: " %}{{ corporate_membership.corp_app.name }}
 			 {% endif %}
@@ -75,7 +78,7 @@
 						     	</tr>
 						     	{% for rep in field_obj.value %}
 						     		<tr class="corp-rep">
-						     		<td><a href="{% url profile rep.user.username %}">
+						     		<td><a href="{% url 'profile' rep.user.username %}">
 						     			{{ rep.user.get_full_name }} ({{ rep.user.email  }})</a>
 							     		
 						            </td>
@@ -93,11 +96,11 @@
 						     	{% endfor %}
 						     	</table>
 						     	<div>&nbsp;</div>
-			 					<div><a href="{% url corp_memb.edit_reps corporate_membership.pk %}">{% trans "Add/Edit Representatives" %}</a></div>
+			 					<div><a href="{% url 'corp_memb.edit_reps' corporate_membership.pk %}">{% trans "Add/Edit Representatives" %}</a></div>
 						    {% else %}
 						    	<div>{% trans "No representatives available" %}</div>
 						    	<div>&nbsp;</div>
-			 					<div><a href="{% url corp_memb.edit_reps corporate_membership.pk %}">{% trans "Add Representatives" %}</a></div>
+			 					<div><a href="{% url 'corp_memb.edit_reps' corporate_membership.pk %}">{% trans "Add Representatives" %}</a></div>
 						    {% endif %} 
 			 				
 			 			{% else %}

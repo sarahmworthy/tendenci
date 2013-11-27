@@ -1,4 +1,7 @@
 {% extends "articles/base.html" %}
+
+{% load url from future %}
+
 {% load article_tags %}
 {% load styled_forms %}
 {% load i18n %} 
@@ -18,7 +21,7 @@
     {{ article_headline }}{% endblocktrans %}</h1>
 
     <div class="article-wrap">
-        <form action="{% url article.edit.meta article.pk %}" method="post">{% csrf_token %}
+        <form action="{% url 'article.edit.meta' article.pk %}" method="post">{% csrf_token %}
         <div class="forms">
             {{ form|styled_form }}
             <input type="submit" value="Save Changes" />

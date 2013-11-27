@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
-from django.utils import simplejson as json
+import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404, redirect

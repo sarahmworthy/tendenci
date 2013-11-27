@@ -1,5 +1,8 @@
 {% extends "theme_editor/base.html" %}
 
+{% load url from future %}
+
+
 {% load i18n %}
 {% load humanize %}
 {% load styled_forms %}
@@ -42,7 +45,7 @@
                     </div>
               </form>
             {% if current_file not in non_deletable_files  %}
-            <a id="delete-btn" href="{% url theme_editor.delete %}?file={{ pwd }}/{{ current_file }}" class="btn" style="float:right;" class="delete">Delete this File</a>
+            <a id="delete-btn" href="{% url 'theme_editor.delete' %}?file={{ pwd }}/{{ current_file }}" class="btn" style="float:right;" class="delete">Delete this File</a>
             {% endif %}
             <div style="clear:both"></div>
             
@@ -72,9 +75,9 @@
                     {{ theme_form.theme_edit }}<input class="btn btn-mini" type="submit" value="Change"/>
                 </form>
                 {% ifnotequal ACTIVE_THEME current_theme %}
-                <p><a href="{% url home %}?theme={{ current_theme }}" target="_blank">{% trans "Preview" %} <strong>{{ current_theme }}</strong> {% trans "on your site" %} &raquo;</a></p>
+                <p><a href="{% url 'home' %}?theme={{ current_theme }}" target="_blank">{% trans "Preview" %} <strong>{{ current_theme }}</strong> {% trans "on your site" %} &raquo;</a></p>
                 {% endifnotequal %}
-                <p><strong>{% trans "Active theme:" %}</strong> {{ ACTIVE_THEME }}. <a href="{% url theme_editor.picker %}">{% trans "Change?" %}</a></p>
+                <p><strong>{% trans "Active theme:" %}</strong> {{ ACTIVE_THEME }}. <a href="{% url 'theme_editor.picker' %}">{% trans "Change?" %}</a></p>
                 </div>
                 {# endif #}
             </div>
@@ -111,13 +114,13 @@
                                {% endif %}
                                {% if prev_dir %}
                                    <p class="prev_dir">
-                                       <a href="{% url theme_editor.editor %}?file={{ prev_dir }}&theme_edit={{ current_theme }}">&laquo;&nbsp;{% blocktrans %}back to {{ prev_dir_name }}{% endblocktrans %}</a>
+                                       <a href="{% url 'theme_editor.editor' %}?file={{ prev_dir }}&theme_edit={{ current_theme }}">&laquo;&nbsp;{% blocktrans %}back to {{ prev_dir_name }}{% endblocktrans %}</a>
                                    </p>
                                {% endif %}
                                {% if dirs %}
                                <ul class="dir_list">   
                                     {% for dir in dirs %}
-                                        <li class="dir_item"><a href="{% url theme_editor.editor %}?file={{ dir }}/&theme_edit={{ current_theme }}">{{ dir|basename|safe }}</a></li>
+                                        <li class="dir_item"><a href="{% url 'theme_editor.editor' %}?file={{ dir }}/&theme_edit={{ current_theme }}">{{ dir|basename|safe }}</a></li>
                                     {% endfor %}
                                </ul>
                                {%  endif %}
@@ -126,7 +129,7 @@
                                     {% if files %}
                                     {% for file in files %}
                                         <li {% if current_file == file %}class="highlight"{% endif %}>
-                                            <a href="{% url theme_editor.editor %}?file={{ pwd }}/{{ file }}&theme_edit={{ current_theme }}#to-editor">{{ file|safe }}</a>
+                                            <a href="{% url 'theme_editor.editor' %}?file={{ pwd }}/{{ file }}&theme_edit={{ current_theme }}#to-editor">{{ file|safe }}</a>
                                         </li>
                                     {% endfor %}
                                     {% endif %}
@@ -149,14 +152,14 @@
                                <div class="well well-small">
                                <h4>Customize more templates:</h4>
                                Copy down one of Tendenci's built-in app templates and customize it.
-                               <a href="{% url theme_editor.app_list %}" class="btn btn-mini">{% trans "Customize more templates" %}</a>
+                               <a href="{% url 'theme_editor.app_list' %}" class="btn btn-mini">{% trans "Customize more templates" %}</a>
                                
                                </div>
                                
                                <div class="well well-small">
                                	<h4>Create a new template:</h4>
-                               		Click the button below to add a new template.
-                               		<button class="btn btn-mini new-template-btn">New Template</button>
+                                  Click the button below to add a new template.
+                                  <button class="btn btn-mini new-template-btn">New Template</button>
                                </div>
                                
            </div>
@@ -299,33 +302,33 @@ function open_archive(id)
         
         current_file.parent().parent().children(":first").addClass('open');
         folder_text = current_file.parent().parent().children(":first").text();
-        current_file.parent().parent().children(":first").text(folder_text.replace('+ ', '– '));
+        current_file.parent().parent().children(":first").text(folder_text.replace('+ ', '- '));
 
         current_file.parent().parent().parent().parent().children(":first").addClass('open');
         p_folder_text = current_file.parent().parent().parent().parent().children(":first").text();
-        current_file.parent().parent().parent().parent().children(":first").text(p_folder_text.replace('+ ', '– '));
+        current_file.parent().parent().parent().parent().children(":first").text(p_folder_text.replace('+ ', '- '));
 
         current_file.parent().parent().parent().parent().parent().parent().children(":first").addClass('open');
         
         if(current_file.parent().parent().parent().parent().parent().is('#file-tree ul')) {
         p_p_folder_text = current_file.parent().parent().parent().parent().parent().parent().children(":first").text();
-        current_file.parent().parent().parent().parent().parent().parent().children(":first").text(p_p_folder_text.replace('+ ', '– ')); 
+        current_file.parent().parent().parent().parent().parent().parent().children(":first").text(p_p_folder_text.replace('+ ', '- ')); 
         }
         
         if(current_file.parent().parent().parent().parent().parent().parent().parent().is('#file-tree ul')) {
         p_p_p_folder_text = current_file.parent().parent().parent().parent().parent().parent().parent().parent().children(":first").text();
-        current_file.parent().parent().parent().parent().parent().parent().parent().parent().children(":first").text(p_p_p_folder_text.replace('+ ', '– '));       
+        current_file.parent().parent().parent().parent().parent().parent().parent().parent().children(":first").text(p_p_p_folder_text.replace('+ ', '- '));       
 }
     });
 
     $('#file-tree li a.folder').click(function() {
         if ($(this).hasClass('open')) {
-            $(this).text($(this).text().replace('– ', '+ '));
+            $(this).text($(this).text().replace('- ', '+ '));
             $(this).removeClass('open');
             $(this).siblings().children().hide();
         } else {
             $(this).addClass('open');
-            $(this).text($(this).text().replace('+ ', '– '));
+            $(this).text($(this).text().replace('+ ', '- '));
             $(this).siblings().children().show();
         }
     });

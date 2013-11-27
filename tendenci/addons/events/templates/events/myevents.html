@@ -1,4 +1,7 @@
 {% extends "events/base.html" %}
+
+{% load url from future %}
+
 {% load pagination_tags %}
 {% load event_tags %}
 {% load base_tags %}
@@ -21,9 +24,9 @@
     <div class="header" style="margin-bottom: 20px;">
         <h1>{% trans "My Upcoming Events" %}</h1>
         {% if show %}
-            <a class="show-all-link" href="{% url event.myevents %}?all=true">{% trans "Show all my registered and attended events." %}</a>
+            <a class="show-all-link" href="{% url 'event.myevents' %}?all=true">{% trans "Show all my registered and attended events." %}</a>
         {% else %}
-            <a class="show-all-link" href="{% url event.myevents %}">{% trans "Show upcoming events only." %}</a>
+            <a class="show-all-link" href="{% url 'event.myevents' %}">{% trans "Show upcoming events only." %}</a>
         {% endif %}
     </div>
     
@@ -33,7 +36,7 @@
         {% for event in events %}
             {% search_result event %}
         {% empty %}
-            {% trans "You're not registered for any upcoming events." %}<a href="{% url events %}">{% trans "View our upcoming events!" %}</a>            
+            {% trans "You're not registered for any upcoming events." %}<a href="{% url 'events' %}">{% trans "View our upcoming events!" %}</a>            
         {% endfor %}
     </div>
 

@@ -1,4 +1,7 @@
 {% extends "memberships/base-wide.html" %}
+
+{% load url from future %}
+
 {% load membership_tags %}
 {% load base_tags %}
 {% load base_filters %}
@@ -26,7 +29,7 @@
         <em>{{ stats.updated }}</em> will be 
         {% if memport.override %}overridden,{% else %}updated,{% endif %}
         and <em>{{ stats.skipped }}</em> will be skipped.</p>
-        <em><a title="Looks good!" href="{% url membership_import_confirm memport.id %}" id="import-confirm">Import Now &rarr;</a></em>
+        <em><a title="Looks good!" href="{% url 'membership_import_confirm' memport.id %}" id="import-confirm">Import Now &rarr;</a></em>
     </p>
     
     <div style="margin-top:10px;">
@@ -48,7 +51,7 @@
                     <td><div>
                             {% if membership.fullname %}
                                 {% if membership.username %}
-                                <a href="{% url profile membership.username %}">
+                                <a href="{% url 'profile' membership.username %}">
                                     {{ membership.fullname }}</a>
                                 {% else %}
                                     {{ membership.fullname }}
@@ -72,7 +75,7 @@
     </div>
     
     <div style="display: none;">
-        <form id="mapping-form" action="{% url membership_import_confirm memport.id %}" method="post">{% csrf_token %}
+        <form id="mapping-form" action="{% url 'membership_import_confirm' memport.id %}" method="post">{% csrf_token %}
             {{ form.as_p }}
             <input type='submit' value='Submit'>
         </form>

@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load base_filters %}
 {% load invoice_tags %}
 {% load i18n %}
@@ -15,7 +16,7 @@
 
     {% if obj %}
       <tr>
-     	<td><a href="{% url admin:memberships_membershipdefault_change obj.pk %}">
+     	<td><a href="{% url 'admin:memberships_membershipdefault_change' obj.pk %}">
             {{ obj.pk }}</a></td>
      	<td>{{ invoice.bill_to_first_name }}</td>
         <td>{{ invoice.bill_to_last_name }}</td>

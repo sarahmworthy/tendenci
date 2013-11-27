@@ -5,7 +5,7 @@ from mimetypes import guess_type
 from os.path import join
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.core.files.storage import FileSystemStorage
 from django.core.urlresolvers import reverse

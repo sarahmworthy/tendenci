@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url, include
+from django.conf.urls import patterns, url, include
 from tendenci.addons.recurring_payments.signals import init_signals
 
 init_signals()

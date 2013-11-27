@@ -18,7 +18,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.encoding import smart_str
-from django.utils import simplejson
+import json as simplejson
 from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.views.decorators.csrf import csrf_exempt
@@ -27,7 +27,7 @@ from django.http import Http404
 from django.db.models import ForeignKey, OneToOneField
 from django.db.models.fields import AutoField
 from django.utils.translation import ugettext_lazy as _
-from johnny.cache import invalidate
+# from johnny.cache import invalidate
 
 from tendenci.core.imports.utils import render_excel
 from tendenci.core.exports.utils import render_csv
@@ -1028,8 +1028,8 @@ def corp_renew_conf(request, id,
 @login_required
 def roster_search(request,
                   template_name='corporate_memberships/roster_search.html'):
-    invalidate('corporate_memberships_corpprofile')
-    invalidate('corporate_memberships_corpmembership')
+    # invalidate('corporate_memberships_corpprofile')
+    # invalidate('corporate_memberships_corpmembership')
     form = RosterSearchAdvancedForm(request.GET or None,
                                     request_user=request.user)
     if form.is_valid():
@@ -1292,7 +1292,7 @@ def check_preprocess_status(request, mimport_id):
     """
     if not request.user.profile.is_superuser:
         raise Http403
-    invalidate('corporate_memberships_corpmembershipimport')
+    # invalidate('corporate_memberships_corpmembershipimport')
     mimport = get_object_or_404(CorpMembershipImport,
                                     pk=mimport_id)
 

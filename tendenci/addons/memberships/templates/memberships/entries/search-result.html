@@ -1,3 +1,4 @@
+{% load url from future %}
 {% load humanize %}
 {% load base_tags %}
 {% load base_filters %}
@@ -19,7 +20,7 @@
             {% else %}
                 Join
             {% endif %}
-            <a href="{% url membership.application_entries entry.pk %}">{{ entry.status_msg }}</a>
+            <a href="{% url 'membership.application_entries' entry.pk %}">{{ entry.status_msg }}</a>
         </div>
 
         <div class="result-content">
@@ -27,7 +28,7 @@
             <div class="member-email">{{ entry.email }}</div>
             <div class="member-period">
             {% if entry.membership %}
-            <a href="{% url membership.edit entry.membership.pk %}">{{ entry.membership.subscribe_dt|date:"M j, Y" }} - {% firstof entry.membership.expire_dt|date:"M j, Y" "Forever" %}</a>
+            <a href="{% url 'membership.edit' entry.membership.pk %}">{{ entry.membership.subscribe_dt|date:"M j, Y" }} - {% firstof entry.membership.expire_dt|date:"M j, Y" "Forever" %}</a>
             {% endif %}
             </div>
         </div>
@@ -43,7 +44,7 @@
         
         <div class="balance">
         {% if entry.invoice.pk %}
-            <a href="{% url invoice.view entry.invoice.pk %}">Balance ${% firstof entry.invoice.balance  0|intcomma %}</a>
+            <a href="{% url 'invoice.view' entry.invoice.pk %}">Balance ${% firstof entry.invoice.balance  0|intcomma %}</a>
         {% else %}
             Balance ${% firstof entry.invoice.balance  0|intcomma %}
         {% endif %}

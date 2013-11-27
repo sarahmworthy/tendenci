@@ -1,4 +1,7 @@
 {% extends "recurring_payments/authnet/base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 
 {% block title %} {% trans "Manage Customer Payment and Shipping Information" %}{% endblock %}
@@ -37,7 +40,7 @@ name="formAuthorizeNetPopup" target="iframeAuthorizeNet" style="display:none;">
     {% if request.user.id == rp.user.id %}
        Manage my Payment Info
     {% else %}
-    {% trans "Manage Payment Info for " %} <a href="{% url profile rp.user.username %}">{{ rp.user.get_full_name }} ({{ rp.user.email }})</a>
+    {% trans "Manage Payment Info for " %} <a href="{% url 'profile' rp.user.username %}">{{ rp.user.get_full_name }} ({{ rp.user.email }})</a>
     {% endif %}
     </h1>
     

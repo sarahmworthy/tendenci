@@ -2,7 +2,7 @@ from django.utils.html import strip_tags
 from django.utils.text import unescape_entities
 from tendenci.core.meta.utils import generate_meta_keywords
 from tendenci.core.site_settings.utils import get_setting
-from django.utils.text import truncate_words
+from django.template.defaultfilters import truncatewords
 
 from tendenci.core.categories.models import Category
 
@@ -100,7 +100,7 @@ class ArticleMeta():
         content = strip_tags(content)  # strips HTML tags
         content = unescape_entities(content)
         content = content.replace("\n", "").replace("\r", "")
-        content = truncate_words(content, 50)  # ~ about 250 chars
+        content = truncatewords(content, 50)  # ~ about 250 chars
 
         ### Build string -----------------------
         value = object.headline

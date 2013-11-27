@@ -1,4 +1,7 @@
 {% extends "reports/base.html" %}
+
+{% load url from future %}
+
 {% load reports_tags %}
 {% load i18n %}
 
@@ -17,7 +20,7 @@
 	<td>
 		{% for item in items %}
             {% if item.source %}
-			<a href="{% url reports-events-source item.source %}?{{ request.META.QUERY_STRING }}" title="{{ item.source }} ({{ item.count }})">
+			<a href="{% url 'reports-events-source' item.source %}?{{ request.META.QUERY_STRING }}" title="{{ item.source }} ({{ item.count }})">
 				<div style="width: 24px; height: {{ item.height }}px; background-color: #{{ item.color }}"> </div>
 			</a>
             {% endif %}
@@ -35,7 +38,7 @@
 	<span style="background-color: #{{ item.color }};"> &nbsp;  &nbsp; </span>
 	&nbsp;
     {% if item.source %}
-	<a href="{% url reports-events-source item.source %}?{{ request.META.QUERY_STRING }}">{{ item.source }} ({{ item.count }})</a>
+	<a href="{% url 'reports-events-source' item.source %}?{{ request.META.QUERY_STRING }}">{{ item.source }} ({{ item.count }})</a>
     {% endif %}
 	</li>
 	{% endif %}
@@ -48,7 +51,7 @@
 	<li>
 	<span style="background-color: #{{ item.color }};"> &nbsp;  &nbsp; </span>
 	&nbsp;
-	<a href="{% url reports-events-source item.source %}?{{ request.META.QUERY_STRING }}">{{ item.source }} ({{ item.count }})</a>
+	<a href="{% url 'reports-events-source' item.source %}?{{ request.META.QUERY_STRING }}">{{ item.source }} ({{ item.count }})</a>
 	</li>
 	{% endif %}
 {% endfor %}
@@ -60,7 +63,7 @@
 	<li>
 	<span style="background-color: #{{ item.color }};"> &nbsp;  &nbsp; </span>
 	&nbsp;
-	<a href="{% url reports-events-source item.source %}?{{ request.META.QUERY_STRING }}">{{ item.source }} ({{ item.count }})</a>
+	<a href="{% url 'reports-events-source' item.source %}?{{ request.META.QUERY_STRING }}">{{ item.source }} ({{ item.count }})</a>
 	</li>
 	{% endif %}
 {% endfor %}

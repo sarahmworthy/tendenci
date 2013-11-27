@@ -278,7 +278,7 @@ def get_administrators():
 # get a list of the admin notice recipients
 def get_notice_recipients(scope, scope_category, setting_name):
     from tendenci.core.site_settings.utils import get_setting
-    from django.core.validators import email_re
+    from django.utils.html import simple_email_re as email_re
 
     recipients = []
     # global recipients

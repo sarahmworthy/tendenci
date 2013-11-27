@@ -1,4 +1,7 @@
 {% extends "reports/base.html" %}
+
+{% load url from future %}
+
 {% load i18n %}
 {% load base_filters %}
 
@@ -18,7 +21,7 @@
 {% for entry in entry_list %}
 <tr class="{% cycle 'odd' '' %}">
 	<td>{{ forloop.counter }}</td>
-	<td><a href="{% url profile entry.user.username %}">{{ entry.user.username }}</a></td>
+	<td><a href="{% url 'profile' entry.user.username %}">{{ entry.user.username }}</a></td>
 	<td>{{ entry.user.pk }}</td>
 	<td>{{ entry.user.last_name }}</td>
 	<td>{{ entry.user.first_name }}</td>
