@@ -1,6 +1,7 @@
 # NOTE: When updating the registration scheme be sure to check with the
 # anonymous registration impementation of events in the registration module.
 import ast
+import calendar
 import re
 import os.path
 from datetime import datetime, timedelta
@@ -1665,3 +1666,16 @@ def create_member_registration(user, event, form):
                                     'pricing': pricing}
                 registrant = Registrant.objects.create(**registrant_attrs)
                 invoice = registration.save_invoice()
+
+
+def week_of_month(tgtdate, cal):
+    weekdays = list(cal.iterweekdays())
+    days_this_month = calendar.mdays[tgtdate.month]
+    for i in range(1, days_this_month):
+        d = date(tgtdate.year, tgtdate.month, i)
+        if d.weekday() == weekdays[0]:
+            startdate = d
+            break
+    if (startdate.day == 1):
+        return (tgtdate - startdate).days //7
+    return (tgtdate - startdate).days //7 + 1
