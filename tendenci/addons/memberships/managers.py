@@ -357,7 +357,7 @@ class MembershipDefaultManager(TendenciBaseManager):
         return qs
 
 
-class MembershipAppManager(Manager):
+class MembershipAppManager(TendenciBaseManager):
     def current_app(self, **kwargs):
         """
         Returns the app being used currently.
@@ -368,3 +368,6 @@ class MembershipAppManager(Manager):
                            ).order_by('id')[:1] or [None]
 
         return current_app
+
+class MembershipTypeManager(TendenciBaseManager):
+    pass

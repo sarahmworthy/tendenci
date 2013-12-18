@@ -35,7 +35,7 @@ from tendenci.core.base.fields import DictField
 from tendenci.apps.invoices.models import Invoice
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.emails.models import Email
-from tendenci.addons.memberships.managers import MembershipManager, \
+from tendenci.addons.memberships.managers import MembershipManager, MembershipTypeManager, \
     MembershipDefaultManager, MembershipAppManager, MemberAppEntryManager
 from tendenci.core.base.utils import fieldify
 from tinymce import models as tinymce_models
@@ -160,6 +160,8 @@ class MembershipType(OrderingBaseModel, TendenciBaseModel):
             help_text="How long (in days) after the memberships expires can the member renew their membership.")
     expiration_grace_period = models.IntegerField(_('Expiration Grace Period'), default=0,
             help_text="The number of days after the membership expires their membership is still active.")
+
+    objects = MembershipTypeManager()
 
     class Meta:
         verbose_name = "Membership Type"
@@ -780,7 +782,7 @@ class MembershipDefault(TendenciBaseModel):
         # show member number on profile
         self.user.profile.refresh_member_number()
 
-        return True
+        return self
 
     def renew(self, request_user):
         """
@@ -837,7 +839,7 @@ class MembershipDefault(TendenciBaseModel):
         # show member number on profile
         dupe.user.profile.refresh_member_number()
 
-        return True
+        return dupe
 
     def disapprove(self, request_user=None):
         """
@@ -1108,10 +1110,9 @@ class MembershipDefault(TendenciBaseModel):
             # add user to groups selected by user
             groups = self.groups.all()
 
-            if groups:
-                for group in groups:
-                    if not group.is_member(self.user):
-                        group.add_user(self.user)
+            for group in groups:
+                if not group.is_member(self.user):
+                    group.add_user(self.user)
 
         else:  # should not be in group; make sure they're out
             GroupMembership.objects.filter(
@@ -1704,7 +1705,9 @@ class MembershipDefault(TendenciBaseModel):
                 send_welcome_email(self.user)
 
             if self.is_renewal():
-                self.renew(request.user)
+                # renewal returns new MembershipDefault instance
+                # old MembershipDefault instance is marked status_detail = "archive"
+                self = self.renew(request.user)
                 Notice.send_notice(
                     request=request,
                     emails=self.user.email,
@@ -1729,9 +1732,6 @@ class MembershipDefault(TendenciBaseModel):
                     instance=self,
                     action='membership_approved'
                 )
-
-            # user in [membership] group
-            self.group_refresh()
 
             if self.corporate_membership_id:
                 # notify corp reps
