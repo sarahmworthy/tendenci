@@ -414,14 +414,16 @@ def _get_price_labels(pricing):
         target_display = ''
 
     end_dt = '<br/>&nbsp;(ends ' + unicode(pricing.end_dt.date()) + ')'
+    description = '<br/>&nbsp;' + unicode(pricing.description)
 
-    return mark_safe('&nbsp;<span data-price="%s">%s%s %s%s</span>%s' % (
+    return mark_safe('&nbsp;<strong><span data-price="%s">%s%s %s%s</span>%s</strong>%s' % (
                                       pricing.price,
                                       currency_symbol,
                                       pricing.price,
                                       pricing.title,
                                       target_display,
-                                      end_dt) )
+                                      end_dt,
+                                      description) )
 
 
 class RadioImageFieldRenderer(forms.widgets.RadioFieldRenderer):
@@ -1034,6 +1036,7 @@ class Reg8nConfPricingForm(BetterModelForm):
 
         fields = [
             'title',
+            'description',
             'quantity',
             'payment_required',
             'price',
@@ -1049,6 +1052,7 @@ class Reg8nConfPricingForm(BetterModelForm):
 
         fieldsets = [('Registration Pricing', {
           'fields': ['title',
+                    'description',
                     'quantity',
                     'payment_required',
                     'price',
