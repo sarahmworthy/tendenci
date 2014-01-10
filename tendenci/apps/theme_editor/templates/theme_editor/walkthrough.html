@@ -65,7 +65,9 @@
 
       <div id="walkthrough-admin-bar" class="walkthrough-item" style="display:none;">
         <p class="tooltipTitle">{% trans 'The Admin Bar' %}</p>
-            <p>{% blocktrans %}You can access your site's backend from the blue admin bar. Under "Content," you'll find all the editable content modules. Under "People," you can add user and groups and assign permissions. "Reports" will show you how people are accessing your website. Under "Quick Links," you have access to the Site Settings as well as the{% endblocktrans %}
+            <p>{% blocktrans %}You can access your site's backend from the blue admin bar{% endblocktrans %}
+            <strong>{% trans 'above' %}</strong>.
+            {% blocktrans %}Under "Content," you'll find all the editable content modules. Under "People," you can add user and groups and assign permissions. "Reports" will show you how people are accessing your website. Under "Quick Links," you have access to the Site Settings as well as the{% endblocktrans %}
             <a href="{% url theme_editor.editor %}" target="_blank">{% trans 'Theme Editor' %}</a>,
             {% blocktrans %}where you can edit your site's html and css.{% endblocktrans %}</p>
             <br>
