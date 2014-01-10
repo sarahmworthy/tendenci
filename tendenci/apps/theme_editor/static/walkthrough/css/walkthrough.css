@@ -200,6 +200,15 @@
     z-index: 1000;
 }
 
+#jpWalkthrough #jpwTooltip .bottom.nohighlight {
+    -moz-transform: scaleX(-1);
+    -o-transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    filter: FlipH;
+    -ms-filter: "FlipH";
+}
+
 #jpWalkthrough #jpwTooltip .left{
     background: url("../images/arrow-right.png") no-repeat scroll 0 0 transparent;
     height: 56px;
