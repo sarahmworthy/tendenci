@@ -50,13 +50,11 @@ def detail(request, slug=None, template_name="news/view.html"):
 def search(request, template_name="news/search.html"):
     query = request.GET.get('q', None)
 
-    filters = get_query_filters(request.user, 'news.view_news')
-    news = News.objects.filter(filters).distinct()
-
-    if query:
-        news = news.filter(Q(headline__icontains=query)|
-                           Q(body__icontains=query)|
-                           Q(tags__icontains=query))
+    if get_setting('site', 'global', 'searchindex') and query:
+        news = News.objects.search(query, user=request.user)
+    else:
+        filters = get_query_filters(request.user, 'news.view_news')
+        news = News.objects.filter(filters).distinct()
 
     if not has_perm(request.user, 'news.view_news'):
         news = news.filter(release_dt__lte=datetime.now())
