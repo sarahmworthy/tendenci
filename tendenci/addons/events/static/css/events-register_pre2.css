@@ -5,7 +5,8 @@
     margin-bottom: 18px;
 }
 .pricing-item {
-    border-bottom: 1px solid #95bce2;
+    border: 2px solid #3E83C9;
+    margin-bottom: 5px;
 }
 .pricing-item.alt {
     background: #ecf6fc;
@@ -20,6 +21,7 @@
 }
 .pricing-item .pricing-info {
     width: 60%;
+    padding: 6px;
     display: inline-block;
     vertical-align: middle;
 }
