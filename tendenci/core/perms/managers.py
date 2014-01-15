@@ -570,7 +570,6 @@ class TendenciBaseManager(models.Manager):
             else:
                 sqs = sqs.auto_query(sqs.query.clean(query))
 
-
         sqs = self._permissions_sqs(sqs, user, status, status_detail, direct_db=direct_db)
 
         return sqs
