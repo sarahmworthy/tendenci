@@ -967,7 +967,7 @@ class Reg8nConfPricingForm(BetterModelForm):
     start_dt = SplitDateTimeField(label=_('Start Date/Time'), initial=datetime.now())
     end_dt = SplitDateTimeField(label=_('End Date/Time'), initial=datetime.now()+timedelta(days=30,hours=6))
     dates = Reg8nDtField(label=_("Start and End"), required=False)
-    group = forms.MultipleChoiceField(required=False, choices=[])
+    groups = forms.MultipleChoiceField(required=False, choices=[])
     payment_required = forms.ChoiceField(required=False,
                             choices=((None,_('Inherit from event')),('True',_('Yes')),('False',_('No'))))
 
