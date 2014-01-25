@@ -68,9 +68,6 @@ class Box(OrderingBaseModel, TendenciBaseModel):
             image.file.save(photo_upload.name, photo_upload)  # save file row
             image.save()  # save image row
 
-            if self.image:
-                self.image.delete()  # delete image and file row
             self.image = image  # set image
-
             self.save()
 
