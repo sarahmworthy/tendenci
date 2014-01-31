@@ -81,6 +81,7 @@ def search_redirect(request):
     """
     return HttpResponseRedirect(reverse('groups'))
 
+@login_required
 def group_detail(request, group_slug, template_name="user_groups/detail.html"):
     group = get_object_or_404(Group, slug=group_slug)
 
