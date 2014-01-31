@@ -314,6 +314,9 @@ $(document).ready(function(){
                 e.css({
                     display: 'inline'
                 });
+            } else {
+                e.css({display: 'none'
+                });
             }
         });
         
