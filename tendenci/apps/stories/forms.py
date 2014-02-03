@@ -194,6 +194,7 @@ class StoryAdminForm(TendenciBaseForm):
                                  'photo_upload',
                                  'full_story_link',
                                  'link_title',
+                                 'rotator',
                                  'tags',
                                  'start_dt',
                                  'end_dt',
