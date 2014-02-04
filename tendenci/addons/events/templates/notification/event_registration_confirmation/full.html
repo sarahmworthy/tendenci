@@ -146,7 +146,7 @@
 {% endif %}
 
 
-{% if event.registration_configuration.registration_email_type != 'custom' %}
+{% if event.registration_configuration.registration_email_type != 'custom' or not event.registration_configuration.registration_email_text %}
 <h3 style="margin-bottom:3px;">{% trans "Helpful Links" %}</h3>
 <ol style="margin-top:0;">
     <li>
