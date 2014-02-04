@@ -1133,6 +1133,7 @@ class Reg8nEditForm(BetterModelForm):
             'use_custom_reg',
             'send_reminder',
             'reminder_days',
+            'registration_email_type',
             'registration_email_text',
         )
 
@@ -1148,6 +1149,7 @@ class Reg8nEditForm(BetterModelForm):
                     'use_custom_reg',
                     'send_reminder',
                     'reminder_days',
+                    'registration_email_type',
                     'registration_email_text',
                     ],
           'legend': ''
