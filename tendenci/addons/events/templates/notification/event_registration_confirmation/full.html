@@ -139,7 +139,7 @@
 <div>{{ event.description|relative_to_absolute_urls|safe }}</div>
 {% endif %}
 
-{% if event.registration_configuration.registration_email_type == 'both' %}
+{% if event.registration_configuration.registration_email_type and event.registration_configuration.registration_email_type != 'default' %}
     {% if event.registration_configuration.registration_email_text %}
     {{ event.registration_configuration.registration_email_text|relative_to_absolute_urls|safe }}
     {% endif %}
