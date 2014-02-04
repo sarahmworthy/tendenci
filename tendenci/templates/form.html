@@ -16,6 +16,9 @@
     {% embed_form SITE_GLOBAL_CONTACT_FORM "forms/contact_form.html" %}
 {% else %}
     <h1>{% trans "Contact Us" %}</h1>
+    {% if request.user.profile.is_staff %}
+    <div class='form-export'><a href="{% url contacts %}">View Entries</a> | <a href="{% url form.export %}">Export Entries</a></div>
+    {% endif %}
 
     <div class="contact-form-wrap">
     

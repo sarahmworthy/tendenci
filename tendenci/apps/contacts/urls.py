@@ -10,5 +10,6 @@ urlpatterns = patterns('tendenci.apps.contacts',
     # site contact form
     url(r'^contact/$', 'views.index', name="form"),
     url(r'^contact/confirmation$', 'views.confirmation', name="form.confirmation"),
+    url(r'^contact/export$', 'views.export', name="form.export"),
 
 )

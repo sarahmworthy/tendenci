@@ -66,12 +66,12 @@
 
         <div class="the-message">
         	<div class="label">{% trans "Message" %}</div>
-        	<div class="submitted-dt">
-        		{% blocktrans with contact.create_dt|date:"long" as create_date %}Submitted {{ create_date }}{% endblocktrans %}
-        	</div>
         	<div class="content">
         		{{ contact.message|linebreaks }}
         	</div>
+        </div>
+        <div class="submitted-dt">
+            {% blocktrans with contact.create_dt|date:"long" as create_date %}Submitted {{ create_date }}{% endblocktrans %}
         </div>
 
     </div>

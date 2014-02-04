@@ -1,0 +1,25 @@
+{% extends "site_base.html" %}
+{% load styled_forms %}
+{% load forms_tags %}
+{% load i18n %}
+
+{% block title %}{{ block.super }} Contact Import Tendenci{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/forms.css">
+{% endblock %}
+
+{% block body %}
+<div class="t">
+    <h1>{% trans "Contact Form Import CSV" %}</h1>
+    <div class="contact-form-wrap">
+        <form action="{% url form.export %}" method="post">{% csrf_token %}
+        <div class="forms">
+            {{ form|styled_form }}
+            <input type='submit' value='Export'>
+        </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

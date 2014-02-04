@@ -1,7 +1,7 @@
 import random, string
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, redirect, Http404
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
@@ -17,10 +17,12 @@ from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.contacts.models import Contact, Address, Phone, Email, URL
 from tendenci.apps.contacts.forms import ContactForm, SubmitContactForm
 from tendenci.apps.contacts.utils import listed_in_email_block
+from tendenci.apps.profiles.forms import ExportForm
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.core.perms.utils import has_perm, has_view_perm, get_query_filters, get_notice_recipients
 from tendenci.core.event_logs.models import EventLog
+from tendenci.core.exports.utils import run_export_task
 
 
 try: from tendenci.apps.notifications import models as notification
@@ -289,3 +291,35 @@ def index(request, form_class=SubmitContactForm, template_name="form.html"):
 
 def confirmation(request, form_class=SubmitContactForm, template_name="form-confirmation.html"):
     return render_to_response(template_name, context_instance=RequestContext(request))
+
+
+@login_required
+def export(request, template_name="form-export.html"):
+    """Create a csv file for all the users
+    """
+    if not request.user.profile.is_staff:
+        raise Http404
+
+    fields = [
+        'last_name',
+        'first_name',
+        'middle_name',
+        'suffix',
+        'addresses',
+        'phones',
+        'emails',
+        'urls',
+        'companies',
+        'message',
+    ]
+
+    form = ExportForm(request.POST or None, user=request.user)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            export_id = run_export_task('contacts', 'contact', fields)
+            return redirect('export.status', export_id)
+        
+    return render_to_response(template_name, {
+        'form':form,
+    }, context_instance=RequestContext(request))
