@@ -1400,7 +1400,8 @@ class RegistrationForm(forms.Form):
     Registration form - not include the registrant.
     """
     discount_code = forms.CharField(label=_('Discount Code'), required=False)
-    captcha = MathCaptchaField(label=_('Type the code below'))
+    #captcha = MathCaptchaField(label=_('Type the code below'))
+    captcha = MathCaptchaField()
 
     def __init__(self, event, *args, **kwargs):
         """
