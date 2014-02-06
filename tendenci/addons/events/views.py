@@ -4020,7 +4020,6 @@ def edit_addon(request, event_id, addon_id, template_name="events/addons/edit.ht
         form = AddonForm(instance=addon)
         formset = OptionFormSet(queryset=options_set, prefix="options", auto_id='options_formset')
 
-
     multi_event_forms = [formset]
 
     return render_to_response(template_name, {

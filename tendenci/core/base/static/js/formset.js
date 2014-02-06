@@ -315,7 +315,8 @@ $(document).ready(function(){
                     display: 'inline'
                 });
             } else {
-                e.css({display: 'none'
+                e.css({
+                    display: 'none'
                 });
             }
         });
