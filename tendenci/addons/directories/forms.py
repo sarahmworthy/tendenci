@@ -42,6 +42,7 @@ SEARCH_CATEGORIES_ADMIN = (
     ('city__icontains', 'City'),
     ('state__iexact', 'State'),
     ('tags__icontains', 'Tags'),
+    ('tags__contains', 'Tags (case sensitive)'),
 
     ('creator__id', 'Creator Userid(#)'),
     ('creator__username', 'Creator Username'),
@@ -59,6 +60,7 @@ SEARCH_CATEGORIES = (
     ('city__icontains', 'City'),
     ('state__iexact', 'State'),
     ('tags__icontains', 'Tags'),
+    ('tags__contains', 'Tags (case sensitive)'),
 )
 
 class DirectorySearchForm(forms.Form):
@@ -72,7 +74,7 @@ class DirectorySearchForm(forms.Form):
         super(DirectorySearchForm, self).__init__(*args, **kwargs)
 
         if not is_superuser:
-          self.fields['search_category'].choices = SEARCH_CATEGORIES
+            self.fields['search_category'].choices = SEARCH_CATEGORIES
 
         categories, sub_categories = Directory.objects.get_categories()
 
