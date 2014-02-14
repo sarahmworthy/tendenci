@@ -882,7 +882,7 @@ def regconf_edit(request, id, form_class=Reg8nEditForm, template_name="events/ed
     if not has_perm(request.user,'events.change_event', event):
         raise Http403
 
-    reg_form_queryset = get_ACRF_queryset(event)
+    reg_form_queryset = CustomRegForm.objects.all()
 
     if request.method == "POST":
         form_regconf = form_class(
@@ -958,7 +958,7 @@ def pricing_edit(request, id, form_class=Reg8nConfPricingForm, template_name="ev
     if not has_perm(request.user,'events.change_event', event):
         raise Http403
 
-    reg_form_queryset = get_ACRF_queryset(event)
+    reg_form_queryset = CustomRegForm.objects.all()
     pricing_reg_form_required = (reg_conf.use_custom_reg_form and
                                  not reg_conf.bind_reg_form_to_conf_only)
     regconfpricing_params = {'user': request.user,
@@ -1092,7 +1092,7 @@ def add(request, year=None, month=None, day=None, \
     the event by traveling to the appropriate URL.
     """
     # custom reg_form queryset
-    reg_form_queryset = get_ACRF_queryset()
+    reg_form_queryset = CustomRegForm.objects.all()
     regconfpricing_params = {'user': request.user,
                              'reg_form_queryset': reg_form_queryset}
 

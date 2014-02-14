@@ -12,6 +12,7 @@ class UseCustomRegWidget(forms.MultiWidget):
         self.attrs = attrs
         self.reg_form_choices = reg_form_choices
         self.event_id = event_id
+
         if not self.attrs:
             self.attrs = {'id':'use_custom_reg'}
         self.widgets = (forms.CheckboxInput(),
@@ -29,13 +30,21 @@ class UseCustomRegWidget(forms.MultiWidget):
         rendered_use_custom_reg_form = self.render_widget(
                                     use_custom_reg_form_widget,
                                     name, value, final_attrs, 
-                                    0, id_)                                             
-        
+                                    0, id_)
+
         reg_form_widget = self.widgets[1]
         reg_form_widget.choices = self.reg_form_choices
+
         #reg_form_widget.attrs = {'size':'8'}
-        rendered_reg_form = '<div style="margin-left:2em;">%s</div>' % \
-                            self.render_widget(reg_form_widget, 
+        rendered_reg_form = """
+        <div style="margin-left:2em; margin-top:10px;">
+            <label>Please choose the template you'd like to you use for this form</label>
+            %s
+            <a href="/admin/events/customregform/add" target="_blank" style="margin-left:5px;font-size:20px;" title="Add Custom Registration Form"
+            >
+                <i class="fa fa-plus"></i>
+            </a>
+        </div>""" % self.render_widget(reg_form_widget, 
                                                 name, value, final_attrs, 
                                                 1, id_)
         bind_reg_form_to_conf_only_widget = self.widgets[2]
