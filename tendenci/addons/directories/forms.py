@@ -383,3 +383,22 @@ class DirectoryRenewForm(TendenciBaseForm):
         if self.cleaned_data.has_key('pricing'):
             directory.requested_duration = self.cleaned_data['pricing'].duration
         return directory
+
+
+class DirectoryExportForm(forms.Form):
+
+    STATUS_DETAIL_CHOICES = (
+        ('active', ' Export Active Directories'),
+        ('pending', 'Export Pending Directories'),
+        ('inactive', 'Export Inactive Directories'),
+    )
+
+    EXPORT_FIELD_CHOICES = (
+        ('main_fields', 'Export Main Fields (fastest)'),
+        ('all_fields', 'Export All Fields'),
+    )
+
+    export_format = forms.CharField(widget=forms.HiddenInput(), initial='csv')
+    export_status_detail = forms.ChoiceField(choices=STATUS_DETAIL_CHOICES)
+    export_fields = forms.ChoiceField(choices=EXPORT_FIELD_CHOICES)
+
