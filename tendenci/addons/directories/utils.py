@@ -168,7 +168,7 @@ def is_free_listing(user, pricing_id, list_type):
     return False
 
 
-def process_export(export_fields='all_fields', export_status_detail='active',
+def process_export(export_fields='all_fields', export_status_detail='',
                    identifier=u'', user_id=0):
     from tendenci.core.perms.models import TendenciBaseModel
 
@@ -226,7 +226,9 @@ def process_export(export_fields='all_fields', export_status_detail='active',
         csv_writer = UnicodeWriter(csvfile, encoding='utf-8')
         csv_writer.writerow(field_list)
 
-        directories = Directory.objects.filter(status_detail__icontains=export_status_detail)
+        directories = Directory.objects.all()
+        if export_status_detail:
+            directories = directories.filter(status_detail__icontains=export_status_detail)
         for directory in directories:
             items_list = []
             for field_name in field_list:

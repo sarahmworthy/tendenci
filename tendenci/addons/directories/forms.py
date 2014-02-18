@@ -388,6 +388,7 @@ class DirectoryRenewForm(TendenciBaseForm):
 class DirectoryExportForm(forms.Form):
 
     STATUS_DETAIL_CHOICES = (
+        ('', 'Export All Directories'),
         ('active', ' Export Active Directories'),
         ('pending', 'Export Pending Directories'),
         ('inactive', 'Export Inactive Directories'),
@@ -399,6 +400,6 @@ class DirectoryExportForm(forms.Form):
     )
 
     export_format = forms.CharField(widget=forms.HiddenInput(), initial='csv')
-    export_status_detail = forms.ChoiceField(choices=STATUS_DETAIL_CHOICES)
+    export_status_detail = forms.ChoiceField(choices=STATUS_DETAIL_CHOICES, required=False)
     export_fields = forms.ChoiceField(choices=EXPORT_FIELD_CHOICES)
 

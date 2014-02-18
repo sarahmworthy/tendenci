@@ -11,17 +11,17 @@ class Command(BaseCommand):
         python manage.py directory_export_process
 
         example:
-        python manage.py directory_export_process --export_fields main_fields
-                                                  --export_status_detail active
-                                                  --identifier 1359048111
-                                                  --user 1
+        python manage.py directory_export_process --export_fields=main_fields
+                                                  --export_status_detail=active
+                                                  --identifier=1359048111
+                                                  --user=1
     """
     option_list = BaseCommand.option_list + (
         make_option(
             '--export_status_detail',
             action='store',
             dest='export_status_detail',
-            default='active',
+            default='',
             help='Export directories with the status detail specified'),
 
         make_option(
