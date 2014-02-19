@@ -12,7 +12,7 @@ from tendenci.addons.resumes.models import Resume
 from tendenci.core.perms.forms import TendenciBaseForm
 from tinymce.widgets import TinyMCE
 from tendenci.core.base.fields import SplitDateTimeField
-from tendenci.core.base.fields import EmailVerificationField, CountrySelectField
+from tendenci.core.base.fields import CountrySelectField
 
 ALLOWED_FILE_EXT = (
     '.doc',
@@ -49,7 +49,7 @@ class ResumeForm(TendenciBaseForm):
 
     captcha = SimpleMathField()
 
-    contact_email = EmailVerificationField(label=_("Contact email"), required=False)
+    contact_email = forms.EmailField(label=_("Contact email"), required=False)
     contact_country = CountrySelectField(label=_("Contact country"), required=False)
 
     activation_dt = SplitDateTimeField(label=_('Activation Date/Time'),

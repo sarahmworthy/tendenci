@@ -10,7 +10,6 @@ from tendenci.addons.news.models import News
 from tendenci.core.perms.forms import TendenciBaseForm
 from tinymce.widgets import TinyMCE
 from tendenci.core.base.fields import SplitDateTimeField
-from tendenci.core.base.fields import EmailVerificationField
 from tendenci.core.files.utils import get_max_file_upload_size
 from tendenci.core.perms.utils import get_query_filters
 from tendenci.apps.user_groups.models import Group
@@ -38,7 +37,7 @@ class NewsForm(TendenciBaseForm):
     release_dt = SplitDateTimeField(label=_('Release Date/Time'), initial=datetime.now())
     status_detail = forms.ChoiceField(
         choices=(('active', 'Active'), ('inactive', 'Inactive'), ('pending', 'Pending')))
-    email = EmailVerificationField(label=_("Email"), required=False)
+    email = forms.EmailField(label=_("Email"), required=False)
 
     photo_upload = forms.FileField(label=_('Thumbnail Image'), required=False, help_text=_('The thumbnail image can be used on your homepage or sidebar if it is setup in your theme. It will not display on the news page.'))
     remove_photo = forms.BooleanField(label=_('Remove the current photo'), required=False)

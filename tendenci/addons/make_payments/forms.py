@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from tendenci.addons.make_payments.models import MakePayment
-from tendenci.core.base.fields import EmailVerificationField
 #from captcha.fields import CaptchaField
 #from simplemathcaptcha.fields import MathCaptchaField
 from tendenci.core.base.forms import SimpleMathField
@@ -17,7 +16,7 @@ class MakePaymentForm(forms.ModelForm):
     state = forms.CharField(max_length=50, required=False,  widget=forms.TextInput(attrs={'size':'5'}))
     zip_code = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'size':'10'}))
     referral_source = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'size':'40'}))
-    email = EmailVerificationField(label=_("Email"), help_text='A valid e-mail address, please.')
+    email = forms.EmailField(label=_("Email"), help_text='A valid e-mail address, please.')
     email_receipt = forms.BooleanField(initial=True)
     
     class Meta:
