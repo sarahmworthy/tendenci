@@ -184,7 +184,7 @@ def event_custom_reg_form_list(request, event_id, template_name="events/event_cu
 
 
 @is_enabled('events')
-def details(request, id=None, hash=None, private_slug=u'', template_name="events/view.html"):
+def details(request, id=None, private_slug=u'', template_name="events/view.html"):
     if not id and not private_slug:
         return HttpResponseRedirect(reverse('event.month'))
 
@@ -194,20 +194,17 @@ def details(request, id=None, hash=None, private_slug=u'', template_name="events
     if not event.on_weekend:
         days = get_active_days(event)
 
-    if not has_view_perm(request.user, 'events.view_event', event):
-        if (not hash) or hash != event.hash:
-            raise Http403
-
-    use_hash = hash == event.hash
-    hash_url = ""
-    if (not event.allow_anonymous_view) and has_perm(request.user,'events.change_event', event):
-        hash_url = get_setting('site', 'global', 'siteurl') + reverse('event', args=([event.pk, event.hash]))
+    use_private_slug = False
+    show_private_slug = ""
 
     if event.is_private(private_slug):
-        pass
+        use_private_slug = True
     else:
         if not has_view_perm(request.user, 'events.view_event', event):
             raise Http403
+
+    if event.enable_private_slug and has_perm(request.user,'events.change_event', event):
+        show_private_slug = event.get_private_slug(True)
 
     if event.registration_configuration:
         event.limit = event.get_limit()
@@ -240,7 +237,6 @@ def details(request, id=None, hash=None, private_slug=u'', template_name="events
         organizer_files = File.objects.filter(content_type=org_ct, object_id=organizer.id)
     else:
         organizer_files = File.objects.none()
-
     place_files = File.objects.filter(content_type=place_ct, object_id=event.place_id)
 
     f_speakers = speakers.filter(featured=True)
@@ -262,8 +258,8 @@ def details(request, id=None, hash=None, private_slug=u'', template_name="events
         'speaker_files': speaker_files,
         'organizer_files': organizer_files,
         'place_files': place_files,
-        'use_hash': use_hash,
-        'hash_url': hash_url,
+        'use_private_slug': use_private_slug,
+        'show_private_slug': show_private_slug,
     }, context_instance=RequestContext(request))
 
 
@@ -1503,10 +1499,10 @@ def recurring_details(request, id, template_name="events/recurring_view.html"):
 
 
 @is_enabled('events')
-def register_pre(request, event_id, hash=None, template_name="events/reg8n/register_pre2.html"):
+def register_pre(request, event_id, private_slug=None, template_name="events/reg8n/register_pre2.html"):
     event = get_object_or_404(Event, pk=event_id)
 
-    use_hash = hash == event.hash
+    use_private_slug = event.is_private(private_slug)
     reg_conf=event.registration_configuration
     anony_reg8n = get_setting('module', 'events', 'anonymousregistration')
 
@@ -1517,7 +1513,7 @@ def register_pre(request, event_id, hash=None, template_name="events/reg8n/regis
     if limit > 0 and spots_available == 0:
         if not request.user.profile.is_superuser:
             # is no more spots available, redirect to event view.
-            return multi_register_redirect(request, event, _('Registration is full.'))
+            return multi_register_redirect(request, event, _('Registration is full.'), private_slug)
     event.limit, event.spots_taken, event.spots_available = limit, spots_taken, spots_available
 
     pricings = reg_conf.get_available_pricings(request.user,
@@ -1534,7 +1530,7 @@ def register_pre(request, event_id, hash=None, template_name="events/reg8n/regis
 
     return render_to_response(template_name, {
         'event':event,
-        'use_hash':use_hash,
+        'use_private_slug':use_private_slug,
         'individual_pricings': individual_pricings,
         'table_pricings': table_pricings,
         'quantity_options': range(31)
@@ -1542,9 +1538,12 @@ def register_pre(request, event_id, hash=None, template_name="events/reg8n/regis
 
 
 
-def multi_register_redirect(request, event, msg):
+def multi_register_redirect(request, event, msg, private_slug=''):
     messages.add_message(request, messages.INFO, msg)
-    return HttpResponseRedirect(reverse('event', args=(event.pk,),))
+    if private_slug:
+        return HttpResponseRedirect(reverse('event.private_details', args=(event.pk, private_slug),))
+    else:
+        return HttpResponseRedirect(reverse('event', args=(event.pk,),))
 
 
 @is_enabled('events')
@@ -1586,7 +1585,7 @@ def member_register(request, event_id,
 
 
 @is_enabled('events')
-def register(request, event_id=0, hash=None,
+def register(request, event_id=0, private_slug=None,
              individual=False,
              is_table=False,
              pricing_id=None,
@@ -1602,13 +1601,16 @@ def register(request, event_id=0, hash=None,
     event.anony_setting = anony_setting
     is_strict = anony_setting == 'strict'
 
-    if is_strict and not hash:
-        # strict requires logged in
-        if not request.user.is_authenticated():
-            messages.add_message(request, messages.INFO,
-                                 'Please log in or sign up to the site before registering the event.')
-            return HttpResponseRedirect('%s?next=%s' % (reverse('auth_login'),
-                                                        reverse('event.register', args=[event.id])))
+    if is_strict:
+        if event.is_private(private_slug):
+            pass
+        else:
+            # strict requires logged in
+            if not request.user.is_authenticated():
+                messages.add_message(request, messages.INFO,
+                                     'Please log in or sign up to the site before registering the event.')
+                return HttpResponseRedirect('%s?next=%s' % (reverse('auth_login'),
+                                                            reverse('event.register', args=[event.id])))
 
 
     # check if event allows registration
@@ -1623,7 +1625,7 @@ def register(request, event_id=0, hash=None,
     if limit > 0 and spots_available == 0:
         if not request.user.profile.is_superuser:
             # is no more spots available, redirect to event view.
-            return multi_register_redirect(request, event, _('Registration is full.'))
+            return multi_register_redirect(request, event, _('Registration is full.'), private_slug)
     event.limit, event.spots_taken, event.spots_available = limit, spots_taken, spots_available
 
 
@@ -1640,8 +1642,8 @@ def register(request, event_id=0, hash=None,
             raise Http404
 
         if len(pricings) > 1:
-            if hash:
-                return HttpResponseRedirect(reverse('event.register_pre', args=(event.pk, event.hash),))
+            if private_slug:
+                return HttpResponseRedirect(reverse('event.register_pre', args=(event.pk, private_slug),))
             else:
                 return HttpResponseRedirect(reverse('event.register_pre', args=(event.pk,),))
 
@@ -1681,7 +1683,10 @@ def register(request, event_id=0, hash=None,
         pricings = pricings.order_by('position', '-price')
         # registration might be closed, redirect to detail page
         if not pricings.exists():
-            return HttpResponseRedirect(reverse('event', args=(event.pk,),))
+            if private_slug:
+                return HttpResponseRedirect(reverse('event.private_details', args=(event.pk, private_slug),))
+            else:
+                return HttpResponseRedirect(reverse('event', args=(event.pk,),))
 
         try:
             pricing_id = int(pricing_id)

@@ -75,7 +75,7 @@ def global_registrant_search(context):
 
 
 @register.inclusion_tag('events/reg8n/registration_pricing.html', takes_context=True)
-def registration_pricing_and_button(context, event, user, use_hash):
+def registration_pricing_and_button(context, event, user, use_private_slug):
     limit = event.get_limit()
     spots_taken = 0
     registration = event.registration_configuration
@@ -112,7 +112,7 @@ def registration_pricing_and_button(context, event, user, use_hash):
         'pricing': pricing,
         'user': user,
         'is_registrant': is_registrant,
-        'use_hash': use_hash,
+        'use_private_slug': use_private_slug,
     })
 
     return context

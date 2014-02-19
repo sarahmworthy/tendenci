@@ -27,7 +27,7 @@
             {% endif %}
             {% if pricing %}
                 <div class="pricing-list-wrap">
-                	<form action="{% if use_hash %}{% url event.register event.pk event.hash %}{% else %}{% url event.register event.pk %}{% endif %}" method="get">
+                	<form action="{% if use_private_slug %}{% url event.register event.pk event.private_slug %}{% else %}{% url event.register event.pk %}{% endif %}" method="get">
                 	{% if pricing|length == 1 and pricing.0.amount == 0 %}
                         <input class="registration-green-button" type="submit" name="submit" value="{% trans 'Register for Free' %}" />
                 	{% else %}

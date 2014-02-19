@@ -74,11 +74,12 @@ urlpatterns = patterns(
     url(r'^%s/register/(?P<event_id>\d+)/pre/$' % urlpath, 'views.register_pre', name='event.register_pre'),
     url(r'^%s/register/(?P<event_id>\d+)/individual/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'individual': True}, name='event.register_individual'),
     url(r'^%s/register/(?P<event_id>\d+)/table/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'is_table': True}, name='event.register_table'),
-    # register for event using hash url
-    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.register', name='event.register'),
-    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/pre/$' % urlpath, 'views.register_pre', name='event.register_pre'),
-    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/individual/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'individual': True}, name='event.register_individual'),
-    url(r'^%s/register/(?P<event_id>\d+)/(?P<hash>\w+)/table/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'is_table': True}, name='event.register_table'),
+
+    # register for event using private slug
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<private_slug>\w+)/$' % urlpath, 'views.register', name='event.register'),
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<private_slug>\w+)/pre/$' % urlpath, 'views.register_pre', name='event.register_pre'),
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<private_slug>\w+)/individual/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'individual': True}, name='event.register_individual'),
+    url(r'^%s/register/(?P<event_id>\d+)/(?P<private_slug>\w+)/table/(?P<pricing_id>\d+)/$' % urlpath, 'views.register', {'is_table': True}, name='event.register_table'),
 
     url(r'^%s/registration/(?P<reg8n_id>\d+)/edit/$' % urlpath, 'views.registration_edit',
         name="event.registration_edit"),
@@ -138,7 +139,6 @@ urlpatterns = patterns(
         {'roster_view': 'total'},
         name="event.registrant.export.total"),
 
-    url(r'^%s/(?P<id>\d+)/(?P<hash>\w+)/$' % urlpath, 'views.details', name="event"),
     url(r'^%s/(?P<id>\d+)/(?P<private_slug>\w+)/$' % urlpath, 'views.details', name='event.private_details'),
 
     # addons

@@ -44,7 +44,7 @@
                     <p><strong>{% trans "Price" %}:</strong>
                        {{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ pricing.price }}</p>
                 </div>
-                <form action="{% if use_hash %}{% url event.register_individual event.id event.hash pricing.id %}{% else %}{% url event.register_individual event.id pricing.id %}{% endif %}" method="get">
+                <form action="{% if use_private_slug %}{% url event.register_individual event.id event.private_slug pricing.id %}{% else %}{% url event.register_individual event.id pricing.id %}{% endif %}" method="get">
                     <input title="{{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ pricing.price }} {{ pricing.title }}" class="register-green-button2" type="submit" name="submit" value="{% trans 'Register Now' %}" />	
                 </form>
             </div>
@@ -68,7 +68,7 @@
                     <p><strong>{% trans "Price" %}:</strong>
                        {{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ pricing.price }}</p>
                 </div>
-                <form action="{% if use_hash %}{% url event.register_table event.id event.hash pricing.id %}{% else %}{% url event.register_table event.id pricing.id %}{% endif %}" method="get">
+                <form action="{% if use_private_slug %}{% url event.register_table event.id event.private_slug pricing.id %}{% else %}{% url event.register_table event.id pricing.id %}{% endif %}" method="get">
                     <input title="{{ SITE_GLOBAL_CURRENCYSYMBOL }}{{ pricing.price }} {{ pricing.title }}" class="register-green-button2" type="submit" name="submit" value="{% trans 'Register Now' %}" />	
                 </form>
             </div>
