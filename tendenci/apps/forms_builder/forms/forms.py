@@ -22,6 +22,7 @@ from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.core.base.forms import SimpleMathField
 from tendenci.apps.user_groups.models import Group
 from tendenci.core.base.utils import get_template_list
+from tendenci.core.base.fields import EmailVerificationField
 
 from tendenci.addons.recurring_payments.fields import BillingCycleField
 from tendenci.addons.recurring_payments.widgets import BillingCycleWidget, BillingDateSelectWidget
@@ -62,7 +63,12 @@ class FormForForm(forms.ModelForm):
                 field_class, field_widget = field.field_type, None
 
             if field.field_type == 'EmailVerificationField':
-                field_class = forms.EmailField
+                one_email = get_setting('module', 'forms', 'one_email')
+                if one_email:
+                    field_class = forms.EmailField
+                else:
+                    field_class = EmailVerificationField
+
             elif field.field_type == 'CountryField' or field.field_type == 'StateProvinceField':
                 field_class = getattr(forms, 'ChoiceField')
             else:
@@ -203,7 +209,7 @@ class FormForForm(forms.ModelForm):
         """
         for field in self.form_fields:
             field_class = field.field_type.split("/")[0]
-            if field_class == "EmailVerificationField" or field_class == "EmailField":
+            if field_class == "EmailVerificationField":
                 return self.cleaned_data["field_%s" % field.id]
         return None
         

@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.template.defaultfilters import filesizeformat
 from django.utils.translation import ugettext_lazy as _ 
 
-from tendenci.core.base.fields import CountrySelectField
+from tendenci.core.base.fields import EmailVerificationField, CountrySelectField
 from tendenci.core.files.utils import get_max_file_upload_size
 
 
@@ -28,7 +28,7 @@ class LocationForm(TendenciBaseForm):
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
 
-    email = forms.EmailField(label=_("Email"), required=False)
+    email = EmailVerificationField(label=_("Email"), required=False)
     country = CountrySelectField(label=_("Country"), required=False)
 
     class Meta:

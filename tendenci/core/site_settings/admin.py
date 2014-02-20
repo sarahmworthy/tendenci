@@ -22,3 +22,5 @@ class SettingAdminDev(admin.ModelAdmin):
     list_filter = ['scope_category']
     
 # admin.site.register(Setting, SettingAdminDev)
+from .models import Setting
+admin.site.register(Setting, SettingAdmin)

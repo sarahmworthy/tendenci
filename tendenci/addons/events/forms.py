@@ -32,7 +32,7 @@ from form_utils.forms import BetterModelForm
 from tinymce.widgets import TinyMCE
 from tendenci.core.payments.models import PaymentMethod
 from tendenci.core.perms.forms import TendenciBaseForm
-from tendenci.core.base.fields import SplitDateTimeField, CountrySelectField
+from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField, CountrySelectField
 from tendenci.core.base.widgets import PriceWidget
 from tendenci.core.emails.models import Email
 from tendenci.core.files.utils import get_max_file_upload_size
@@ -200,7 +200,7 @@ class FormForCustomRegForm(forms.ModelForm):
                 field_class, field_widget = field.field_type, None
 
             if field.field_type == 'EmailVerificationField':
-                field_class = forms.EmailField
+                field_class = EmailVerificationField
             else:
                 field_class = getattr(forms, field_class)
             field_args = {"label": mark_safe(field.label), "required": field.required}
@@ -1390,7 +1390,7 @@ class Reg8nForm(forms.Form):
     company_name = forms.CharField(max_length=100, required=False)
     username = forms.CharField(max_length=50, required=False)
     phone = forms.CharField(max_length=20, required=False)
-    email = forms.EmailField(label=_("Email"))
+    email = EmailVerificationField(label=_("Email"))
     captcha = SimpleMathField(label=_('Type the code below'))
 
     def __init__(self, event_id=None, *args, **kwargs):
@@ -1556,7 +1556,7 @@ class RegistrantForm(forms.Form):
     company_name = forms.CharField(max_length=100, required=False)
     #username = forms.CharField(max_length=50, required=False)
     phone = forms.CharField(max_length=20, required=False)
-    email = forms.EmailField(label=_("Email"))
+    email = EmailVerificationField(label=_("Email"))
     comments = forms.CharField(
         max_length=300, widget=forms.Textarea, required=False)
 

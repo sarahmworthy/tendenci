@@ -64,9 +64,11 @@ class EmailVerificationWidget(MultiWidget):
         email0_attrs = attrs.copy()
         email0_attrs['class'] = email_class_0
         email0_attrs['maxlength'] = 75
+        email0_attrs['value'] = ''
         email1_attrs = attrs.copy()
         email1_attrs['class'] = email_class_1
         email1_attrs['maxlength'] = 75
+        email1_attrs['value'] = ''
 
         widgets = (TextInput(attrs=email0_attrs),
                    TextInput(attrs=email1_attrs))
@@ -87,7 +89,7 @@ class EmailVerificationWidget(MultiWidget):
 
         Returns a Unicode string representing the HTML for the whole lot.
         """
-        label = "<label generated='true' style='display:none; color:red; margin-left: 5px;' class='email-verfication-error'>Please enter similar email addresses.</label>"
+        label = "<label generated='true' style='display:none; color:red; margin-left: 5px;' class='email-verfication-error'>Please enter the same email address.</label>"
         return "%s%s<br>%s" % (rendered_widgets[0], label, rendered_widgets[1])
 
 

@@ -9,7 +9,7 @@ from django.forms.extras.widgets import SelectDateWidget
 from django.utils.safestring import mark_safe
 
 from tendenci.core.base.fields import SplitDateTimeField
-from tendenci.core.base.fields import CountrySelectField
+from tendenci.core.base.fields import EmailVerificationField, CountrySelectField
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.apps.user_groups.models import Group, GroupMembership
@@ -86,9 +86,9 @@ class ProfileForm(TendenciBaseForm):
                                  error_messages={'required': 'First Name is a required field.'})
     last_name = forms.CharField(label=_("Last Name"), max_length=100,
                                 error_messages={'required': 'Last Name is a required field.'})
-    email = forms.EmailField(label=_("Email"),
+    email = EmailVerificationField(label=_("Email"),
                                 error_messages={'required': 'Email is a required field.'})
-    email2 = forms.EmailField(label=_("Email 2"), required=False)
+    email2 = EmailVerificationField(label=_("Email 2"), required=False)
 
     initials = forms.CharField(label=_("Initial"), max_length=100, required=False,
                                widget=forms.TextInput(attrs={'size':'10'}))
@@ -318,9 +318,9 @@ class ProfileAdminForm(TendenciBaseForm):
                                  error_messages={'required': 'First Name is a required field.'})
     last_name = forms.CharField(label=_("Last Name"), max_length=100,
                                 error_messages={'required': 'Last Name is a required field.'})
-    email = forms.EmailField(label=_("Email"),
+    email = EmailVerificationField(label=_("Email"),
                                 error_messages={'required': 'Email is a required field.'})
-    email2 = forms.EmailField(label=_("Email 2"), required=False)
+    email2 = EmailVerificationField(label=_("Email 2"), required=False)
 
     username = forms.RegexField(regex=r'^[\w.@+-]+$',
                                 max_length=30,
