@@ -425,6 +425,7 @@ def addon_upload_check(request, sid):
 
     return HttpResponse(finished)
 
+
 @superuser_required
 @password_required
 def update_tendenci(request, template_name="base/update.html"):
