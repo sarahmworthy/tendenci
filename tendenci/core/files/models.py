@@ -365,9 +365,8 @@ def auto_delete_file_on_change(sender, instance, **kwargs):
         return False
 
     new_file = instance.file
-    if not old_file == new_file:
-        try:
-            if os.path.isfile(old_file.path):
-                os.remove(old_file.path)
-        except Exception:
-            return False
+    try:
+        if os.path.isfile(old_file.path):
+            os.remove(old_file.path)
+    except Exception:
+        return False
