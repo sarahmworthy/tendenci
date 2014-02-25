@@ -227,6 +227,7 @@
     top: 25px;
     right: 25px;
     z-index: 10000;
+    display: none;
 }
 
 #jpwClose a{
@@ -277,6 +278,10 @@
     text-align: center;
     font-size: 16px;
     line-height: 20px;
+}
+
+#jpWalkthrough #jpwTooltip #tooltipInner p{
+    color: #fff;
 }
 
 #jpWalkthrough #jpwTooltip #tooltipInner a{
