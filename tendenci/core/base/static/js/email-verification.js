@@ -2,7 +2,7 @@ $('.email-verification-0').each(function() {
     // Save current value of element
     $(this).data('oldVal', $(this).val());
     // Look for changes in the value
-    $(this).bind("propertychange keyup input paste", function(event){
+    $(this).bind("blur", function(event){
         // If value has changed...
         if ($(this).data('oldVal') != $(this).val() && $(this).val() !='') {
             // Updated stored value
@@ -24,7 +24,7 @@ $('.email-verification-1').each(function() {
     // Save current value of element
     $(this).data('oldVal', $(this).val());
     // Look for changes in the value
-    $(this).bind("propertychange keyup input paste", function(event){
+    $(this).bind("blur", function(event){
         // If value has changed...
         if ($(this).data('oldVal') != $(this).val()) {
             // Updated stored value
