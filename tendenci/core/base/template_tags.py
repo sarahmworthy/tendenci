@@ -158,41 +158,57 @@ class ListNode(Node):
 
         # get the list of items
         self.perms = getattr(self, 'perms', unicode())
-
-        # Only use the search index if there is a query passed
-        if query:
-            for tag in tags:
-                tag = tag.strip()
-                query = '%s "tag:%s"' % (query, tag)
-
+        
+        if query or tags:
+            if not query:
+                query = ''
+            if tags:
+                for tag in tags:
+                    query = '%s "tag:%s"' % (query, tag.strip())
+            
             items = self.model.objects.search(user=user, query=query)
-
         else:
-            filters = get_query_filters(user, self.perms)
-            items = self.model.objects.filter(filters)
-            if user.is_authenticated():
-                items = items.distinct()
+            # use index for performance reason - the extreme example of not using index
+            # is when those two tables, objectpermissions and groupmembership, grow really big,
+            # members are not able to get to the site and those heavy queries can also bring down
+            # the server 
+            items = self.model.objects.search(user=user)
+        
 
-            if tags:  # tags is a comma delimited list
-                # this is fast; but has one hole
-                # it finds words inside of other words
-                # e.g. "prev" is within "prevent"
-                tag_queries = [Q(tags__iexact=t.strip()) for t in tags]
-                tag_queries += [Q(tags__istartswith=t.strip() + ",") for t in tags]
-                tag_queries += [Q(tags__iendswith=", " + t.strip()) for t in tags]
-                tag_queries += [Q(tags__iendswith="," + t.strip()) for t in tags]
-                tag_queries += [Q(tags__icontains=", " + t.strip() + ",") for t in tags]
-                tag_queries += [Q(tags__icontains="," + t.strip() + ",") for t in tags]
-                tag_query = reduce(or_, tag_queries)
-                items = items.filter(tag_query)
-
-            if hasattr(self.model, 'group') and group:
-                items = items.filter(group=group)
-
-            if hasattr(self.model(), 'status_detail'):
-                items = items.filter(status_detail__iexact=status_detail)
-
-            items = self.custom_model_filter(items, user)
+#         # Only use the search index if there is a query passed
+#         if query:
+#             for tag in tags:
+#                 tag = tag.strip()
+#                 query = '%s "tag:%s"' % (query, tag)
+# 
+#             items = self.model.objects.search(user=user, query=query)
+# 
+#         else:
+#             filters = get_query_filters(user, self.perms)
+#             items = self.model.objects.filter(filters)
+#             if user.is_authenticated():
+#                 items = items.distinct()
+# 
+#             if tags:  # tags is a comma delimited list
+#                 # this is fast; but has one hole
+#                 # it finds words inside of other words
+#                 # e.g. "prev" is within "prevent"
+#                 tag_queries = [Q(tags__iexact=t.strip()) for t in tags]
+#                 tag_queries += [Q(tags__istartswith=t.strip() + ",") for t in tags]
+#                 tag_queries += [Q(tags__iendswith=", " + t.strip()) for t in tags]
+#                 tag_queries += [Q(tags__iendswith="," + t.strip()) for t in tags]
+#                 tag_queries += [Q(tags__icontains=", " + t.strip() + ",") for t in tags]
+#                 tag_queries += [Q(tags__icontains="," + t.strip() + ",") for t in tags]
+#                 tag_query = reduce(or_, tag_queries)
+#                 items = items.filter(tag_query)
+# 
+#             if hasattr(self.model, 'group') and group:
+#                 items = items.filter(group=group)
+# 
+#             if hasattr(self.model(), 'status_detail'):
+#                 items = items.filter(status_detail__iexact=status_detail)
+# 
+#             items = self.custom_model_filter(items, user)
 
         objects = []
 
