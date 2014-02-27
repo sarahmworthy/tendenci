@@ -103,7 +103,8 @@ from tendenci.addons.events.forms import (
     EventRegistrantSearchForm,
     MemberRegistrationForm,
     ApplyRecurringChangesForm,
-    EventSearchForm)
+    EventSearchForm,
+    NewEventExportForm)
 from tendenci.addons.events.utils import (
     email_registrants,
     render_event_email,
@@ -4238,3 +4239,31 @@ def import_process(request, import_id,
         'total': import_i.total_created + import_i.total_invalid,
         "import_i": import_i,
     }, context_instance=RequestContext(request))
+
+
+@is_enabled('events')
+@login_required
+def new_export(request, template_name="events/new_export.html"):
+
+    if request.method == 'POST':
+        form = NewEventExportForm(request.POST)
+        if form.is_valid():
+            return HttpResponse('form is valid')
+
+    else:
+        form = NewEventExportForm()
+
+    return render_to_response(
+        template_name,
+        {'form' : form},
+        context_instance=RequestContext(request))
+
+
+@login_required
+def new_export_status(request, identifier):
+    pass
+
+
+@login_required
+def new_export_download(request, indentifier):
+    pass

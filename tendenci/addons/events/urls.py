@@ -48,6 +48,11 @@ urlpatterns = patterns(
     url(r'^%s/(?P<id>\d+)/$' % urlpath, 'views.details', name="event"),
     url(r'^%s/recurring/(?P<id>\d+)/$' % urlpath, 'views.recurring_details', name="event.recurring"),
 
+    # new event export
+    url(r'^%s/new_export/$' % urlpath, 'views.new_export', name="event.new_export"),
+    url(r'^%s/new_export/status/(?P<identifier>\d+)/$' % urlpath, 'views.new_export_status', name="event.new_export_status"),
+    url(r'^%s/new_export/download/(?P<identifier>\d+)/$' % urlpath, 'views.new_export_download', name="event.new_export_download"),
+
     url(r'^%s/(?P<event_id>\d+)/speakers/$' % urlpath, 'views.speaker_list', name="event.speakers"),
     url(r'^%s/(?P<event_id>\d+)/attendees$' % urlpath, 'views.view_attendees', name="event.attendees"),
 
@@ -167,5 +172,6 @@ urlpatterns = patterns(
 
     # event types, need to be the last in the urls
     url(r'^%s/(?P<type>[\w\-\/]+)/$' % urlpath, 'views.month_view', name='event.month'),
+
 
 )
