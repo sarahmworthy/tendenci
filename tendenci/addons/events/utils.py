@@ -5,16 +5,18 @@ import calendar
 import csv
 import re
 import os.path
+import time as ttime
 from datetime import datetime, timedelta
 from datetime import date
 from dateutil.rrule import *
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
 from django.db import connection
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Max, Count
 from django.db.models.fields import FieldDoesNotExist
 from django.forms.models import modelformset_factory
 from django.template import Context, Template
@@ -38,9 +40,11 @@ from tendenci.apps.discounts.utils import assign_discount
 from tendenci.core.site_settings.utils import get_setting
 from tendenci.core.perms.utils import get_query_filters
 from tendenci.core.imports.utils import extract_from_excel
-from tendenci.core.base.utils import format_datetime_range
+from tendenci.core.base.utils import format_datetime_range, UnicodeWriter
 from tendenci.core.files.models import File
 from tendenci.core.perms.utils import update_perms_and_save
+from tendenci.core.exports.utils import full_model_to_dict
+from tendenci.core.emails.models import Email
 
 
 try:
@@ -1697,14 +1701,14 @@ def week_of_month(tgtdate, cal):
     return (tgtdate - startdate).days //7 + 1
 
 
-def process_event_export(start_dt=None, end_dt=None, type=None):
+def process_event_export(start_dt=None, end_dt=None, event_type=None,
+                         identifier=u'', user_id=0):
     """
     This exports all events data and registration configuration.
     This export needs to be able to handle additional columns for each
     instance of Pricing, Speaker, and Addon.
     This export does not include registrant data.
     """
-
     event_fields = [
         'entity',
         'type',
@@ -1765,7 +1769,7 @@ def process_event_export(start_dt=None, end_dt=None, type=None):
     pricing_fields = [
         'title',
         'quantity',
-        'group',
+        'groups',
         'price',
         'reg_form',
         'start_dt',
@@ -1777,17 +1781,15 @@ def process_event_export(start_dt=None, end_dt=None, type=None):
     ]
 
     events = Event.objects.filter(status=True)
-
     if start_dt and end_dt:
         events = events.filter(start_dt__gte=start_dt, start_dt__lte=end_dt)
-
-    if type:
-        events = events.filter(type=type)
+    if event_type:
+        events = events.filter(type=event_type)
 
     max_speakers = events.annotate(num_speakers=Count('speaker')).aggregate(Max('num_speakers'))['num_speakers__max']
     max_organizers = events.annotate(num_organizers=Count('organizer')).aggregate(Max('num_organizers'))['num_organizers__max']
     max_pricings = events.annotate(num_pricings=Count('registration_configuration__regconfpricing')).aggregate(Max('num_pricings'))['num_pricings__max']
-    file_name = 'events.csv'
+
     data_row_list = []
 
     for event in events:
@@ -1821,6 +1823,7 @@ def process_event_export(start_dt=None, end_dt=None, type=None):
             for field in configuration_fields:
                 if field == "payment_method":
                     value = event.registration_configuration.payment_method.all()
+                    value = value.values_list('human_name', flat=True)
                 else:
                     value = conf_d[field]
                 value = unicode(value).replace(os.linesep, ' ').rstrip()
@@ -1862,7 +1865,10 @@ def process_event_export(start_dt=None, end_dt=None, type=None):
             for pricing in reg_conf.regconfpricing_set.all():
                 pricing_d = full_model_to_dict(pricing)
                 for field in pricing_fields:
-                    value = pricing_d[field]
+                    if field == 'groups':
+                        value = pricing.groups.values_list('name', flat=True)
+                    else:
+                        value = pricing_d[field]
                     value = unicode(value).replace(os.linesep, ' ').rstrip()
                     data_row.append(value)
         
@@ -1882,3 +1888,50 @@ def process_event_export(start_dt=None, end_dt=None, type=None):
         fields = fields + ["organizer %s %s" % (i, f) for f in organizer_fields]
     for i in range(0, max_pricings):
         fields = fields + ["pricing %s %s" % (i, f) for f in pricing_fields]
+
+    identifier = identifier or int(ttime.time())
+    file_name_temp = 'export/events/%s_temp.csv' % identifier
+
+    with default_storage.open(file_name_temp, 'wb') as csvfile:
+        csv_writer = UnicodeWriter(csvfile, encoding='utf-8')
+        csv_writer.writerow(fields)
+
+        for row in data_row_list:
+            csv_writer.writerow(row)
+
+    # rename the file name
+    file_name = 'export/events/%s.csv' % identifier
+    default_storage.save(file_name, default_storage.open(file_name_temp, 'rb'))
+
+    # delete the temp file
+    default_storage.delete(file_name_temp)
+
+    # notify user that export is ready to download
+    [user] = User.objects.filter(pk=user_id)[:1] or [None]
+    if user and user.email:
+        download_url = reverse('event.export_download', args=[identifier])
+
+        site_url = get_setting('site', 'global', 'siteurl')
+        site_display_name = get_setting('site', 'global', 'sitedisplayname')
+        parms = {
+            'download_url': download_url,
+            'user': user,
+            'site_url': site_url,
+            'site_display_name': site_display_name,
+            'start_dt': start_dt,
+            'end_dt': end_dt,
+            'type': event_type}
+
+        subject = render_to_string(
+            'events/notices/export_ready_subject.html', parms)
+        subject = subject.strip('\n').strip('\r')
+
+        body = render_to_string(
+            'events/notices/export_ready_body.html', parms)
+
+        email = Email(
+            recipient=user.email,
+            subject=subject,
+            body=body)
+        email.send()
+

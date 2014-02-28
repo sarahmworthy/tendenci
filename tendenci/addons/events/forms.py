@@ -2102,7 +2102,7 @@ class MemberRegistrationForm(forms.Form):
         return self.cleaned_data['member_ids']
 
 
-class NewEventExportForm(forms.Form):
+class EventExportForm(forms.Form):
     by_date_range = forms.BooleanField(
                 label=_('Export by Date Range'),
                 required=False)
@@ -2145,3 +2145,4 @@ class NewEventExportForm(forms.Form):
                 raise forms.ValidationError('End date must be greater than start date')
 
         return end_dt
+
