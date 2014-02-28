@@ -255,6 +255,7 @@ INSTALLED_APPS = (
     'tendenci.apps.reports',
     'tendenci.core.sso',
     'tendenci.apps.dashboard',
+    'tendenci.addons.social_media',
     # celery task system, must stay at the bottom of installed apps
     'djkombu',
     'djcelery',
