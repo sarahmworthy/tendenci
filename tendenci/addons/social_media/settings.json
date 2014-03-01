@@ -177,7 +177,7 @@
         "input_type": "textarea", 
         "client_editable": true, 
         "name": "contact_message", 
-        "value": "", 
+        "value": "Good day! Check out our event: {{ page_url }}", 
         "label": "Contact Email Message", 
         "input_value": "", 
         "parent_id": 0, 
