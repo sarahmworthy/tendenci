@@ -52,6 +52,7 @@ urlpatterns = patterns(
     url(r'^%s/export/status/(?P<identifier>\d+)/$' % urlpath, 'views.export_status', name="event.export_status"),
     url(r'^%s/export/download/(?P<identifier>\d+)/$' % urlpath, 'views.export_download', name="event.export_download"),
 
+    # speakers_list view does not exist
     url(r'^%s/(?P<event_id>\d+)/speakers/$' % urlpath, 'views.speaker_list', name="event.speakers"),
     url(r'^%s/(?P<event_id>\d+)/attendees$' % urlpath, 'views.view_attendees', name="event.attendees"),
 
