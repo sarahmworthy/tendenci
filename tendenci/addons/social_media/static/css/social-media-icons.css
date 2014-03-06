@@ -1,14 +1,11 @@
-.media-icons,
-.action-icons {
+.media-icons {
     text-align: center;
 }
-	.media-icons a,
-	.action-icons a {	
+	.media-icons a {	
 	    padding: 0px;
 	}
 
-	.media-icons a:hover,
-	.action-icons a:hover {
+	.media-icons a:hover {
 		text-decoration: none;
 	}
 
@@ -16,7 +13,7 @@
 		font-family: "FontAwesome";
 		font-size: 2em;
 		font-weight: normal !important;
-		margin: 0px 10px;
+		margin-right: 15px;
 		position: relative;
 		color: #000000;
 	}
