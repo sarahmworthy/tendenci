@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% load perm_tags %}
+{% load announcement_tags %}
 {# admin left for deprecation for custom templates/themes #}
 {% is_admin request.user as admin %}
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:fb="http://www.facebook.com/2008/fbml" dir="ltr" lang="en-US"> 
@@ -57,6 +58,7 @@
         {% include "top_menu/user_top.html" %}
     {% endif %}
 {% endif %}
+{% emergency_announcement request.user %}
 {% endblock %}
 
 {% block html_body %}{% endblock %}
