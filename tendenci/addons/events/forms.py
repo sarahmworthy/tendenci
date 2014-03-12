@@ -17,9 +17,7 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import filesizeformat
 
-#from captcha.fields import CaptchaField
-#from simplemathcaptcha.fields import MathCaptchaField
-from tendenci.core.base.forms import SimpleMathField
+from captcha.fields import CaptchaField
 from tendenci.addons.events.models import (
     Event, Place, RegistrationConfiguration, Payment,
     Sponsor, Organizer, Speaker, Type, TypeColorSet,
@@ -164,6 +162,26 @@ class CustomRegFormForField(forms.ModelForm):
     class Meta:
         model = CustomRegField
         exclude = ["position"]
+        
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        field_function = cleaned_data.get("field_function")
+        field_type = cleaned_data.get("field_type")
+        choices = cleaned_data.get("choices")
+
+        if field_function == "GroupSubscription":
+            if field_type != "BooleanField":
+                raise forms.ValidationError("This field's function requires Checkbox as a field type")
+            if not choices:
+                raise forms.ValidationError("This field's function requires at least 1 group specified.")
+            else:
+                for val in choices.split(','):
+                    try:
+                        Group.objects.get(name=val.strip())
+                    except Group.DoesNotExist:
+                        raise forms.ValidationError("The group \"%s\" does not exist" % (val))
+
+        return cleaned_data
 
 
 class FormForCustomRegForm(forms.ModelForm):
@@ -1391,7 +1409,7 @@ class Reg8nForm(forms.Form):
     username = forms.CharField(max_length=50, required=False)
     phone = forms.CharField(max_length=20, required=False)
     email = EmailVerificationField(label=_("Email"))
-    captcha = SimpleMathField(label=_('Type the code below'))
+    captcha = CaptchaField(label=_('Type the code below'))
 
     def __init__(self, event_id=None, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -1474,8 +1492,7 @@ class RegistrationForm(forms.Form):
     Registration form - not include the registrant.
     """
     discount_code = forms.CharField(label=_('Discount Code'), required=False)
-    #captcha = SimpleMathField(label=_('Type the code below'))
-    captcha = SimpleMathField()
+    captcha = CaptchaField(label=_('Type the code below'))
 
     def __init__(self, event, *args, **kwargs):
         """
@@ -2019,10 +2036,19 @@ class AddonForm(BetterModelForm):
             }),
         ]
 
-class AddonOptionForm(forms.ModelForm):
+class AddonOptionForm(BetterModelForm):
+    label = 'Option'
+
     class Meta:
         model = AddonOption
         fields = ('title',)
+        fieldsets = [('', {'fields': ['title']})]
+
+
+class AddonOptionBaseModelFormSet(BaseModelFormSet):
+    def __init__(self, *args, **kwargs):
+        super(AddonOptionBaseModelFormSet, self).__init__(*args, **kwargs)
+        self.forms[0].empty_permitted = False
 
 
 class EventICSForm(forms.Form):

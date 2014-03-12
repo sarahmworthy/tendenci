@@ -1,0 +1,5 @@
+{% if MODULE_ANNOUNCEMENTS_ENABLED and announcement %}
+<div id="announcement-bar">
+    {{ announcement.content|safe }}
+</div>
+{% endif %}
