@@ -13,7 +13,7 @@
 		font-family: "FontAwesome";
 		font-size: 2em;
 		font-weight: normal !important;
-		margin-right: 15px;
+		margin-right: 10px;
 		position: relative;
 		color: #000000;
 	}
@@ -44,4 +44,5 @@
 
 		.social-print:before {
 			content: "\f02f";
+			margin-right: 0px;
 		}

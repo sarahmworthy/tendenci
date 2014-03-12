@@ -244,7 +244,7 @@
             {% endif %}
             
             {% url event event.pk as the_url %}
-            <p>{% fb_like_button_iframe the_url %}</p>
+            <p class="fb-like-event">{% fb_like_button_iframe the_url %}</p>
 
             {% include 'social_media/icons.html' %}
 		</div> <!-- end vitals -->
