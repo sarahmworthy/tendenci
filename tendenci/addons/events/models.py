@@ -1358,7 +1358,6 @@ class CustomRegField(OrderingBaseModel):
             cloned_field.save()
         return cloned_field
 
-
     def execute_function(self, entry, value, user=None):
         if self.field_function == "GroupSubscription":
             if value:
@@ -1468,6 +1467,7 @@ class CustomRegFieldEntry(models.Model):
 
 class EventPhoto(File):
     pass
+
 
 class Addon(models.Model):
     event = models.ForeignKey(Event)
