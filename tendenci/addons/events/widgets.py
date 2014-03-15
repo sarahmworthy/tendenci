@@ -40,7 +40,12 @@ class UseCustomRegWidget(forms.MultiWidget):
         <div style="margin-left:2em; margin-top:10px;">
             <label>Please choose the template you'd like to you use for this form</label>
             %s
-            <a href="/admin/events/customregform/add" target="_blank" style="margin-left:5px;font-size:20px;" title="Add Custom Registration Form"
+            <a class="add-another"
+            id="add_id_regconf-use_custom_reg_1"
+            href="/admin/events/customregform/add" 
+            style="margin-left:5px;font-size:20px;"
+            title="Add Custom Registration Form"
+            onclick="return showAddAnotherPopup(this);"
             >
                 <i class="fa fa-plus"></i>
             </a>

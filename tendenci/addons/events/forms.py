@@ -1374,14 +1374,23 @@ class Reg8nEditForm(BetterModelForm):
             if reg_form_id:
                 if self.instance.use_custom_reg_form and self.instance.bind_reg_form_to_conf_only:
                     reg_form = CustomRegForm.objects.get(id=reg_form_id)
-                    reg_form = reg_form.clone()
+                    # clone the template so that it can be used on other events
+                    prev_form = None
+                    if reg_form.is_template:
+                        reg_form = reg_form.clone()
+                        # get the previous instance of the form
+                        if self.instance.pk:
+                            prev_form = self.instance.reg_form
+
                     self.instance.reg_form = reg_form
                 else:
                     self.instance.reg_form = None
 
-        return super(Reg8nEditForm, self).save(*args, **kwargs)
+        newregconf = super(Reg8nEditForm, self).save(*args, **kwargs)
+        if prev_form:
+            prev_form.delete()
 
-
+        return newregconf
 
     # def clean(self):
     #     from django.db.models import Sum
