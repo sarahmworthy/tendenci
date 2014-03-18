@@ -68,6 +68,9 @@ class FormAdmin(TendenciBaseModelAdmin):
         payment_fields = ("custom_payment", "payment_methods")
     else:
         payment_fields = ("custom_payment", 'recurring_payment', "payment_methods")
+
+    position_fields = ("intro_position", "fields_position", "pricing_position")
+
     fieldsets = (
         (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template")}),
         (_("Email"), {"fields": ('subject_template', "email_from", "email_copies", "send_email", "email_text")}),
@@ -81,6 +84,7 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status_detail',
         )}),
         (_("Payment"), {"fields": payment_fields}),
+        (_("Section Positions"), {"fields": position_fields}),
     )
 
     form = FormAdminForm
