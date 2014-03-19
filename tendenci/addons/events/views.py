@@ -131,7 +131,7 @@ from tendenci.addons.events.utils import (
     check_month,
     create_member_registration,
     get_recurrence_dates,
-    week_of_month)
+    get_week_days)
 from tendenci.addons.events.addons.forms import RegAddonForm
 from tendenci.addons.events.addons.formsets import RegAddonBaseFormSet
 from tendenci.addons.events.addons.utils import get_available_addons
@@ -2736,15 +2736,9 @@ def week_view(request, year=None, month=None, day=None, template_name='events/we
     calendar.setfirstweekday(calendar.SUNDAY)
     Calendar = calendar.Calendar(calendar.SUNDAY)
     weekdays = calendar.weekheader(10).split()
-    cal = Calendar.monthdatescalendar(year, month)
 
     tgtdate = date(year, month, day)
-    weeknum = week_of_month(tgtdate, Calendar)
-
-    try:
-        week_dates = cal[weeknum]
-    except IndexError:
-        raise Http404
+    week_dates = get_week_days(tgtdate, Calendar)
 
     next_date = week_dates[6] + timedelta(days=1)
     prev_date = week_dates[0] + timedelta(days=-1)
@@ -2786,9 +2780,7 @@ def week_view(request, year=None, month=None, day=None, template_name='events/we
         'weekdays':weekdays,
         'next_week_url':next_week_url,
         'prev_week_url':prev_week_url,
-        'year':year,
-        'month':month,
-        'day':day,
+        'cur_date':tgtdate,
         'types':types,
         },
         context_instance=RequestContext(request))
