@@ -11,14 +11,11 @@ register = Library()
 def emergency_announcement(context, user):
 
     filters = get_query_filters(user, 'announcements.view_emergencyannouncement')
-    announcement = EmergencyAnnouncement.objects.filter(filters).distinct()
-
-    announcement = announcement.filter(enabled=True).order_by('-create_dt')
-    if announcement.exists():
-        announcement = announcement[0]
+    announcements = EmergencyAnnouncement.objects.filter(filters).distinct()
+    announcements = announcements.filter(enabled=True).order_by('-create_dt')
 
     context.update({
         "user": user,
-        "announcement": announcement
+        "announcements": announcements
     })
     return context
