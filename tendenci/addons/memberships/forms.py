@@ -829,8 +829,9 @@ class DemographicsForm(forms.ModelForm):
         if self.file_upload_fields:
             for key in self.file_upload_fields.keys():
                 file_instance = self.cleaned_data.get(key)
-                path = handle_uploaded_file(file_instance)
-                paths.update({key: path})
+                if file_instance:
+                    path = handle_uploaded_file(file_instance)
+                    paths.update({key: path})
 
         demographic = super(DemographicsForm, self).save(commit=commit, *args, **kwargs)
         if paths:
