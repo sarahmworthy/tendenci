@@ -1354,6 +1354,7 @@ class Reg8nEditForm(BetterModelForm):
         # handle three fields here - use_custom_reg_form, reg_form,
         # and bind_reg_form_to_conf_only
         # split the value from use_custom_reg and assign to the 3 fields
+        prev_form = None
         if not self.recurring_edit:
             use_custom_reg_data_list = (self.cleaned_data['use_custom_reg']).split(',')
             try:
@@ -1375,7 +1376,6 @@ class Reg8nEditForm(BetterModelForm):
                 if self.instance.use_custom_reg_form and self.instance.bind_reg_form_to_conf_only:
                     reg_form = CustomRegForm.objects.get(id=reg_form_id)
                     # clone the template so that it can be used on other events
-                    prev_form = None
                     if reg_form.is_template:
                         reg_form = reg_form.clone()
                         # get the previous instance of the form

@@ -1,3 +1,4 @@
+import uuid, re, os
 from uuid import uuid4
 #from captcha.fields import CaptchaField
 from os.path import join
@@ -797,10 +798,50 @@ class DemographicsForm(forms.ModelForm):
         super(DemographicsForm, self).__init__(*args, **kwargs)
         assign_fields(self, app_field_objs)
         self.field_names = [name for name in self.fields.keys()]
+        self.file_upload_fields = {}
         # change the default widget to TextInput instead of TextArea
-        for field in self.fields.values():
+        for key, field in self.fields.items():
             if field.widget.__class__.__name__.lower() == 'textarea':
                 field.widget = forms.widgets.TextInput({'size': 30})
+            if 'fileinput' in field.widget.__class__.__name__.lower():
+                self.file_upload_fields.update({key:field})
+
+    def save(self, commit=True, *args, **kwargs):
+
+        def handle_uploaded_file(f):
+            filename = f.name
+            filename = re.sub(r'[^a-zA-Z0-9._-]+', '_', filename)
+            uuid_hex = uuid.uuid1().get_hex()[:8]
+            file_path = 'membership/%s/' % (uuid_hex)
+            file_directory = os.path.join(settings.MEDIA_ROOT, file_path)
+            if not os.path.exists(file_directory):
+                os.makedirs(file_directory)
+
+            file_directory += filename
+            destination = open(file_directory, 'wb+')
+            for chunk in f.chunks(): 
+                destination.write(chunk)
+            destination.close()
+
+            return '/media/' + file_path + filename
+
+        paths = {}
+        if self.file_upload_fields:
+            for key in self.file_upload_fields.keys():
+                file_instance = self.cleaned_data.get(key)
+                if file_instance:
+                    path = handle_uploaded_file(file_instance)
+                    paths.update({key: path})
+
+        demographic = super(DemographicsForm, self).save(commit=commit, *args, **kwargs)
+        if paths:
+            for key, path in paths.items():
+                setattr(demographic, key, path)
+
+        if commit:
+            demographic.save()
+
+        return demographic
 
 
 class MembershipDefault2Form(forms.ModelForm):
