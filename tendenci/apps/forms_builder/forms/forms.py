@@ -277,6 +277,10 @@ class FormAdminForm(TendenciBaseForm):
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = 0
             self.fields['response'].widget.mce_attrs['app_instance_id'] = 0
 
+        position_fields = ['intro_position', 'fields_position', 'pricing_position']
+        for field in position_fields:
+            self.fields[field].widget.attrs['class'] = 'position_field'
+
 
     def clean_slug(self):
         slug = slugify(self.cleaned_data['slug'])

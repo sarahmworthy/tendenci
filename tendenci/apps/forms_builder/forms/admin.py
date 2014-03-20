@@ -101,6 +101,7 @@ class FormAdmin(TendenciBaseModelAdmin):
             '%sjs/global/tinymce.event_handlers.js' % settings.STATIC_URL,
             '%sjs/admin/form-fields-inline-ordering.js' % settings.STATIC_URL,
             '%sjs/admin/form-field-dynamic-hiding.js' % settings.STATIC_URL,
+            '%sjs/admin/form-position.js' % settings.STATIC_URL,
         )
         css = {'all': ['%scss/admin/dynamic-inlines-with-sort.css' % settings.STATIC_URL], }
 
