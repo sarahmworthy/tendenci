@@ -47,6 +47,7 @@
     <script type="text/javascript">
 		$(document).ready(function(){
 			$('.custom-price').closest('label').attr('for', '');
+
             {% with form.intro_position as intro_pos and form.fields_position as fields_pos and form.pricing_position as pricing_pos %}
                 var introDiv = $("<div>{{ form.intro|safe|urlize }}</div>");
                 {% if intro_pos > pricing_pos and intro_pos > fields_pos%}
@@ -61,6 +62,8 @@
                     introDiv.insertAfter($('.t .forms .formforform-field:last').parents('.form-field'));
                 {% endif %}
             {% endwith %}
+
+            $('label[for="id_pricing_option_0"]:first').text("{{ form.pricing_name }}");
 		});
     </script>
 {% endblock %}

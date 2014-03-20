@@ -260,8 +260,11 @@ class FormAdminForm(TendenciBaseForm):
                   'recurring_payment',
                   'payment_methods',
                   'intro_position',
-                  'pricing_position',
                   'fields_position',
+                  'pricing_position',
+                  'intro_name',
+                  'fields_name',
+                  'pricing_name',
                  )
 
     def __init__(self, *args, **kwargs): 
@@ -269,6 +272,7 @@ class FormAdminForm(TendenciBaseForm):
         if self.instance.pk:
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = self.instance.pk
             self.fields['response'].widget.mce_attrs['app_instance_id'] = self.instance.pk
+            self.fields['intro'].label = self.instance.intro_name
         else:
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = 0
             self.fields['response'].widget.mce_attrs['app_instance_id'] = 0

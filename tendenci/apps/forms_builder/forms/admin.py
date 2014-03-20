@@ -7,6 +7,7 @@ from os.path import join
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
+from django.contrib.admin.util import unquote
 from django.core.files.storage import FileSystemStorage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
@@ -70,6 +71,7 @@ class FormAdmin(TendenciBaseModelAdmin):
         payment_fields = ("custom_payment", 'recurring_payment', "payment_methods")
 
     position_fields = ("intro_position", "fields_position", "pricing_position")
+    section_name_fields = ("intro_name", "fields_name", "pricing_name")
 
     fieldsets = (
         (None, {"fields": ("title", "slug", "intro", "response", "completion_url", "template")}),
@@ -85,6 +87,7 @@ class FormAdmin(TendenciBaseModelAdmin):
         )}),
         (_("Payment"), {"fields": payment_fields}),
         (_("Section Positions"), {"fields": position_fields}),
+        (_("Section Names"), {"fields": section_name_fields}),
     )
 
     form = FormAdminForm
@@ -100,6 +103,20 @@ class FormAdmin(TendenciBaseModelAdmin):
             '%sjs/admin/form-field-dynamic-hiding.js' % settings.STATIC_URL,
         )
         css = {'all': ['%scss/admin/dynamic-inlines-with-sort.css' % settings.STATIC_URL], }
+
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        obj = self.get_object(request, unquote(object_id))
+
+        for inline_class in self.inlines:
+            if inline_class.model == Field:
+                inline_class.verbose_name = obj.fields_name
+                inline_class.verbose_name_plural = obj.fields_name
+            elif inline_class.model == Pricing:
+                inline_class.verbose_name = obj.pricing_name
+                inline_class.verbose_name_plural = obj.pricing_name
+
+        return super(FormAdmin, self).change_view(request, object_id, form_url, extra_context)
 
     def get_urls(self):
         """
