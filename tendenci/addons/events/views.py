@@ -1820,7 +1820,7 @@ def register(request, event_id=0, private_slug=None,
     within_available_spots = True
 
     if request.method == 'POST':
-        if 'submit' in request.POST:
+        if 'commit' in request.POST:
 
             #if not request.user.profile.is_superuser:
             within_available_spots = event.limit==0 or event.spots_available >= int(total_regt_forms)
