@@ -17,6 +17,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django.utils.importlib import import_module
 from django.core.files.storage import FileSystemStorage
+from django.utils.safestring import mark_safe
 
 from tendenci.core.base.fields import SplitDateTimeField, EmailVerificationField
 from tendenci.addons.corporate_memberships.models import (
@@ -25,8 +26,8 @@ from tendenci.apps.user_groups.models import Group
 from tendenci.apps.profiles.models import Profile
 from tendenci.core.perms.forms import TendenciBaseForm
 from tendenci.addons.memberships.models import (
-    Membership, MembershipDefault, MembershipDemographic, MembershipAppField,
-    MembershipType, Notice, App, AppEntry, AppField, AppFieldEntry, MembershipImport, MembershipApp)
+    Membership, MembershipDefault, MembershipDemographic, MembershipAppField, MembershipType,
+    Notice, App, AppEntry, AppField, AppFieldEntry, MembershipImport, MembershipApp, MembershipFile)
 from tendenci.addons.memberships.fields import TypeExpMethodField, PriceInput, NoticeTimeTypeField
 from tendenci.addons.memberships.settings import FIELD_MAX_LENGTH, UPLOAD_ROOT
 from tendenci.addons.memberships.utils import csv_to_dict, NoMembershipTypes
@@ -807,36 +808,25 @@ class DemographicsForm(forms.ModelForm):
                 self.file_upload_fields.update({key:field})
 
     def save(self, commit=True, *args, **kwargs):
-
-        def handle_uploaded_file(f):
-            filename = f.name
-            filename = re.sub(r'[^a-zA-Z0-9._-]+', '_', filename)
-            uuid_hex = uuid.uuid1().get_hex()[:8]
-            file_path = 'membership/%s/' % (uuid_hex)
-            file_directory = os.path.join(settings.MEDIA_ROOT, file_path)
-            if not os.path.exists(file_directory):
-                os.makedirs(file_directory)
-
-            file_directory += filename
-            destination = open(file_directory, 'wb+')
-            for chunk in f.chunks(): 
-                destination.write(chunk)
-            destination.close()
-
-            return '/media/' + file_path + filename
-
-        paths = {}
+        pks ={}
         if self.file_upload_fields:
             for key in self.file_upload_fields.keys():
                 file_instance = self.cleaned_data.get(key)
                 if file_instance:
-                    path = handle_uploaded_file(file_instance)
-                    paths.update({key: path})
+                    new_file = MembershipFile(file=file_instance)
+                    new_file.save()
+                    data = {
+                        'type' : u'file',
+                        'pk' : unicode(new_file.pk),
+                        'html' : '<a href="%s" target="blank">View here</a>' % new_file.get_absolute_url(),
+                    }
+                    data = unicode(data)
+                    pks.update({ key : data })
 
         demographic = super(DemographicsForm, self).save(commit=commit, *args, **kwargs)
-        if paths:
-            for key, path in paths.items():
-                setattr(demographic, key, path)
+        if pks:
+            for key, data in pks.items():
+                setattr(demographic, key, data)
 
         if commit:
             demographic.save()
@@ -2210,18 +2200,30 @@ class MembershipDefaultForm(TendenciBaseForm):
                 del self.fields[field_name]
 
         demographics = self.instance.demographics
+
         if self.instance and self.instance.app:
             app = self.instance.app
         else:
             app = MembershipApp.objects.current_app()
+
+        self._app = app
         demographic_fields = get_selected_demographic_fields(app, forms)
         self.demographic_field_names = [field_item[0] for field_item in demographic_fields]
         for field_name, field in demographic_fields:
             self.fields[field_name] = field
             # set initial value
             if demographics:
-                self.fields[field_name].initial = \
-                    getattr(demographics, field_name)
+                ud_field = MembershipAppField.objects.get(field_name=field_name,
+                    membership_app=app, display=True)
+                if ud_field.field_type == u'FileField':
+                    self.fields[field_name] = forms.FileField(label=ud_field.label, required=False)
+                    file_instance = get_ud_file_isntance(demographics, field_name)
+
+                    if file_instance:
+                        self.fields[field_name].initial = file_instance.file
+
+                else:
+                    self.fields[field_name].initial = getattr(demographics, field_name)
         # end demographic
 
     def clean(self):
@@ -2466,16 +2468,75 @@ class MembershipDefaultForm(TendenciBaseForm):
         # -----------------------------------------------------------------
 
         # ***** demographics *****
+
         if self.demographic_field_names:
             demographics, created = MembershipDemographic.objects.get_or_create(
                                             user=membership.user)
+
             for field_name in self.demographic_field_names:
-                setattr(demographics, field_name,
+                ud_field = MembershipAppField.objects.get(field_name=field_name,
+                     membership_app=self._app, display=True)
+                if ud_field.field_type == u'FileField':
+                    # get the file instance
+                    new_file = self.cleaned_data.get(field_name, None)
+                    # check if cleared:
+                    clear = request.POST.get('%s-clear' % field_name, False)
+                    if clear:
+                        file_instance = get_ud_file_isntance(demographics, field_name)
+
+                        if file_instance:
+                            file_instance.delete()
+                            setattr(demographics, field_name, '')
+
+                    if new_file:
+                        file_instance = get_ud_file_isntance(demographics, field_name)
+
+                        if file_instance:
+                            file_instance.file = new_file
+                        else:
+                            file_instance = MembershipFile(file=new_file)
+
+                        file_instance.save()
+                        data = {
+                            'type' : u'file',
+                            'pk' : unicode(file_instance.pk),
+                            'html' : '<a href="%s" target="blank">View here</a>' % file_instance.get_absolute_url(),
+                        }
+                        data = unicode(data)
+                        setattr(demographics, field_name, data)
+
+                else:
+                    setattr(demographics, field_name,
                         self.cleaned_data.get(field_name, ''))
             demographics.save()
         # ***** end demographics *****
 
         return membership
+
+
+def get_ud_file_isntance(demographics, field_name):
+    data = getattr(demographics, field_name, '')
+    if not data:
+        return None
+
+    try:
+        pk = eval(data).get('pk')
+    except Exception as e:
+        pk = 0
+
+    file_id = 0
+    if pk:
+        try:
+            file_id = int(pk)
+        except Exception as e:
+            file_id = 0
+
+    try:
+        file_instance = MembershipFile.objects.get(pk=file_id)
+    except MembershipFile.DoesNotExist:
+        file_instance = None
+
+    return file_instance
 
 
 class MembershipForm(TendenciBaseForm):
