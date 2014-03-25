@@ -149,5 +149,12 @@ function update_id_fields(row, new_position)
         $(this).attr('id', new_id);
     });
     
+    // <select ...>
+    row.find('select').each(function() {
+        // id=...
+        old_id = $(this).attr('id').toString();
+        new_id = old_id.replace(/([^ ]+\-)[0-9]+(\-[^ ]+)/i, "$1" + new_position + "$2");
+        $(this).attr('id', new_id);
+    });
     // Are there other element types...? Add here.
 }
