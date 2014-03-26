@@ -200,6 +200,7 @@ class FormForCustomRegForm(forms.ModelForm):
         self.event = kwargs.pop('event', None)
         self.entry = kwargs.pop('entry', None)
         self.form_index = kwargs.pop('form_index', None)
+        self.validate_pricing = kwargs.pop('validate_pricing', True)
         self.form_fields = self.custom_reg_form.fields.filter(visible=True).order_by('position')
 
         self.pricings = kwargs.pop('pricings', None)
@@ -335,65 +336,57 @@ class FormForCustomRegForm(forms.ModelForm):
         # if pricing allows anonymous, let go.
         if pricing.allow_anonymous:
             return pricing
-        
-        validate_primary_only_setting = get_setting('module', 'events', 'validateprimaryregistrantonly')
-        
-        # the setting validateprimaryregistrantonly can be set to 'true' or 'false'
-        # if true, only primary registrant (or is_first=True) needs validation
-        try:
-            enter_validation = self.is_first or validate_primary_only_setting == "false"
-        except AttributeError:
-            enter_validation = True #should not enter here
-            
-        # The setting anonymousregistration can be set to 'open', 'validated' and 'strict'
-        # Both 'validated' and 'strict' require validation.
-        if enter_validation and self.event.anony_setting != 'open':
 
-            # check if user is eligiable for this pricing
-            email = self.cleaned_data.get('email', u'')
-            registrant_user = self.get_user(email)
+        if self.validate_pricing:
+            # The setting anonymousregistration can be set to 'open', 'validated' and 'strict'
+            # Both 'validated' and 'strict' require validation.
+            if self.event.anony_setting != 'open':
 
-            if not registrant_user.is_anonymous():
+                # check if user is eligiable for this pricing
+                email = self.cleaned_data.get('email', u'')
+                registrant_user = self.get_user(email)
 
-                if registrant_user.profile.is_superuser:
-                    return pricing
+                if not registrant_user.is_anonymous():
 
-                if pricing.allow_user:
-                    return pricing
+                    if registrant_user.profile.is_superuser:
+                        return pricing
 
-                [registrant_profile] = Profile.objects.filter(user=registrant_user)[:1] or [None]
+                    if pricing.allow_user:
+                        return pricing
 
-                if pricing.allow_member and registrant_profile and registrant_profile.is_member:
-                    return pricing
+                    [registrant_profile] = Profile.objects.filter(user=registrant_user)[:1] or [None]
 
-                if pricing.groups.all():
-                    for group in pricing.groups.all():
-                        if group.is_member(registrant_user):
-                            return pricing
+                    if pricing.allow_member and registrant_profile and registrant_profile.is_member:
+                        return pricing
 
-            currency_symbol = get_setting("site", "global", "currencysymbol") or '$'
-            err_msg = ""
-            if not email:
-                err_msg = 'An email address is required for this price %s%s %s. ' % (
-                    currency_symbol, pricing.price, pricing.title)
-            else:
-                if pricing.allow_user:
-                    err_msg = 'We do not detect %s as a site user.' % email
+                    if pricing.groups.all():
+                        for group in pricing.groups.all():
+                            if group.is_member(registrant_user):
+                                return pricing
+
+                currency_symbol = get_setting("site", "global", "currencysymbol") or '$'
+                err_msg = ""
+                if not email:
+                    err_msg = 'An email address is required for this price %s%s %s. ' % (
+                        currency_symbol, pricing.price, pricing.title)
                 else:
-                    if pricing.allow_member:
-                        err_msg = "We do not detect %s as the member." % email
+                    if pricing.allow_user:
+                        err_msg = 'We do not detect %s as a site user.' % email
                     else:
-                        if pricing.groups.all():
-                            err_msg = "We do not detect %s as a member of any of the following %s." % (email, ', '.join(pricing.groups.values_list('name', flat=True)))
-                if not err_msg:
+                        if pricing.allow_member:
+                            err_msg = "We do not detect %s as the member." % email
+                        else:
+                            if pricing.groups.all():
+                                err_msg = "We do not detect %s as a member of any of the following %s." % (email, ', '.join(pricing.groups.values_list('name', flat=True)))
+                    if not err_msg:
 
-                    err_msg = 'Not eligible for the price.%s%s %s.' % (
-                        currency_symbol,
-                        pricing.price,
-                        pricing.title,)
+                        err_msg = 'Not eligible for the price.%s%s %s.' % (
+                            currency_symbol,
+                            pricing.price,
+                            pricing.title,)
 
-                err_msg += ' Please choose another price option.'
-            raise forms.ValidationError(err_msg)
+                    err_msg += ' Please choose another price option.'
+                raise forms.ValidationError(err_msg)
 
         return pricing
 

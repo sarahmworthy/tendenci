@@ -894,42 +894,18 @@ def users_not_in_groups(request, template_name='profiles/users_not_in_groups.htm
     if not request.user.profile.is_superuser:
         raise Http403
 
-    LIMIT_PER_PAGE = 10.0
+    # improve the query used to avoid timeouts
     users = User.objects.filter(group_member__isnull=True)
-    num_pages = math.ceil(users.count()/LIMIT_PER_PAGE)
 
-    page = request.GET.get('page')
-    try:
-        page = int(page)
-        if page < 1:
-            page = 1;
-        elif page > num_pages:
-            page = num_pages
-    except:
-        page = 1
+    # check if a user has profile. create a profile if no profile
+    # exists for the user. This would be the self healing process.
+    for usr in users:
+        try:
+            profile = usr.profile
+        except Profile.DoesNotExist:
+            Profile.objects.create_profile(user=usr)
 
-    start = (page - 1)*LIMIT_PER_PAGE
-    end = page*LIMIT_PER_PAGE
-    users = users[start:end]
-
-    if page == 1:
-        has_previous = None
-        has_next = page + 1
-    elif page == num_pages:
-        has_previous = page - 1
-        has_next = None
-    else:
-        has_previous = page - 1
-        has_next = page + 1
-
-    return render_to_response(
-        template_name, {'users': users,
-                        'has_previous':has_previous,
-                        'has_next':has_next,
-                        'current_page':page,
-                        'pages':range(1, int(num_pages+1)),},
-        context_instance=RequestContext(request))
-
+    return render_to_response(template_name, {'users': users}, context_instance=RequestContext(request))
 
 @login_required
 def user_groups_edit(request, username, form_class=UserGroupsForm, template_name="profiles/add_delete_groups.html"):
