@@ -104,8 +104,9 @@ class FormForForm(forms.ModelForm):
                 
                 form.fields[field_key] = field_class(**field_args)
 
-                form.fields[field_key].widget.attrs['title'] = field.label
-                form.fields[field_key].widget.attrs['class'] = 'formforform-field'
+                if not field_class == EmailVerificationField:
+                    form.fields[field_key].widget.attrs['title'] = field.label
+                    form.fields[field_key].widget.attrs['class'] = 'formforform-field'
 
         def add_pricing_fields(form, formforform):
             # include pricing options if any
