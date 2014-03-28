@@ -43,6 +43,7 @@ from tendenci.addons.educations.models import Education
 from tendenci.addons.careers.models import Career
 from tendenci.apps.entities.models import Entity
 
+THIS_YEAR = datetime.today().year
 
 fs = FileSystemStorage(location=UPLOAD_ROOT)
 
@@ -810,6 +811,8 @@ class DemographicsForm(forms.ModelForm):
                 field.widget = forms.widgets.TextInput({'size': 30})
             if 'fileinput' in field.widget.__class__.__name__.lower():
                 self.file_upload_fields.update({key:field})
+            if field.widget.__class__.__name__.lower() == 'selectdatewidget':
+                field.widget.years = range(1920, THIS_YEAR + 10)
 
         self.app = None
         self.demographics = None
@@ -1725,7 +1728,7 @@ class AppEntryForm(forms.ModelForm):
 
             if field.field_type == 'date':
                 year = datetime.today().year
-                self.fields[field_key].widget.years = range(year - 120, year + 120)
+                self.fields[field_key].widget.years = range(1920, year + 120)
 
         if app.use_captcha and not self.user.is_authenticated():
             self.fields['field_captcha'] = CaptchaField(**{

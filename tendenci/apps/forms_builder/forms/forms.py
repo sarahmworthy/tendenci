@@ -36,6 +36,7 @@ FIELD_FNAME_LENGTH = 30
 FIELD_LNAME_LENGTH = 30
 FIELD_NAME_LENGTH = 50
 FIELD_PHONE_LENGTH = 50
+THIS_YEAR = datetime.today().year
 
 class FormForForm(forms.ModelForm):
 
@@ -107,6 +108,9 @@ class FormForForm(forms.ModelForm):
                 if not field_class == EmailVerificationField:
                     form.fields[field_key].widget.attrs['title'] = field.label
                     form.fields[field_key].widget.attrs['class'] = 'formforform-field'
+
+                if form.fields[field_key].widget.__class__.__name__.lower() == 'selectdatewidget':
+                    form.fields[field_key].widget.years = range(1920, THIS_YEAR + 10)
 
         def add_pricing_fields(form, formforform):
             # include pricing options if any
