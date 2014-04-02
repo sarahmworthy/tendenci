@@ -160,11 +160,17 @@
         {% for membership in memberships %}
         		<tr>
         			<td>
-                        {% if request.user.profile.is_superuser or request.user == membership.user %}
+                        {% if request.user.profile.is_superuser %}
         				 <a href="{% url membership.details membership.pk %}">{{ membership.membership_type }}
         				</a>
                         {% else %}
-                        {{ membership.member_number }} {{ membership.membership_type }}
+                            {% if request.user.username == membership.user.username %}
+                            <a href="{% url membership.details membership.pk %}">
+                            {{ membership.member_number }} {{ membership.membership_type }}
+                            </a>
+                            {% else %}
+                            {{ membership.member_number }} {{ membership.membership_type }}
+                            {% endif %}
                         {% endif %}
         			</td>
         			<td>
