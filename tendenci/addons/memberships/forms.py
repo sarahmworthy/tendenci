@@ -836,7 +836,7 @@ class DemographicsForm(forms.ModelForm):
                             self.fields[field_name].initial = file_instance.file
 
                     else:
-                        self.fields[field_name].initial = getattr(demographics, field_name)
+                        self.fields[field_name].initial = getattr(self.demographics, field_name)
 
     def save(self, commit=True, *args, **kwargs):
         pks ={}
