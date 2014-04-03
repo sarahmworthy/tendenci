@@ -2,15 +2,16 @@
 from csv import writer
 from datetime import datetime
 from mimetypes import guess_type
-from os.path import join
+
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
 from django.contrib.admin.util import unquote
-from django.core.files.storage import FileSystemStorage
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
@@ -19,10 +20,10 @@ from tendenci.core.perms.admin import TendenciBaseModelAdmin
 from tendenci.core.site_settings.utils import get_setting
 
 from tendenci.apps.forms_builder.forms.models import Form, Field, FormEntry, FieldEntry, Pricing
-from tendenci.apps.forms_builder.forms.settings import UPLOAD_ROOT
 from tendenci.apps.forms_builder.forms.forms import FormAdminForm, FormForField, PricingForm
 
-fs = FileSystemStorage(location=UPLOAD_ROOT)
+import os
+import mimetypes
 
 
 class PricingAdminForm(PricingForm):
@@ -198,14 +199,24 @@ class FormAdmin(TendenciBaseModelAdmin):
         """
         Output the file for the requested field entry.
         """
-        field_entry = get_object_or_404(FieldEntry, id=field_entry_id)
-        path = join(fs.location, field_entry.value)
-        response = HttpResponse(mimetype=guess_type(path)[0])
-        f = open(path, "r+b")
-        response["Content-Disposition"] = "attachment; filename=%s" % f.name
-        response.write(f.read())
-        f.close()
+        field = get_object_or_404(FieldEntry, id=field_entry_id)
+
+        base_name = os.path.basename(field.value)
+        mime_type = mimetypes.guess_type(base_name)[0]
+
+        if not mime_type:
+            raise Http404
+
+        if not default_storage.exists(field.value):
+            raise Http404
+
+        data = default_storage.open(field.value).read()
+        f = ContentFile(data)
+
+        response = HttpResponse(f.read(), mimetype=mime_type)
+        response['Content-Disposition'] = 'filename=%s' % base_name
         return response
+
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
