@@ -277,7 +277,8 @@ class FormAdminForm(TendenciBaseForm):
         if self.instance.pk:
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = self.instance.pk
             self.fields['response'].widget.mce_attrs['app_instance_id'] = self.instance.pk
-            self.fields['intro'].label = self.instance.intro_name
+            if self.instance.intro_name:
+                self.fields['intro'].label = self.instance.intro_name
         else:
             self.fields['intro'].widget.mce_attrs['app_instance_id'] = 0
             self.fields['response'].widget.mce_attrs['app_instance_id'] = 0

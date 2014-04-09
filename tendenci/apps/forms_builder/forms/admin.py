@@ -87,8 +87,10 @@ class FormAdmin(TendenciBaseModelAdmin):
             'status_detail',
         )}),
         (_("Payment"), {"fields": payment_fields}),
-        (_("Section Positions"), {"fields": position_fields}),
-        (_("Section Names"), {"fields": section_name_fields}),
+        (_("Section Positions"), {"fields": position_fields,
+                                  "description": "Please select the order in which you would like the Intro paragraph, the fields (name, date, address, etc) and the pricing options to appear on your finished form. Example: If you want the paragraph at the top, position the 'Intro' to the first position."}),
+        (_("Section Names"), {"fields": section_name_fields,
+                              "description": "Label the section names to meet the needs of your form. Examples for the pricing section would be: Pricing, Costs, Ticket Prices, Additional Costs, Service Fees and text of that nature."}),
     )
 
     form = FormAdminForm
@@ -124,8 +126,9 @@ class FormAdmin(TendenciBaseModelAdmin):
 
         for inline_class in self.inlines:
             if inline_class.model == Field:
-                inline_class.verbose_name = obj.fields_name
-                inline_class.verbose_name_plural = obj.fields_name
+                if obj.fields_name:
+                    inline_class.verbose_name = obj.fields_name
+                    inline_class.verbose_name_plural = obj.fields_name
             elif inline_class.model == Pricing:
                 inline_class.verbose_name = obj.pricing_name
                 inline_class.verbose_name_plural = obj.pricing_name

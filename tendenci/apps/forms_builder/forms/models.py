@@ -127,9 +127,12 @@ class Form(TendenciBaseModel):
     pricing_position = models.IntegerField(_("Pricing Position"), choices=FIELD_POSITION_CHOICES, default=LAST)
 
     # variable name of form main sections
-    intro_name = models.CharField(_("Intro Name"), max_length=50, default=INTRO_DEFAULT_NAME)
-    fields_name = models.CharField(_("Fields Name"), max_length=50, default=FIELDS_DEFAULT_NAME)
-    pricing_name = models.CharField(_("Pricing Name"), max_length=50, default=PRICING_DEFAULT_NAME)
+    intro_name = models.CharField(_("Intro Name"), max_length=50,
+                                  default=INTRO_DEFAULT_NAME, blank=True)
+    fields_name = models.CharField(_("Fields Name"), max_length=50,
+                                   default=FIELDS_DEFAULT_NAME, blank=True)
+    pricing_name = models.CharField(_("Pricing Name"), max_length=50,
+                                    default=PRICING_DEFAULT_NAME)
 
     objects = FormManager()
 
