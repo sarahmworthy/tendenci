@@ -448,6 +448,8 @@ FORMS_BUILDER_UPLOAD_ROOT = MEDIA_ROOT
 # --------------------------------------#
 MOBILE_COOKIE_NAME = "tendenci_mobile"
 
+
+
 # --------------------------------------#
 # SWFUPLOAD cookie
 # --------------------------------------#
