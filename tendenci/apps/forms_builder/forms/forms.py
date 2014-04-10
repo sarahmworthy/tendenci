@@ -108,6 +108,9 @@ class FormForForm(forms.ModelForm):
                 if not field_class == EmailVerificationField:
                     form.fields[field_key].widget.attrs['title'] = field.label
                     form.fields[field_key].widget.attrs['class'] = 'formforform-field'
+                else:
+                    form.fields[field_key].widget.widgets[0].attrs['class'] += ' formforform-field'
+                    form.fields[field_key].widget.widgets[1].attrs['class'] += ' formforform-field'
 
                 if form.fields[field_key].widget.__class__.__name__.lower() == 'selectdatewidget':
                     form.fields[field_key].widget.years = range(1920, THIS_YEAR + 10)
