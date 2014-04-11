@@ -653,7 +653,13 @@ class UserForm(forms.ModelForm):
             self.fields['confirm_password'].widget.attrs.update({'size': 28})
 
         if 'username' in self_fields_keys:
-            self.fields['username'].help_text = 'Letters, numbers and @/./+/-/_ characters'
+            self.fields['username'] = forms.RegexField(regex=r'^[\w.@+-]+$',
+                                required=False,
+                                max_length=30,
+                                widget=forms.TextInput,
+                                label=_(u'Username'),
+                                help_text = _("Letters, digits and @/./+/-/_ only."))
+
 
         self.field_names = [name for name in self.fields.keys()]
 
