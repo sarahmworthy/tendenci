@@ -444,6 +444,8 @@ class MembershipAppForm(TendenciBaseForm):
             'notes',
             'membership_types',
             'payment_methods',
+            'include_tax',
+            'tax_rate',
             'use_for_corp',
             'use_captcha',
             'allow_anonymous_view',

@@ -1,14 +1,31 @@
 # -*- coding: utf-8 -*-
-from south.v2 import DataMigration
-from django.core.management import call_command
+import datetime
+from south.db import db
+from south.v2 import SchemaMigration
+from django.db import models
 
-class Migration(DataMigration):
+
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        call_command('convert_status_detail_to_lowercase')
-        
+        # Adding field 'MembershipApp.include_tax'
+        db.add_column('memberships_membershipapp', 'include_tax',
+                      self.gf('django.db.models.fields.BooleanField')(default=False),
+                      keep_default=False)
+
+        # Adding field 'MembershipApp.tax_rate'
+        db.add_column('memberships_membershipapp', 'tax_rate',
+                      self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=5, decimal_places=4, blank=True),
+                      keep_default=False)
+
+
     def backwards(self, orm):
-        pass
+        # Deleting field 'MembershipApp.include_tax'
+        db.delete_column('memberships_membershipapp', 'include_tax')
+
+        # Deleting field 'MembershipApp.tax_rate'
+        db.delete_column('memberships_membershipapp', 'tax_rate')
+
 
     models = {
         'auth.group': {
@@ -423,6 +440,7 @@ class Migration(DataMigration):
             'entity': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'memberships_membershipapp_entity'", 'on_delete': 'models.SET_NULL', 'default': 'None', 'to': "orm['entities.Entity']", 'blank': 'True', 'null': 'True'}),
             'guid': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'include_tax': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'membership_types': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['memberships.MembershipType']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '155'}),
             'notes': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
@@ -432,6 +450,7 @@ class Migration(DataMigration):
             'slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '200'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'status_detail': ('django.db.models.fields.CharField', [], {'default': "'active'", 'max_length': '50'}),
+            'tax_rate': ('django.db.models.fields.DecimalField', [], {'default': '0', 'max_digits': '5', 'decimal_places': '4', 'blank': 'True'}),
             'update_dt': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'use_captcha': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'use_for_corp': ('django.db.models.fields.BooleanField', [], {'default': 'True'})
@@ -816,4 +835,3 @@ class Migration(DataMigration):
     }
 
     complete_apps = ['memberships']
-    symmetrical = True

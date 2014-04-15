@@ -243,6 +243,9 @@ class RegConfPricing(OrderingBaseModel):
     groups = models.ManyToManyField(Group, blank=True, null=True)
 
     price = models.DecimalField(_('Price'), max_digits=21, decimal_places=2, default=0)
+    include_tax = models.BooleanField(default=False)
+    tax_rate = models.DecimalField(blank=True, max_digits=5, decimal_places=4, default=0,
+                                   help_text='Example: 0.0825 for 8.25%.')
     payment_required = models.NullBooleanField(help_text='A payment required before registration is accepted.')
     
     reg_form = models.ForeignKey("CustomRegForm", blank=True, null=True, 
@@ -608,8 +611,14 @@ class Registration(models.Model):
         invoice.title = "Registration %s for Event: %s" % (self.pk, self.event.title)
         invoice.estimate = ('estimate' == status_detail)
         invoice.status_detail = status_detail
-        invoice.subtotal = self.amount_paid
-        invoice.total = self.amount_paid
+
+        tax = 0
+        if self.reg_conf_price and self.reg_conf_price.include_tax:
+            tax = self.reg_conf_price.tax_rate * self.amount_paid
+            invoice.tax = tax
+
+        invoice.subtotal = self.amount_paid + tax
+        invoice.total = self.amount_paid + tax
         invoice.balance = invoice.total
         invoice.tender_date = datetime.now()
         invoice.due_date = datetime.now()
@@ -1473,15 +1482,17 @@ class Addon(models.Model):
     event = models.ForeignKey(Event)
     title = models.CharField(max_length=50)
     price = models.DecimalField(_('Price'), max_digits=21, decimal_places=2, default=0)
-    
+    include_tax = models.BooleanField(default=False)
+    tax_rate = models.DecimalField(blank=True, max_digits=5, decimal_places=4, default=0,
+                                   help_text='Example: 0.0825 for 8.25%.')
     # permission fields
     group = models.ForeignKey(Group, blank=True, null=True)
     allow_anonymous = models.BooleanField(_("Public can use"))
     allow_user = models.BooleanField(_("Signed in user can use"))
     allow_member = models.BooleanField(_("All members can use"))
-    
+
     status = models.BooleanField(default=True)
-    
+
     def delete(self, *args, **kwargs):
         """
         Note that the delete() method for an object is not necessarily
@@ -1490,7 +1501,7 @@ class Addon(models.Model):
         #print "%s, %s" % (self, "status set to false" )
         self.status = False
         self.save(*args, **kwargs)
-    
+
     def __unicode__(self):
         return self.title
 
@@ -1501,18 +1512,20 @@ class Addon(models.Model):
             if datetime.now() > self.event.end_dt:
                 return False
         return True
-    
+
     def field_name(self):
         return "%s_%s" % (self.pk, self.title.lower().replace(' ', '').replace('-', ''))
-    
+
+
 class AddonOption(models.Model):
     addon = models.ForeignKey(Addon, related_name="options")
     title = models.CharField(max_length=100)
     # old field for 2 level options (e.g. Option: Size -> Choices: small, large)
     # choices = models.CharField(max_length=200, help_text=_('options are separated by commas, ex: option 1, option 2, option 3'))
-    
+
     def __unicode__(self):
         return self.title
+
 
 class RegAddon(models.Model):
     """Event registration addon.
@@ -1522,16 +1535,17 @@ class RegAddon(models.Model):
     """
     registration = models.ForeignKey('Registration')
     addon = models.ForeignKey('Addon')
-    
+
     # price at the moment of registration
     amount = models.DecimalField(_('Amount'), max_digits=21, decimal_places=2, default=0)
-    
+
     create_dt = models.DateTimeField(auto_now_add=True)
     update_dt = models.DateTimeField(auto_now=True)
-    
+
     def __unicode__(self):
         return "%s: %s" % (self.registration.pk, self.addon.title)
-    
+
+
 class RegAddonOption(models.Model):
     """Selected event registration addon option.
     """
@@ -1539,10 +1553,10 @@ class RegAddonOption(models.Model):
     option = models.ForeignKey(AddonOption)
     # old field for 2 level options (e.g. Option: Size -> Choices: small, large)
     # selected_option = models.CharField(max_length=50)
-    
+
     class Meta:
         unique_together = (('regaddon', 'option'),)
-        
+
     def __unicode__(self):
         return "%s: %s - %s" % (self.regaddon.pk, self.option.title, self.selected_option)
-    
+
