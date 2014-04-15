@@ -33,6 +33,7 @@
 			</div>
 
             <h2><a href="{% url job_pricing.view jp.pk %}">{% trans "Duration:" %} {{ jp.duration }}</a></h2>
+            <div class="content">{% trans "Title:" %} {{ jp.get_title }}</div>
             <div class="content">{% trans "Regular Price:" %} {{ jp.regular_price|format_currency }}</div>
             <div class="content">{% trans "Premium Price:" %} {{ jp.premium_price|format_currency }}</div>
             <div class="content">{% trans "Member Regular Price:" %} {{ jp.regular_price_member|format_currency }}</div>
