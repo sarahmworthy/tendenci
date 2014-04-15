@@ -82,10 +82,12 @@ class JobPricingAdmin(admin.ModelAdmin):
         'premium_price', 
         'regular_price_member', 
         'premium_price_member', 
+        'include_tax',
+        'tax_rate',
         'show_member_pricing',
         'status'
     ]
-    list_filter = ['status']
+    list_filter = ['status', 'include_tax']
     search_fields = ['title']
     ordering = ['-update_dt']
     fields = list_display
