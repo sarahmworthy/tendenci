@@ -1302,6 +1302,10 @@ class CorpMembershipApp(TendenciBaseModel):
     payment_methods = models.ManyToManyField(PaymentMethod,
                                              verbose_name="Payment Methods")
 
+    include_tax = models.BooleanField(default=False)
+    tax_rate = models.DecimalField(blank=True, max_digits=5, decimal_places=4, default=0,
+                                   help_text='Example: 0.0825 for 8.25%.')
+
     objects = CorpMembershipAppManager()
 
     class Meta:
