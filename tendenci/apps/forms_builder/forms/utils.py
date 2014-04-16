@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from decimal import Decimal
 from django.conf import settings
 from django.template import Context
 from django.template.loader import get_template
@@ -92,7 +93,6 @@ def make_invoice_for_entry(entry, **kwargs):
     """
 
     price = entry.pricing.price or kwargs.get('custom_price')
-    price = unicode(price)
     now = datetime.now()
 
     inv = Invoice()
@@ -104,7 +104,16 @@ def make_invoice_for_entry(entry, **kwargs):
     inv.balance = price
     inv.due_date = now
     inv.ship_date = now
-    
+
+    tax = 0
+    if entry.pricing and entry.pricing.taxable:
+        tax = price * entry.pricing.tax_rate
+        total = tax + price
+        inv.tax = tax
+        inv.subtotal = total
+        inv.total = total
+        inv.balance = total
+
     if entry.creator and not entry.creator.is_anonymous():
         inv.set_owner(entry.creator)
 

@@ -78,13 +78,22 @@ def job_set_inv_payment(user, job, pricing):
             inv.ship_date = datetime.now()
             inv.message = 'Thank You.'
             inv.status = True
-            
+
             inv.total = get_job_price(user, job, pricing)
             inv.subtotal = inv.total
             inv.balance = inv.total
             inv.estimate = True
             inv.status_detail = 'estimate'
-            
+
+            tax = 0
+            if pricing.include_tax:
+                tax = inv.total * pricing.tax_rate
+                total = tax + inv.total
+                inv.tax = tax
+                inv.total = total
+                inv.subtotal = total
+                inv.balance = total
+
             if user and not user.is_anonymous():
                 inv.set_creator(user)
                 inv.set_owner(user)

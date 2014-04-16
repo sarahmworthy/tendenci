@@ -1482,9 +1482,6 @@ class Addon(models.Model):
     event = models.ForeignKey(Event)
     title = models.CharField(max_length=50)
     price = models.DecimalField(_('Price'), max_digits=21, decimal_places=2, default=0)
-    include_tax = models.BooleanField(default=False)
-    tax_rate = models.DecimalField(blank=True, max_digits=5, decimal_places=4, default=0,
-                                   help_text='Example: 0.0825 for 8.25%.')
     # permission fields
     group = models.ForeignKey(Group, blank=True, null=True)
     allow_anonymous = models.BooleanField(_("Public can use"))
