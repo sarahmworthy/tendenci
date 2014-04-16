@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from tendenci.core.perms.admin import TendenciBaseModelAdmin
 from tendenci.addons.jobs.models import Job, JobPricing
-from tendenci.addons.jobs.forms import JobAdminForm
+from tendenci.addons.jobs.forms import JobAdminForm, JobPricingForm
 
 
 class JobAdmin(TendenciBaseModelAdmin):
@@ -91,5 +91,7 @@ class JobPricingAdmin(admin.ModelAdmin):
     search_fields = ['title']
     ordering = ['-update_dt']
     fields = list_display
+
+    form = JobPricingForm
 
 admin.site.register(JobPricing, JobPricingAdmin)
