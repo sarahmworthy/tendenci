@@ -53,11 +53,11 @@
             {% endif %}
         </ul>
         {% if nav_object %}
-            {% if can_view_memb or can_edit_memb  or user == membership.user %}
+            {% if can_view_memb or can_edit_memb or user == membership.user %}
             <ul>
                 <li class="heading">{% trans "This Member" %}</li>
                 <li class="divider"></li>
-                {% if can_view_memb or allow_view or user == membership.user %}
+                {% if can_view_memb or allow_view or user == membership.user  %}
                     <li><a href="{{ nav_object.user.get_absolute_url }}">{% trans "View Profile" %}</a></li>
                 {% endif %}
                 {% if can_edit_memb %}

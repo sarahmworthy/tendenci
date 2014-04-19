@@ -137,7 +137,7 @@
                       {% endfor %}
                 {% endif %}
             {% endfor %}
-            
+
             {% if not is_edit %}
             {% for field in captcha_form %}
                 {% if field.errors %}
@@ -163,6 +163,7 @@
             <button type="button" id="discount_check">Check Discount</button>
         </div>
         {% endif %}
+
         {% if not is_edit %}
         {{ captcha_form.as_p }}
         {% endif %}

@@ -628,7 +628,6 @@ class UserForm(forms.ModelForm):
 
         is_renewal = 'username' in self.request.GET
         if (self.request.user.is_superuser and is_renewal) or (self.instance and self.instance.pk):
-            # remove also these fields when updating membership information
             if 'username' in self_fields_keys:
                 self_fields_keys.remove('username')
             if 'password' in self_fields_keys:
@@ -660,8 +659,10 @@ class UserForm(forms.ModelForm):
                                 max_length=30,
                                 widget=forms.TextInput,
                                 label=_(u'Username'),
-                                help_text = _("Letters, digits and @/./+/-/_ only."))
-
+                                help_text = _("Allowed characters are letters, digits, at sign (@), period (.), plus sign (+), dash (-), and underscore (_)."),
+                                error_messages = {
+                                    'invalid' : "Allowed characters are letters, digits, at sign (@), period (.), plus sign (+), dash (-), and underscore (_)."
+                                })
 
         self.field_names = [name for name in self.fields.keys()]
 
@@ -851,6 +852,7 @@ class DemographicsForm(forms.ModelForm):
         if self.file_upload_fields:
             for key in self.file_upload_fields.keys():
                 new_file = self.cleaned_data.get(key, None)
+
                 if self.request:
                     clear = self.request.POST.get('%s-clear' % key, False)
                 else:
