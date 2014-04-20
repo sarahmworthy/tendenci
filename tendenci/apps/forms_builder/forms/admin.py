@@ -40,6 +40,7 @@ class PricingAdmin(admin.StackedInline):
     model = Pricing
     form = PricingAdminForm
     extra = 0
+    template = 'admin/forms/edit_inline/stacked.html'
 
 
 class FieldAdminForm(FormForField):
@@ -105,6 +106,7 @@ class FormAdmin(TendenciBaseModelAdmin):
             '%sjs/admin/form-fields-inline-ordering.js' % settings.STATIC_URL,
             '%sjs/admin/form-field-dynamic-hiding.js' % settings.STATIC_URL,
             '%sjs/admin/form-position.js' % settings.STATIC_URL,
+            '%sjs/admin/tax_fields.js' % settings.STATIC_URL,
         )
         css = {'all': ['%scss/admin/dynamic-inlines-with-sort.css' % settings.STATIC_URL], }
 
