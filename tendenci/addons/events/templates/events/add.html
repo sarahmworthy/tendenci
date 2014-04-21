@@ -39,7 +39,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.2.custom.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.time.picker.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/slug.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/formset.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/events_formset.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}admin/js/admin/RelatedObjectLookups.js"></script>
     <script type="text/javascript">
 		var slugit = new Slugify({
@@ -112,6 +112,7 @@
 <script type="text/javascript">
 {% include 'events/include/event_form_custom_reg.js' %}
 </script>
+
 {% include 'tags/autocomplete.html' %}
 
 {% endblock %}
