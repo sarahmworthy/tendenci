@@ -139,6 +139,11 @@ div.invoice-meta-logo {
 	float: right;
 }
 
+div.invoice-meta-logo.print-view {
+    position: relative;
+    right: 110px;
+}
+
 div.invoice-meta-logo img {
 	width: 100%;
 }
