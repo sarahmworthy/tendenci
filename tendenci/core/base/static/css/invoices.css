@@ -1,3 +1,5 @@
+#container { width: 8.5in; }
+
 .invoice-view-display{
 	width: 95%;
 	max-width: 650px;
@@ -135,13 +137,12 @@ div.invoice-meta table tr.invoice-meta-amount td {
 
 div.invoice-meta-logo {
 	margin: 20px 0 20px 0;
-	width: 300px;
+	width: 295px;
 	float: right;
 }
 
 div.invoice-meta-logo.print-view {
-    position: relative;
-    right: 110px;
+    float:left;
 }
 
 div.invoice-meta-logo img {
