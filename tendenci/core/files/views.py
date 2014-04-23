@@ -343,6 +343,7 @@ def bulk_add(request, template_name="files/bulk-add.html"):
             # Handle formset errors
             return render_to_response(template_name, {
                 'file_formset': file_formset,
+                'redirect_url': reverse('file.search'),
             }, context_instance=RequestContext(request))
 
         formset_edit = True
@@ -373,6 +374,7 @@ def bulk_add(request, template_name="files/bulk-add.html"):
         html = render_to_response(
             'files/file-formset.html', {
                 'file_formset': file_formset,
+                'redirect_url': reverse('file.search'),
             }, context_instance=RequestContext(request)).content
 
         data = {'form_set': html}
@@ -389,6 +391,7 @@ def bulk_add(request, template_name="files/bulk-add.html"):
     return render_to_response(
         template_name, {
             'file_formset': file_formset,
+            'redirect_url': reverse('file.search'),
         }, context_instance=RequestContext(request))
 
 

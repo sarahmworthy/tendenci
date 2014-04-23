@@ -13,15 +13,15 @@ class CategoryField(forms.ChoiceField):
         return value
 
 category_defaults = {
-    'label':_('Category'), 
+    'label':_('Category'),
     'choices': [],
     'help_text': mark_safe('<a href="#" class="add-category">Add Category</a>'),
 }
 
 sub_category_defaults = {
-    'label':_('Sub Category'), 
+    'label':_('Sub Category'),
     'choices': [],
-    'help_text': mark_safe('<a href="#" class="add-sub-category">Add Sub Category</a>'),                    
+    'help_text': mark_safe('<a href="#" class="add-sub-category">Add Sub Category</a>'),
 }
 
 class CategoryForm(forms.Form):

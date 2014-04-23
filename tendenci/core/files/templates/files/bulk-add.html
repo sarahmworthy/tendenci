@@ -64,6 +64,7 @@
 	$(function () {
 		$('#fileupload').fileupload({
 			dataType: 'json',
+            redirect: '{{ redirect_url }}',
 			progressall: function(e, data) {
                 var progress = parseInt(data.loaded / data.total * 100, 10);
                 $('#formset-container').html(progress + '% done.');
