@@ -41,7 +41,7 @@ class MultiFileField(forms.FileField):
             num_files = 0
 
         if num_files < self.min_num:
-            raise ValidationError(self.error_messages['min_num'] % {'min_num': self.min_num, 'num_files': num_files})
+            raise forms.ValidationError(self.error_messages['min_num'] % {'min_num': self.min_num, 'num_files': num_files})
         elif self.max_num and  num_files > self.max_num:
             raise forms.ValidationError(self.error_messages['max_num'] % {'max_num': self.max_num, 'num_files': num_files})
 
