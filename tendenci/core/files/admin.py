@@ -62,6 +62,7 @@ class FileAdmin(TendenciBaseModelAdmin):
 
 admin.site.register(File, FileAdmin)
 
+
 class MultipleFileAdmin(admin.ModelAdmin):
 
     def get_urls(self):
@@ -77,10 +78,10 @@ class MultipleFileAdmin(admin.ModelAdmin):
         return extra_urls + urls
 
     def add_multiple_file_view(self, request):
-        form = MultiFileForm(user=request.user)
+        form = MultiFileForm(request=request)
 
         if request.method == 'POST':
-            form = MultiFileForm(request.POST, request.FILES, user=request.user)
+            form = MultiFileForm(request.POST, request.FILES, request=request)
             if form.is_valid():
                 form.save()
                 return redirect(reverse('admin:files_file_changelist'))
