@@ -1490,14 +1490,20 @@ class Addon(models.Model):
 
     status = models.BooleanField(default=True)
 
-    def delete(self, *args, **kwargs):
+    def delete(self, from_db=False, *args, **kwargs):
         """
         Note that the delete() method for an object is not necessarily
         called when deleting objects in bulk using a QuerySet.
         """
         #print "%s, %s" % (self, "status set to false" )
-        self.status = False
-        self.save(*args, **kwargs)
+        print from_db
+
+        if not from_db:
+            self.status = False
+            self.save(*args, **kwargs)
+        else:
+            super(Addon, self).delete(*args, **kwargs)
+
 
     def __unicode__(self):
         return self.title

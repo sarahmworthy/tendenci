@@ -24,6 +24,7 @@
         {% for addon in addons %}
             <div class="addon-title">
             <strong>{{ addon.title }}</strong>
+            <a href="{% url event.delete_addon event.id addon.id %}">Delete</a>
             {% if addon.status %}
                 <a href="{% url event.disable_addon event.id addon.id %}">Disable</a>
             {% else %}
