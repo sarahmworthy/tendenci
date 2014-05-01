@@ -100,6 +100,7 @@ class ProfileAdmin(TendenciBaseModelAdmin):
 
 admin.site.register(Profile, ProfileAdmin)
 
+
 class MyUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
