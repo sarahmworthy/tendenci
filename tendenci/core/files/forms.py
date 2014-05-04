@@ -358,36 +358,24 @@ class MultiFileForm(BetterForm):
             self.user = None
 
         super(MultiFileForm, self).__init__(*args, **kwargs)
-
         default_groups = Group.objects.filter(status=True, status_detail="active")
-
-        # needs to update the choices on every pull
-        # in case groups get added
-        if 'group_perms' in self.fields:
-            self.fields['group_perms'].choices = group_choices()
-
-        if 'instance' in kwargs:
-            instance = kwargs['instance']
-            if 'group_perms' in self.fields:
-                self.fields['group_perms'].initial = groups_with_perms(instance)
-            if 'user_perms' in self.fields:
-                self.fields['user_perms'].initial = user_perm_bits(instance)
-            if 'member_perms' in self.fields:
-                self.fields['member_perms'].initial = member_perm_bits(instance)
 
         if args:
             post_data = args[0]
         else:
             post_data = None
 
-        filters = get_query_filters(self.user, 'user_groups.view_group', **{'perms_field': False})
-        groups = default_groups.filter(filters).distinct()
-        groups_list = list(groups.values_list('pk', 'name'))
+        if self.user and not self.user.profile.is_superuser:
+            filters = get_query_filters(self.user, 'user_groups.view_group', **{'perms_field': False})
+            groups = default_groups.filter(filters).distinct()
+            groups_list = list(groups.values_list('pk', 'name'))
 
-        users_groups = self.user.profile.get_groups()
-        for g in users_groups:
-            if [g.id, g.name] not in groups_list:
-                groups_list.append([g.id, g.name])
+            users_groups = self.user.profile.get_groups()
+            for g in users_groups:
+                if [g.id, g.name] not in groups_list:
+                    groups_list.append([g.id, g.name])
+        else:
+            groups_list = default_groups.values_list('pk', 'name')
 
         self.fields['group'].choices = groups_list
 
@@ -481,6 +469,7 @@ class MultiFileForm(BetterForm):
 
     def save(self, *args, **kwargs):
         data = self.cleaned_data
+        counter = 0
 
         files = data.get('files')
         tags = data.get('tags')
@@ -488,7 +477,6 @@ class MultiFileForm(BetterForm):
         category_from_form = data.get('category')
         sub_category_from_form = data.get('sub_category')
         is_public = data.get('allow_anonymous_view', False)
-
 
         for new_file in files:
             file = File(file=new_file, tags=tags, group=group, allow_anonymous_view=is_public)
@@ -522,6 +510,9 @@ class MultiFileForm(BetterForm):
 
             #Save relationships
             file.save()
+            counter += 1
+
+        return counter
 
 
 class FileCategoryForm(CategoryForm):

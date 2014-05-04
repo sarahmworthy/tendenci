@@ -56,11 +56,11 @@ function update_form_fields(form, original_form, form_number, total, remove) {
   
     // remove mceEditor and display the textarea - because it doesn't work on clone
     if (!remove) {
-	    form.find('.mceEditor').each(function() {
-	    	var $this = $(this);
-	    	$this.parent('.field').find('textarea').show();
-	    	$this.remove();
-	    });
+        form.find('.mceEditor').each(function() {
+            var $this = $(this);
+            $this.parent('.field').find('textarea').show();
+            $this.remove();
+        });
     }
     
     // update the form field values with
@@ -86,18 +86,18 @@ function clone_form(selector, type) {
     var form_functions_clone = form_functions.clone(true);
     var total = parseInt($('#' + type + '-TOTAL_FORMS').val());
     var form_number = current_element.find('input[name="form-number"]').val();
-	// check if we have mceEditor
-	var textarea_id;
-	var myEditor = $(new_element).find('.mceEditor');
-	if (myEditor){
-		var mytextarea = myEditor.parent('.field').find('textarea');
-		if (mytextarea){
-			textarea_id = mytextarea.attr('id');
-		}
-	}
+    // check if we have mceEditor
+    var textarea_id;
+    var myEditor = $(new_element).find('.mceEditor');
+    if (myEditor){
+        var mytextarea = myEditor.parent('.field').find('textarea');
+        if (mytextarea){
+            textarea_id = mytextarea.attr('id');
+        }
+    }
 
     new_element.find('input.datepicker').removeClass('hasDatepicker')
-	
+
     new_element = update_form_fields(
         new_element, 
         current_element, 
@@ -117,18 +117,18 @@ function clone_form(selector, type) {
     
     // Add mce Editor
     if (myEditor){
-    	if (textarea_id){
-    	var search = '-' + (form_number) + '-';
-    	var replacement = '-' + (parseInt(form_number) + 1) + '-';
-    	var new_textarea_id = textarea_id.replace(search, replacement);
-    	
-    	// it's weird, the new id has to add id_ in front of the original one
-    	// id_speaker-1-description
-    	if (new_textarea_id.substr(0, 3) !='id_'){
-    		new_textarea_id = 'id_' + new_textarea_id;
-    	}
-    	tinyMCE.execCommand('mceAddControl', false, new_textarea_id);
-    	tinyMCE.triggerSave();
+        if (textarea_id){
+        var search = '-' + (form_number) + '-';
+        var replacement = '-' + (parseInt(form_number) + 1) + '-';
+        var new_textarea_id = textarea_id.replace(search, replacement);
+        
+        // it's weird, the new id has to add id_ in front of the original one
+        // id_speaker-1-description
+        if (new_textarea_id.substr(0, 3) !='id_'){
+            new_textarea_id = 'id_' + new_textarea_id;
+        }
+        tinyMCE.execCommand('mceAddControl', false, new_textarea_id);
+        tinyMCE.triggerSave();
       }
     }
     

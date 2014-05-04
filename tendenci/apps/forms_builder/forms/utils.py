@@ -29,6 +29,7 @@ def generate_admin_email_body(entry, form_for_form):
 
     return output
 
+
 def generate_submitter_email_body(entry, form_for_form):
     """
         Generates the email body so that is readable
@@ -43,6 +44,7 @@ def generate_submitter_email_body(entry, form_for_form):
     output = template.render(context)
 
     return output
+
 
 def generate_email_subject(form, form_entry):
     """
@@ -62,15 +64,15 @@ def generate_email_subject(form, form_entry):
             else:
                 p = re.compile('\[%s\]' % label, re.IGNORECASE)
             subject = p.sub(value, subject)
-            
+
         # title
         p = re.compile('\[title\]', re.IGNORECASE)
         subject = p.sub(form.title, subject)
-            
+
         # replace those brackets with blank string
         p = re.compile('(-\s+)?\[[\d\D\s\S\w\W]*?\]')
         subject = p.sub('', subject)
-    
+
     else:
         subject = "%s:" % (form.title)
         if form_entry.get_first_name():
@@ -83,9 +85,9 @@ def generate_email_subject(form, form_entry):
             subject = "%s - %s" % (subject, form_entry.get_phone_number())
         if form_entry.get_email_address():
             subject = "%s - %s" % (subject, form_entry.get_email_address())
-        
+
     return subject
-    
+
 
 def make_invoice_for_entry(entry, **kwargs):
     """
@@ -118,7 +120,7 @@ def make_invoice_for_entry(entry, **kwargs):
         inv.set_owner(entry.creator)
 
     inv.save()
-    
+
     return inv
 
 def update_invoice_for_entry(invoice, form):
@@ -143,4 +145,3 @@ def update_invoice_for_entry(invoice, form):
     inv.estimate = True
     inv.status_detail = 'estimate'
     inv.save()
-

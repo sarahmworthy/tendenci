@@ -107,8 +107,8 @@ td.td-right {
 }
 
 div.invoice-meta-wrapper {
-	width: 90%;
-}
+    width: 90%;
+ }
 
 div.invoice-meta {
 	margin: 20px 20px 20px 0;
@@ -136,21 +136,22 @@ div.invoice-meta table tr.invoice-meta-amount td {
 }
 
 div.invoice-meta-logo {
-	margin: 20px 0 20px 0;
-	width: 295px;
-	float: right;
+    margin: 20px 0 20px 0;
+    width: 300px;
+    float: right;
 }
 
 div.invoice-meta-logo.print-view {
-    float:left;
+    width: 295px;
+    float: left;
 }
 
 div.invoice-meta-logo img {
-	width: 100%;
+    width: 100%;
 }
 
 div.invoice-meta-clear {
-	clear: both;
+    clear: both;
 }
 
 div.invoice-table {

@@ -463,4 +463,3 @@ def timezone_label(value):
         return "(GMT%s) %s" %(tzinfo, value)
     except:
         return ""
-

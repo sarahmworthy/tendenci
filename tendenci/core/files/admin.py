@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib import admin, messages
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render, get_object_or_404
-from django.http import HttpResponse
+from django.utils.translation import ugettext_lazy as _
 
 from tendenci.core.perms.admin import TendenciBaseModelAdmin
 from tendenci.core.files.models import File, MultipleFile
@@ -109,7 +109,12 @@ class MultipleFileAdmin(admin.ModelAdmin):
         if request.method == 'POST':
             form = MultiFileForm(request.POST, request.FILES, request=request)
             if form.is_valid():
-                form.save()
+                counter = form.save()
+                if counter == 1:
+                    messages.success(request, _('Successfully uploaded a file.'))
+                elif counter > 1:
+                    string = 'Successfully uploaded %s files.' % counter
+                    messages.success(request, _(string) )
                 return redirect(reverse('admin:files_file_changelist'))
         return render(request,
             'admin/files/file/multiple_file_upload.html',{

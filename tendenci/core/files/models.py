@@ -343,7 +343,7 @@ class File(TendenciBaseModel):
 
 class MultipleFile(models.Model):
     """
-    Dummy model to enable us of having ad admin options in the
+    Dummy model to enable us of having an admin options in the
     Files section to add multiple files
     """
     class Meta:

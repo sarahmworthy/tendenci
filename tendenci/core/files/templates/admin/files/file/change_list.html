@@ -9,6 +9,7 @@
   {% if cl.formset %}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
   {% endif %}
+
   <style type="text/css">
     .actions.category-form {
       display: none; }
@@ -40,6 +41,7 @@
     });
 })(django.jQuery);
 </script>
+
 <script type="text/javascript">
   jQuery(document).ready(function($) {
     $("select[name='action']").change(function () {

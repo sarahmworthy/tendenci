@@ -18,16 +18,6 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=5, decimal_places=4, blank=True),
                       keep_default=False)
 
-        # Adding field 'Addon.include_tax'
-        db.add_column('events_addon', 'include_tax',
-                      self.gf('django.db.models.fields.BooleanField')(default=False),
-                      keep_default=False)
-
-        # Adding field 'Addon.tax_rate'
-        db.add_column('events_addon', 'tax_rate',
-                      self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=5, decimal_places=4, blank=True),
-                      keep_default=False)
-
 
     def backwards(self, orm):
         # Deleting field 'RegConfPricing.include_tax'
@@ -35,12 +25,6 @@ class Migration(SchemaMigration):
 
         # Deleting field 'RegConfPricing.tax_rate'
         db.delete_column('events_regconfpricing', 'tax_rate')
-
-        # Deleting field 'Addon.include_tax'
-        db.delete_column('events_addon', 'include_tax')
-
-        # Deleting field 'Addon.tax_rate'
-        db.delete_column('events_addon', 'tax_rate')
 
 
     models = {
@@ -163,10 +147,8 @@ class Migration(SchemaMigration):
             'event': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['events.Event']"}),
             'group': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['user_groups.Group']", 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'include_tax': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'price': ('django.db.models.fields.DecimalField', [], {'default': '0', 'max_digits': '21', 'decimal_places': '2'}),
             'status': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'tax_rate': ('django.db.models.fields.DecimalField', [], {'default': '0', 'max_digits': '5', 'decimal_places': '4', 'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
         'events.addonoption': {

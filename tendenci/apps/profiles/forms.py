@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.forms.extras.widgets import SelectDateWidget
 from django.utils.safestring import mark_safe
+from django.conf import settings
 
 from tendenci.core.base.fields import SplitDateTimeField
 from tendenci.core.base.fields import EmailVerificationField, CountrySelectField
@@ -88,7 +89,7 @@ class ProfileForm(TendenciBaseForm):
                                 error_messages={'required': 'Last Name is a required field.'})
     email = EmailVerificationField(label=_("Email"),
                                 error_messages={'required': 'Email is a required field.'})
-    email2 = EmailVerificationField(label=_("Email 2"), required=False)
+    email2 = EmailVerificationField(label=_("Secondary Email"), required=False)
 
     initials = forms.CharField(label=_("Initial"), max_length=100, required=False,
                                widget=forms.TextInput(attrs={'size':'10'}))
@@ -143,6 +144,7 @@ class ProfileForm(TendenciBaseForm):
                                widget=forms.Textarea(attrs={'rows':'3'}))
     admin_notes = forms.CharField(label=_("Admin Notes"), max_length=1000, required=False,
                                widget=forms.Textarea(attrs={'rows':'3'}))
+    language = forms.ChoiceField(initial="en", choices=settings.LANGUAGES)
     dob = forms.DateField(required=False, widget=SelectDateWidget(None, range(1920, THIS_YEAR)))
 
     status_detail = forms.ChoiceField(
@@ -186,8 +188,8 @@ class ProfileForm(TendenciBaseForm):
                   'dob',
                   'ssn',
                   'spouse',
-                  'language',
                   'time_zone',
+                  'language',
                   'department',
                   'education',
                   'student',
@@ -339,6 +341,8 @@ class ProfileAdminForm(TendenciBaseForm):
     interactive = forms.ChoiceField(initial=1, choices=((1,'Interactive'),
                                                           (0,'Not Interactive (no login)'),))
 
+    language = forms.ChoiceField(initial="en", choices=settings.LANGUAGES)
+
     status_detail = forms.ChoiceField(
         choices=(('active','Active'),('inactive','Inactive'), ('pending','Pending'),))
 
@@ -380,8 +384,8 @@ class ProfileAdminForm(TendenciBaseForm):
                   'dob',
                   'ssn',
                   'spouse',
-                  'language',
                   'time_zone',
+                  'language',
                   'department',
                   'education',
                   'student',
