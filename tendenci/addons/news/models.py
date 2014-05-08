@@ -9,7 +9,7 @@ from django.contrib.contenttypes import generic
 from tagging.fields import TagField
 from tendenci.core.base.fields import SlugField
 from timezones.fields import TimeZoneField
-from timezones.utils import localtime_for_timezone
+from timezones.utils import localtime_for_timezone, adjust_datetime_to_timezone
 from tendenci.core.perms.models import TendenciBaseModel
 from tendenci.core.perms.object_perms import ObjectPermission
 from tendenci.core.categories.models import CategoryItem
@@ -141,7 +141,7 @@ class News(TendenciBaseModel):
     @property
     def release_dt_localtimezone(self):
         tz = get_setting('site', 'global', 'defaulttimezone')
-        return localtime_for_timezone(self.release_dt_with_tz, tz)
+        return adjust_datetime_to_timezone(self.release_dt, self.timezone, tz)
 
     @property
     def is_released(self):

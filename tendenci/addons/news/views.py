@@ -68,7 +68,7 @@ def search(request, template_name="news/search.html"):
     if not has_perm(request.user, 'news.view_news'):
         news = news.filter(id__in=released_news_ids)
 
-    news = sorted(news, key=lambda news_item: news_item.release_dt_with_tz, reverse=True)
+    news = sorted(news, key=lambda news_item: news_item.release_dt_localtimezone, reverse=True)
 
     EventLog.objects.log()
 
