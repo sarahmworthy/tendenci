@@ -19,6 +19,7 @@ from tendenci.core.meta.models import Meta as MetaTags
 from tendenci.addons.news.module_meta import NewsMeta
 from tendenci.core.files.models import File
 from tendenci.libs.boto_s3.utils import set_s3_file_permission
+from tendenci.core.site_settings.utils import get_setting
 
 class News(TendenciBaseModel):
     CONTRIBUTOR_AUTHOR = 1
@@ -135,22 +136,18 @@ class News(TendenciBaseModel):
 
     @property
     def release_dt_with_tz(self):
-        return datetime(
-                year = self.release_dt.year,
-                month = self.release_dt.month,
-                day = self.release_dt.day,
-                hour = self.release_dt.hour,
-                minute = self.release_dt.minute,
-                tzinfo = self.timezone )
+        return localtime_for_timezone(self.release_dt, self.timezone)
 
     @property
-    def release_dt_default_tz(self):
-        return localtime_for_timezone(self.release_dt_with_tz, None)
+    def release_dt_localtimezone(self):
+        tz = get_setting('site', 'global', 'defaulttimezone')
+        return localtime_for_timezone(self.release_dt_with_tz, tz)
 
     @property
     def is_released(self):
-        now = localtime_for_timezone(datetime.now(), None)
-        return self.release_dt_default_tz <= now
+        tz = get_setting('site', 'global', 'defaulttimezone')
+        now = localtime_for_timezone(datetime.now(), tz)
+        return self.release_dt_localtimezone <= now
 
     @property
     def has_google_author(self):
