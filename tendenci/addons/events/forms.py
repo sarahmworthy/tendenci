@@ -1577,10 +1577,17 @@ class RegistrantForm(forms.Form):
     """
     first_name = forms.CharField(max_length=50)
     last_name = forms.CharField(max_length=50)
-    company_name = forms.CharField(max_length=100, required=False)
-    #username = forms.CharField(max_length=50, required=False)
-    phone = forms.CharField(max_length=20, required=False)
+    mail_name = forms.CharField(max_length=50, required=False)
     email = EmailVerificationField(label=_("Email"))
+    position_title = forms.CharField(max_length=100, required=False)
+    company_name = forms.CharField(max_length=100, required=False)
+    phone = forms.CharField(max_length=20, required=False)
+    address = forms.CharField(max_length=200, required=False)
+    city = forms.CharField(max_length=100, required=False)
+    state = forms.CharField(max_length=100, required=False)
+    zip_code = forms.CharField(max_length=50, required=False)
+    country = CountrySelectField(required=False)
+    meal_option = forms.CharField(max_length=200, required=False)
     comments = forms.CharField(
         max_length=300, widget=forms.Textarea, required=False)
 
@@ -1602,6 +1609,14 @@ class RegistrantForm(forms.Form):
         if reg_conf.send_reminder:
             self.fields['reminder'] = forms.BooleanField(label=_('Receive event reminders'),
                                                          required=False)
+
+        # add changes in the stardard registration form
+        for field_name, field in self.fields.items():
+            if field_name not in ['first_name', 'last_name', 'email']:
+                if get_setting('module', 'events', 'regform_%s_visible' % field_name):
+                    field.required = get_setting('module', 'events', 'regform_%s_required' % field_name)
+                else:
+                    del self.fields[field_name]
 
         # make the fields in the subsequent forms as not required
         if not reg_conf.require_guests_info:
@@ -2178,4 +2193,36 @@ class EventExportForm(forms.Form):
                 raise forms.ValidationError('End date must be greater than start date')
 
         return end_dt
+
+
+class StandardRegAdminForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(StandardRegAdminForm, self).__init__(*args, **kwargs)
+        scope = 'module'
+        scope_category = 'events'
+
+        regform_settings = Setting.objects.filter(scope=scope, scope_category=scope_category,
+                                                  name__startswith="regform_")
+        for setting in regform_settings:
+            name = setting.name
+            field_name = name.split("regform_")[1]
+            initial = get_setting('module', 'events', name)
+            self.fields[field_name] = forms.BooleanField(required=False, initial=initial)
+
+    def apply_changes(self):
+        cleaned_data = self.cleaned_data
+        scope = 'module'
+        scope_category = 'events'
+
+        for field_name, value in cleaned_data.items():
+            try:
+                setting = Setting.objects.get(scope=scope, scope_category=scope_category,
+                                              name='regform_%s' % field_name)
+            except Setting.DoesNotExist:
+                setting = None
+
+            if setting:
+                setting.set_value(value)
+                setting.save()
 
