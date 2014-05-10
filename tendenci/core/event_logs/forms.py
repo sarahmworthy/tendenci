@@ -3,6 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 from django import forms
 
 from tendenci.core.base.fields import SplitDateTimeField
+from .models import EventLog
 from form_utils.forms import BetterForm
 
 INITIAL_START_DT = datetime.now() - timedelta(weeks=4)
@@ -51,7 +52,10 @@ class EventLogSearchForm(BetterForm):
     user_name = forms.CharField(required=False)
     session_id = forms.CharField(required=False)
     application = forms.CharField(required=False)
-    action = forms.CharField(required=False)
+    action = forms.ChoiceField(
+      required=False,
+      choices=[('', '-----')] + [(data, data) for data in EventLog.objects.values_list('action', flat=True).distinct().order_by('action')]
+      )
 
     class Meta:
         fields = (
@@ -92,3 +96,4 @@ class EventLogSearchForm(BetterForm):
               'legend': 'Advanced Options'
               }),
         ]
+
