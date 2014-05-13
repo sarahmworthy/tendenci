@@ -35,6 +35,9 @@ class EventLog(models.Model):
     robot = models.ForeignKey(Robot, null=True, on_delete=models.SET_NULL)
     create_dt = models.DateTimeField(auto_now_add=True)
 
+    # colors
+    app_color = models.CharField(blank=True, max_length=10)
+
     uuid = models.CharField(max_length=40)
     application = models.CharField(max_length=50, db_index=True)
     action = models.CharField(max_length=50, db_index=True)
@@ -48,6 +51,10 @@ class EventLog(models.Model):
     def save(self, *args, **kwargs):
         if not self.uuid:
             self.uuid = str(uuid.uuid1())
+
+        # add the app_color attribute on save
+        self.app_color = EventLogBaseColor.get_color(self.application)
+
         super(EventLog, self).save(*args, **kwargs)
 
     def color(self):
