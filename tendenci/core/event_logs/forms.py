@@ -52,9 +52,9 @@ class EventLogSearchForm(BetterForm):
     user_name = forms.CharField(required=False)
     session_id = forms.CharField(required=False)
     application = forms.CharField(required=False)
-    action = forms.ChoiceField(
+    action = forms.ModelChoiceField(
       required=False,
-      choices=[('', '-----')] + [(data, data) for data in EventLog.objects.values_list('action', flat=True).distinct().order_by('action')]
+      queryset=EventLog.objects.values_list('action', flat=True).distinct().order_by('action')
       )
 
     class Meta:
