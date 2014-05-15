@@ -157,6 +157,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'tendenci.core.base.context_processors.today',
     'tendenci.core.base.context_processors.site_admin_email',
     'tendenci.core.registry.context_processors.registered_apps',
+    'zinnia.context_processors.version'
 )
 
 INSTALLED_APPS = (
@@ -165,6 +166,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'django.contrib.comments',
     'django.contrib.humanize',
     'django.contrib.sitemaps',
     'django.contrib.messages',
@@ -180,7 +182,10 @@ INSTALLED_APPS = (
     'haystack',
     'captcha',
     'south',
+    'mptt',
+    'zinnia',
     'tastypie',
+
     'tendenci.libs.model_report',
 
     'tendenci.apps.entities',
@@ -256,6 +261,7 @@ INSTALLED_APPS = (
     'tendenci.apps.dashboard',
     'tendenci.addons.social_media',
     'tendenci.addons.announcements',
+    'tendenci.addons.blog',
     # celery task system, must stay at the bottom of installed apps
     'djkombu',
     'djcelery',
@@ -477,3 +483,10 @@ MAX_MEMBERSHIP_TYPES = 10
 # indexes are being used.
 #-------------------------------------------------------#
 INDEX_UPDATE_NOTE = 'updated hourly'
+
+
+#--------------------------------------------------------#
+# ZINNIA BLOG 
+#--------------------------------------------------------#
+ZINNIA_UPLOAD_TO = 'zinnia'
+ZINNIA_MAIL_COMMENT_AUTHORS = False

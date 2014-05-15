@@ -94,6 +94,7 @@ urlpatterns += patterns('',
     url(r'^login/$', redirect_to, {'url': '/accounts/login/'}),
 
     url(r'^', include('tendenci.addons.articles.urls')),
+    url(r'^', include('tendenci.addons.blog.urls')),
     url(r'^', include('tendenci.addons.corporate_memberships.urls')),
     url(r'^', include('tendenci.addons.directories.urls')),
     url(r'^', include('tendenci.addons.events.urls')),

@@ -2804,7 +2804,7 @@ class AppEntry(TendenciBaseModel):
     is_renewal = models.BooleanField()
     is_approved = models.NullBooleanField(_('Approved'), null=True)
     decision_dt = models.DateTimeField(null=True)
-    judge = models.ForeignKey(User, null=True, related_name='entries', on_delete=models.SET_NULL)
+    judge = models.ForeignKey(User, null=True, related_name='appentries', on_delete=models.SET_NULL)
     invoice = models.ForeignKey(Invoice, null=True)
     perms = generic.GenericRelation(
         ObjectPermission,
