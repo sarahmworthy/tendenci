@@ -198,8 +198,8 @@ var editor;
 $(document).ready(function(){
   editor = CodeMirror.fromTextArea('id_content', {
     height: "500px",
-    parserfile: {% if ext == "css" %}"parsecss.js"{% elif ext == "js" %}"parsejavascript.js"{% else %}"parsexml.js"{% endif %},
-  stylesheet: {% if ext == "css" %}"{{ STATIC_URL }}codemirror/css/csscolors.css"{% elif ext == "js" %} "{{ STATIC_URL }}codemirror/css/jscolors.css" {% else %}"{{ STATIC_URL }}codemirror/css/xmlcolors.css"{% endif %},
+    parserfile: {% if ext in stylesheets %}"parsecss.js"{% elif ext == "js" %}"parsejavascript.js"{% else %}"parsexml.js"{% endif %},
+  stylesheet: {% if ext in stylesheets %}"{{ STATIC_URL }}codemirror/css/csscolors.css"{% elif ext == "js" %} "{{ STATIC_URL }}codemirror/css/jscolors.css" {% else %}"{{ STATIC_URL }}codemirror/css/xmlcolors.css"{% endif %},
     path: "{{ STATIC_URL }}codemirror/js/",
     continuousScanning: 500,
     lineNumbers: true,

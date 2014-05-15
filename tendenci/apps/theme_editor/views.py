@@ -77,6 +77,7 @@ def edit_file(request, form_class=FileForm, template_name="theme_editor/index.ht
     # get file ext
     name = current_file.split('/')[-1]
     ext = name.split('.')[-1]
+    stylesheets = ['css', 'less']
 
     # get the present working directory
     # and make sure they cannot list root
@@ -151,7 +152,8 @@ def edit_file(request, form_class=FileForm, template_name="theme_editor/index.ht
         'is_file': is_file,
         'is_dir': is_dir,
         'all_files_folders': all_files_folders,
-        'ext' : ext
+        'ext' : ext,
+        'stylesheets' : stylesheets
     }, context_instance=RequestContext(request))
 
 
