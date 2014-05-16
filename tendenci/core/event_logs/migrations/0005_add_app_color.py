@@ -11,15 +11,16 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        for i in orm.EventLog.objects.all():
-            i.app_color = EventLogBaseColor.get_color(i.application)
-            i.save()
+        applications_list = orm.EventLog.objects.distinct().values_list('application', flat=True)
+        for application in applications_list:
+            app_color = EventLogBaseColor.get_color(application)
+            orm.EventLog.objects.filter(application=application).update(app_color=app_color)
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        for i in orm.EventLog.objects.all():
-            i.app_color = ''
-            i.save()
+        applications_list = orm.EventLog.objects.distinct().values_list('application', flat=True)
+        for application in applications_list:
+            EventLog.objects.filter(application=application).update(app_color='')
 
     models = {
         'auth.group': {
