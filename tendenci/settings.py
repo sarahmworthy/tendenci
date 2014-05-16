@@ -64,6 +64,7 @@ SITE_SETTINGS_KEY = "FhAiPZWDoxnY0TrakVEFplu2sd3DIli6"
 
 ## Django 1.4
 TEMPLATE_LOADERS = (
+    'app_namespace.Loader',
     'tendenci.core.theme.template_loaders.load_template_source',
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
@@ -183,6 +184,7 @@ INSTALLED_APPS = (
     'captcha',
     'south',
     'mptt',
+    'zinnia_threaded_comments',
     'zinnia',
     'tastypie',
 
@@ -490,3 +492,4 @@ INDEX_UPDATE_NOTE = 'updated hourly'
 #--------------------------------------------------------#
 ZINNIA_UPLOAD_TO = 'zinnia'
 ZINNIA_MAIL_COMMENT_AUTHORS = False
+COMMENTS_APP = 'zinnia_threaded_comments'

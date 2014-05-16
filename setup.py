@@ -157,6 +157,7 @@ setup(
         "django-authority>=0.4",
         "django-avatar==1.0.5",
         "django-blog-zinnia==0.12.3",
+        "django-app-namespace-template-loader==0.1",
         "django-countries==1.5",
         "django-form-utils>=0.1.8",
         "django-localflavor==1.0",
@@ -207,5 +208,6 @@ setup(
         "simple-salesforce==0.51",
         "static==0.4",
         "selenium==2.37.2",
+        "zinnia-threaded-comments==0.2",
     ],
 )

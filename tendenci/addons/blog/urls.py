@@ -1,7 +1,7 @@
 from django.conf.urls.defaults import include, patterns, url
 from tendenci.core.site_settings.utils import get_setting
 
-urlpath = get_setting('module', 'blog', 'url') or 'blog'
+urlpath = get_setting('module', 'blog', 'url')
 enabled = get_setting('module', 'blog', 'enabled') or False
 
 
