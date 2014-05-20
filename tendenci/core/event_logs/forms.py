@@ -10,7 +10,10 @@ INITIAL_START_DT = datetime.now() - timedelta(weeks=4)
 INITIAL_END_DT = datetime.now()
 ACTION_CHOICES = [(i, i) for i in EventLog.objects.values_list('action', flat=True).distinct().order_by('action')]
 ACTION_CHOICES = [('','---------------')] + ACTION_CHOICES
+APP_CHOICES = [(i, i) for i in EventLog.objects.values_list('application', flat=True).distinct().order_by('action')]
+APP_CHOICES = [('','---------------')] + APP_CHOICES
 REQUEST_CHOICES = [('all', 'ALL',), ('post', 'POST',), ('get', 'GET',)]
+
 
 
 class EventsFilterForm(forms.Form):
@@ -58,8 +61,10 @@ class EventLogSearchForm(BetterForm):
     user_ip_address = forms.CharField(required=False)
     user_id = forms.IntegerField(required=False)
     user_name = forms.CharField(required=False)
-    application = forms.CharField(
+
+    application = forms.ChoiceField(
         required=False,
+        choices=APP_CHOICES,
         help_text="These are the different modules like Pages or Articles.")
 
     action = forms.ChoiceField(
