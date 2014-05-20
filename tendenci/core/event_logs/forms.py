@@ -2,12 +2,15 @@ from datetime import datetime, timedelta
 from django.utils.translation import ugettext_lazy as _
 from django import forms
 
-from tendenci.core.base.fields import SplitDateTimeField
 from .models import EventLog
+from tendenci.core.base.fields import SplitDateTimeField
 from form_utils.forms import BetterForm
 
 INITIAL_START_DT = datetime.now() - timedelta(weeks=4)
 INITIAL_END_DT = datetime.now()
+ACTION_CHOICES = [(i, i) for i in EventLog.objects.values_list('action', flat=True).distinct().order_by('action')]
+ACTION_CHOICES = [('','---------------')] + ACTION_CHOICES
+REQUEST_CHOICES = [('all', 'ALL',), ('post', 'POST',), ('get', 'GET',)]
 
 
 class EventsFilterForm(forms.Form):
@@ -42,19 +45,28 @@ class EventLogSearchForm(BetterForm):
     )
     request_method = forms.ChoiceField(
         required=False,
-        choices=(('all', 'ALL',), ('post', 'POST',), ('get', 'GET',))
+        choices=REQUEST_CHOICES,
+        help_text='GET = whether a page/item was viewed. POST = an item was edited or added'
     )
-    event_id = forms.IntegerField(required=False)
-    source = forms.CharField(required=False)
-    object_id = forms.CharField(required=False)
+
+    object_id = forms.CharField(
+        required=False,
+        help_text="This is the ID Tendenci uses for all objects. "
+        "This is the number you sometimes see in URLs. For example, "
+        "for the event at http://tendenci.com/events/173/, the object ID is 173.")
+
     user_ip_address = forms.CharField(required=False)
     user_id = forms.IntegerField(required=False)
     user_name = forms.CharField(required=False)
-    session_id = forms.CharField(required=False)
-    application = forms.CharField(required=False)
-    action = forms.ModelChoiceField(
+    application = forms.CharField(
+        required=False,
+        help_text="These are the different modules like Pages or Articles.")
+
+    action = forms.ChoiceField(
       required=False,
-      queryset=EventLog.objects.values_list('action', flat=True).distinct().order_by('action')
+      choices=ACTION_CHOICES,
+      help_text="These are the actions within the python commands at view.py. "
+      "Some examples of actions are search and edit, for example."
       )
 
     class Meta:
@@ -62,13 +74,10 @@ class EventLogSearchForm(BetterForm):
             'start_dt',
             'end_dt',
             'request_method',
-            'event_id',
-            'source',
             'object_id'
             'user_ip_address',
             'user_id',
             'user_name',
-            'session_id',
             'application',
             'action',
             )
@@ -78,7 +87,6 @@ class EventLogSearchForm(BetterForm):
               'fields': ['start_dt',
                          'end_dt',
                          'request_method',
-                         'event_id'
                          ],
               'legend': ''
               }),
@@ -87,8 +95,6 @@ class EventLogSearchForm(BetterForm):
               'fields': ['user_id',
                          'user_name',
                          'user_ip_address',
-                         'session_id',
-                         'source',
                          'object_id',
                          'application',
                          'action'
@@ -96,4 +102,3 @@ class EventLogSearchForm(BetterForm):
               'legend': 'Advanced Options'
               }),
         ]
-
