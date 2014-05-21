@@ -80,7 +80,8 @@
 	margin-bottom: 20px;
 }
 
-.t form.search-form input[type="text"] {
+.t form.search-form input[type="text"],
+form.search-form input[type="text"] {
 	width: 50%;
 	margin-bottom: 10px;
 	padding: 5px;	
@@ -88,7 +89,8 @@
 .t form.search-form input[type="text"].datepicker {
     width: 70px;
 }
-.t form.search-form select {
+.t form.search-form select,
+form.search-form select {
 	padding: 5px;
 }
 .t form.search-form ul.errorlist {

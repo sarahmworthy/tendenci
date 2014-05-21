@@ -38,6 +38,12 @@
 
 </form>
 
+<form class="search-form" action="" method="get">
+    {{ form.search_category }}
+    {{ form.q }}
+    <input class="btn" type="submit" value="Search" />
+</form>
+
     <div class="days-nav">
         <div class="yesterday-link">
             <a href="{{ yesterday_url }}">&laquo; {{ yesterday|date:"SHORT_DATE_FORMAT" }}</a>

@@ -108,7 +108,8 @@ from tendenci.addons.events.forms import (
     MemberRegistrationForm,
     ApplyRecurringChangesForm,
     EventSearchForm,
-    EventExportForm)
+    EventExportForm,
+    EventSimpleSearchForm)
 from tendenci.addons.events.utils import (
     email_registrants,
     render_event_email,
@@ -2794,6 +2795,13 @@ def day_view(request, year=None, month=None, day=None, template_name='events/day
     if year <= 1900:
         raise Http404
 
+    query = request.GET.get('q', None)
+    form = EventSimpleSearchForm(request.GET)
+    if form.is_valid():
+        cat = form.cleaned_data.get('search_category', None)
+    else:
+        cat = None
+
     day_date = datetime(year=int(year), month=int(month), day=int(day))
     yesterday = day_date - timedelta(days=1)
     yesterday_url = reverse('event.day', args=(
@@ -2812,10 +2820,15 @@ def day_view(request, year=None, month=None, day=None, template_name='events/day
     if abs(year - datetime.now().year) > 6:
         filters = get_query_filters(request.user, 'events.view_event')
         is_events = Event.objects.filter(filters).filter(end_dt__gte=day_date, start_dt__lte=tomorrow)
+        if cat == 'priority':
+            is_events = is_events.filter(**{cat : True })
+        elif query and cat:
+            is_events = is_events.filter(**{cat : query})
         if not is_events:
             # Try to redirect old dates to the earliest event
             if year < datetime.now().year:
                 latest_event = Event.objects.filter(start_dt__gte=day_date).order_by('start_dt')
+
                 if latest_event.count() > 0:
                     latest_month = latest_event[0].start_dt.month
                     latest_year = latest_event[0].start_dt.year
@@ -2842,6 +2855,7 @@ def day_view(request, year=None, month=None, day=None, template_name='events/day
         'tomorrow': tomorrow,
         'yesterday_url': yesterday_url,
         'tomorrow_url': tomorrow_url,
+        'form': form,
     }, context_instance=RequestContext(request))
 
 
